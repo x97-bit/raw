@@ -737,11 +737,85 @@ router.get("/defaults/transaction-form", authMiddleware, async (req: AuthRequest
   } catch (e: any) { return res.status(500).json({ error: e.message }); }
 });
 
+router.get("/defaults/account", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+
+    const conditions: any[] = [];
+    const sectionKey = req.query.sectionKey ? String(req.query.sectionKey).trim() : "";
+    const accountId = parseOptionalInt(req.query.accountId);
+    const search = req.query.search ? String(req.query.search).trim().toLowerCase() : "";
+
+    if (sectionKey) conditions.push(eq(accountDefaults.sectionKey, sectionKey));
+    if (accountId) conditions.push(eq(accountDefaults.accountId, accountId));
+
+    let query = db.select().from(accountDefaults).orderBy(desc(accountDefaults.updatedAt), desc(accountDefaults.id));
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    const rows = await query;
+
+    const [allAccounts, allDrivers, allVehicles, allGoods, allGovs, allCompanies] = await Promise.all([
+      db.select().from(accounts),
+      db.select().from(drivers),
+      db.select().from(vehicles),
+      db.select().from(goodsTypes),
+      db.select().from(governorates),
+      db.select().from(companies),
+    ]);
+
+    const accountMap = new Map(allAccounts.map((row: any) => [row.id, row.name]));
+    const driverMap = new Map(allDrivers.map((row: any) => [row.id, row.name]));
+    const vehicleMap = new Map(allVehicles.map((row: any) => [row.id, row.plateNumber]));
+    const goodTypeMap = new Map(allGoods.map((row: any) => [row.id, row.name]));
+    const govMap = new Map(allGovs.map((row: any) => [row.id, row.name]));
+    const companyMap = new Map(allCompanies.map((row: any) => [row.id, row.name]));
+
+    let result = rows.map((row: any) => ({
+      id: row.id,
+      accountId: row.accountId,
+      accountName: accountMap.get(row.accountId) || "",
+      sectionKey: row.sectionKey,
+      defaultCurrency: row.defaultCurrency ?? null,
+      defaultDriverId: row.defaultDriverId ?? null,
+      defaultDriverName: row.defaultDriverId ? driverMap.get(row.defaultDriverId) || "" : "",
+      defaultVehicleId: row.defaultVehicleId ?? null,
+      defaultVehicleName: row.defaultVehicleId ? vehicleMap.get(row.defaultVehicleId) || "" : "",
+      defaultGoodTypeId: row.defaultGoodTypeId ?? null,
+      defaultGoodTypeName: row.defaultGoodTypeId ? goodTypeMap.get(row.defaultGoodTypeId) || "" : "",
+      defaultGovId: row.defaultGovId ?? null,
+      defaultGovName: row.defaultGovId ? govMap.get(row.defaultGovId) || "" : "",
+      defaultCompanyId: row.defaultCompanyId ?? null,
+      defaultCompanyName: row.defaultCompanyId ? companyMap.get(row.defaultCompanyId) || "" : "",
+      defaultCarrierId: row.defaultCarrierId ?? null,
+      defaultCarrierName: row.defaultCarrierId ? accountMap.get(row.defaultCarrierId) || "" : "",
+      defaultFeeUsd: parseNullableNumber(row.defaultFeeUsd),
+      defaultSyrCus: parseNullableNumber(row.defaultSyrCus),
+      defaultCarQty: row.defaultCarQty ?? null,
+      notes: row.notes ?? "",
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+
+    if (search) {
+      result = result.filter((row) =>
+        row.accountName.toLowerCase().includes(search)
+        || row.sectionKey.toLowerCase().includes(search)
+        || row.defaultDriverName.toLowerCase().includes(search)
+        || row.defaultGovName.toLowerCase().includes(search)
+      );
+    }
+
+    return res.json(result);
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
 router.post("/defaults/account", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
     const db = await getDb();
     if (!db) return res.status(500).json({ error: "Database unavailable" });
+    const replaceMode = req.body.replace === true;
 
     const accountId = parseOptionalInt(req.body.accountId);
     const sectionKey = String(req.body.sectionKey || "").trim();
@@ -757,17 +831,39 @@ router.post("/defaults/account", authMiddleware, async (req: AuthRequest, res: R
     const payload: any = {
       accountId,
       sectionKey,
-      defaultCurrency: hasBodyValue(req.body.defaultCurrency) ? String(req.body.defaultCurrency) : existing?.defaultCurrency ?? null,
-      defaultDriverId: parseOptionalInt(req.body.defaultDriverId) ?? existing?.defaultDriverId ?? null,
-      defaultVehicleId: parseOptionalInt(req.body.defaultVehicleId) ?? existing?.defaultVehicleId ?? null,
-      defaultGoodTypeId: parseOptionalInt(req.body.defaultGoodTypeId) ?? existing?.defaultGoodTypeId ?? null,
-      defaultGovId: parseOptionalInt(req.body.defaultGovId) ?? existing?.defaultGovId ?? null,
-      defaultCompanyId: parseOptionalInt(req.body.defaultCompanyId) ?? existing?.defaultCompanyId ?? null,
-      defaultCarrierId: parseOptionalInt(req.body.defaultCarrierId) ?? existing?.defaultCarrierId ?? null,
-      defaultFeeUsd: parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null,
-      defaultSyrCus: parseOptionalDecimal(req.body.defaultSyrCus) ?? existing?.defaultSyrCus ?? null,
-      defaultCarQty: parseOptionalInt(req.body.defaultCarQty) ?? existing?.defaultCarQty ?? null,
-      notes: hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null,
+      defaultCurrency: replaceMode
+        ? (hasBodyValue(req.body.defaultCurrency) ? String(req.body.defaultCurrency) : null)
+        : (hasBodyValue(req.body.defaultCurrency) ? String(req.body.defaultCurrency) : existing?.defaultCurrency ?? null),
+      defaultDriverId: replaceMode
+        ? (parseOptionalInt(req.body.defaultDriverId) ?? null)
+        : (parseOptionalInt(req.body.defaultDriverId) ?? existing?.defaultDriverId ?? null),
+      defaultVehicleId: replaceMode
+        ? (parseOptionalInt(req.body.defaultVehicleId) ?? null)
+        : (parseOptionalInt(req.body.defaultVehicleId) ?? existing?.defaultVehicleId ?? null),
+      defaultGoodTypeId: replaceMode
+        ? (parseOptionalInt(req.body.defaultGoodTypeId) ?? null)
+        : (parseOptionalInt(req.body.defaultGoodTypeId) ?? existing?.defaultGoodTypeId ?? null),
+      defaultGovId: replaceMode
+        ? (parseOptionalInt(req.body.defaultGovId) ?? null)
+        : (parseOptionalInt(req.body.defaultGovId) ?? existing?.defaultGovId ?? null),
+      defaultCompanyId: replaceMode
+        ? (parseOptionalInt(req.body.defaultCompanyId) ?? null)
+        : (parseOptionalInt(req.body.defaultCompanyId) ?? existing?.defaultCompanyId ?? null),
+      defaultCarrierId: replaceMode
+        ? (parseOptionalInt(req.body.defaultCarrierId) ?? null)
+        : (parseOptionalInt(req.body.defaultCarrierId) ?? existing?.defaultCarrierId ?? null),
+      defaultFeeUsd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultFeeUsd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null),
+      defaultSyrCus: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultSyrCus) ?? null)
+        : (parseOptionalDecimal(req.body.defaultSyrCus) ?? existing?.defaultSyrCus ?? null),
+      defaultCarQty: replaceMode
+        ? (parseOptionalInt(req.body.defaultCarQty) ?? null)
+        : (parseOptionalInt(req.body.defaultCarQty) ?? existing?.defaultCarQty ?? null),
+      notes: replaceMode
+        ? (hasBodyValue(req.body.notes) ? String(req.body.notes) : null)
+        : (hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null),
     };
 
     await db.insert(accountDefaults).values(payload).onDuplicateKeyUpdate({
@@ -790,11 +886,75 @@ router.post("/defaults/account", authMiddleware, async (req: AuthRequest, res: R
   } catch (e: any) { return res.status(500).json({ error: e.message }); }
 });
 
+router.delete("/defaults/account/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+    await db.delete(accountDefaults).where(eq(accountDefaults.id, parseInt(req.params.id, 10)));
+    return res.json({ message: "تم حذف افتراضيات التاجر" });
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
+router.get("/defaults/route", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+
+    const conditions: any[] = [];
+    const sectionKey = req.query.sectionKey ? String(req.query.sectionKey).trim() : "";
+    const govId = parseOptionalInt(req.query.govId);
+    const currency = req.query.currency ? String(req.query.currency).trim() : "";
+    const search = req.query.search ? String(req.query.search).trim().toLowerCase() : "";
+
+    if (sectionKey) conditions.push(eq(routeDefaults.sectionKey, sectionKey));
+    if (govId) conditions.push(eq(routeDefaults.govId, govId));
+    if (currency) conditions.push(eq(routeDefaults.currency, currency));
+
+    let query = db.select().from(routeDefaults).orderBy(desc(routeDefaults.updatedAt), desc(routeDefaults.id));
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    const rows = await query;
+
+    const allGovs = await db.select().from(governorates);
+    const govMap = new Map(allGovs.map((row: any) => [row.id, row.name]));
+
+    let result = rows.map((row: any) => ({
+      id: row.id,
+      sectionKey: row.sectionKey,
+      govId: row.govId,
+      govName: govMap.get(row.govId) || "",
+      currency: row.currency,
+      defaultTransPrice: parseNullableNumber(row.defaultTransPrice),
+      defaultFeeUsd: parseNullableNumber(row.defaultFeeUsd),
+      defaultCostUsd: parseNullableNumber(row.defaultCostUsd),
+      defaultAmountUsd: parseNullableNumber(row.defaultAmountUsd),
+      defaultCostIqd: parseNullableNumber(row.defaultCostIqd),
+      defaultAmountIqd: parseNullableNumber(row.defaultAmountIqd),
+      notes: row.notes ?? "",
+      active: row.active === 1,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+
+    if (search) {
+      result = result.filter((row) =>
+        row.govName.toLowerCase().includes(search)
+        || row.sectionKey.toLowerCase().includes(search)
+        || String(row.currency || "").toLowerCase().includes(search)
+      );
+    }
+
+    return res.json(result);
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
 router.post("/defaults/route", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
     const db = await getDb();
     if (!db) return res.status(500).json({ error: "Database unavailable" });
+    const replaceMode = req.body.replace === true;
 
     const sectionKey = String(req.body.sectionKey || "").trim();
     const govId = parseOptionalInt(req.body.govId);
@@ -813,13 +973,27 @@ router.post("/defaults/route", authMiddleware, async (req: AuthRequest, res: Res
       sectionKey,
       govId,
       currency,
-      defaultTransPrice: parseOptionalDecimal(req.body.defaultTransPrice) ?? existing?.defaultTransPrice ?? null,
-      defaultFeeUsd: parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null,
-      defaultCostUsd: parseOptionalDecimal(req.body.defaultCostUsd) ?? existing?.defaultCostUsd ?? null,
-      defaultAmountUsd: parseOptionalDecimal(req.body.defaultAmountUsd) ?? existing?.defaultAmountUsd ?? null,
-      defaultCostIqd: parseOptionalDecimal(req.body.defaultCostIqd) ?? existing?.defaultCostIqd ?? null,
-      defaultAmountIqd: parseOptionalDecimal(req.body.defaultAmountIqd) ?? existing?.defaultAmountIqd ?? null,
-      notes: hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null,
+      defaultTransPrice: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultTransPrice) ?? null)
+        : (parseOptionalDecimal(req.body.defaultTransPrice) ?? existing?.defaultTransPrice ?? null),
+      defaultFeeUsd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultFeeUsd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null),
+      defaultCostUsd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultCostUsd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultCostUsd) ?? existing?.defaultCostUsd ?? null),
+      defaultAmountUsd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultAmountUsd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultAmountUsd) ?? existing?.defaultAmountUsd ?? null),
+      defaultCostIqd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultCostIqd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultCostIqd) ?? existing?.defaultCostIqd ?? null),
+      defaultAmountIqd: replaceMode
+        ? (parseOptionalDecimal(req.body.defaultAmountIqd) ?? null)
+        : (parseOptionalDecimal(req.body.defaultAmountIqd) ?? existing?.defaultAmountIqd ?? null),
+      notes: replaceMode
+        ? (hasBodyValue(req.body.notes) ? String(req.body.notes) : null)
+        : (hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null),
       active: 1,
     };
 
@@ -837,6 +1011,16 @@ router.post("/defaults/route", authMiddleware, async (req: AuthRequest, res: Res
     });
 
     return res.json({ message: "تم حفظ افتراضيات المسار" });
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
+router.delete("/defaults/route/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+    await db.delete(routeDefaults).where(eq(routeDefaults.id, parseInt(req.params.id, 10)));
+    return res.json({ message: "تم حذف افتراضيات المسار" });
   } catch (e: any) { return res.status(500).json({ error: e.message }); }
 });
 

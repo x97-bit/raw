@@ -13,6 +13,7 @@ const TrialBalancePage = lazy(() => import('./pages/TrialBalancePage'));
 const PaymentMatchingPage = lazy(() => import('./pages/PaymentMatchingPage'));
 const FieldManagementPage = lazy(() => import('./pages/FieldManagementPage'));
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage'));
+const DefaultsManagementPage = lazy(() => import('./pages/DefaultsManagementPage'));
 
 function PageLoadingFallback() {
   return (
@@ -79,6 +80,8 @@ function AppContent() {
           navigate('payment-matching');
         } else if (sectionId === 'field-management') {
           navigate('field-management');
+        } else if (sectionId === 'defaults-management') {
+          navigate('defaults-management');
         } else if (sectionId === 'expenses') {
           navigate('expenses');
         } else if (sectionConfig[sectionId]) {
@@ -158,6 +161,12 @@ function AppContent() {
   if (current.page === 'field-management') {
     return can.manageUsers
       ? renderLazyPage(<FieldManagementPage onBack={goBack} />)
+      : <MainPage onNavigate={(id) => navigate('section', { sectionId: id })} />;
+  }
+
+  if (current.page === 'defaults-management') {
+    return can.manageUsers
+      ? renderLazyPage(<DefaultsManagementPage onBack={goBack} />)
       : <MainPage onNavigate={(id) => navigate('section', { sectionId: id })} />;
   }
 

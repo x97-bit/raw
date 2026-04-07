@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   LogOut, Truck, Handshake, Landmark, CreditCard, BarChart3,
   Wallet, Users, Link2, Scale, Settings2, Receipt, ChevronLeft,
-  MapPin, Globe, Building2, ShieldCheck,
+  MapPin, Globe, Building2, ShieldCheck, Database,
 } from 'lucide-react';
 
 const sectionGroups = [
@@ -166,11 +166,12 @@ export default function MainPage({ onNavigate }) {
     if (can.manageUsers) {
       groups.push({
         title: 'إدارة النظام',
-        subtitle: 'المستخدمون وإدارة الحقول',
+        subtitle: 'المستخدمون والحقول والافتراضيات',
         accent: '#0f766e',
         items: [
           { id: 'users', label: 'المستخدمون', icon: Users, accent: '#475569', bg: '#f8fafc' },
           { id: 'field-management', label: 'إدارة الحقول', icon: Settings2, accent: '#0f766e', bg: '#f0fdfa' },
+          { id: 'defaults-management', label: 'إدارة الافتراضيات', icon: Database, accent: '#1d4ed8', bg: '#eff6ff' },
         ],
       });
     }
