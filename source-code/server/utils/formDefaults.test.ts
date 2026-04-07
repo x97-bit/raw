@@ -38,6 +38,10 @@ describe("buildTransactionFormDefaults", () => {
         gov: { id: 4, name: "بغداد" },
         defaultTransPrice: 450000,
         defaultFeeUsd: 12,
+        defaultCostUsd: 30,
+        defaultAmountUsd: 45,
+        defaultCostIqd: 25000,
+        defaultAmountIqd: 40000,
       },
       recentTransaction: {
         Currency: "USD",
@@ -45,6 +49,8 @@ describe("buildTransactionFormDefaults", () => {
         VehiclePlate: "12345",
         GoodTypeID: 6,
         GoodTypeName: "شعير",
+        FeeUSD: 7,
+        SyrCus: 180,
         CarQty: 3,
       },
     });
@@ -56,8 +62,13 @@ describe("buildTransactionFormDefaults", () => {
     expect(result.VehiclePlate).toBe("12345");
     expect(result.GoodTypeID).toBe(6);
     expect(result.GoodTypeName).toBe("شعير");
+    expect(result.CostUSD).toBe(30);
+    expect(result.AmountUSD).toBe(45);
+    expect(result.CostIQD).toBe(25000);
+    expect(result.AmountIQD).toBe(40000);
     expect(result.TransPrice).toBe(450000);
     expect(result.FeeUSD).toBe(12);
+    expect(result.SyrCus).toBe(180);
     expect(result.CarQty).toBe(3);
   });
 
@@ -69,11 +80,15 @@ describe("buildTransactionFormDefaults", () => {
       },
       routeDefaults: {
         defaultTransPrice: 0,
+        defaultCostUsd: 0,
+        defaultAmountUsd: 0,
       },
     });
 
     expect(result.FeeUSD).toBe(0);
     expect(result.CarQty).toBe(0);
     expect(result.TransPrice).toBe(0);
+    expect(result.CostUSD).toBe(0);
+    expect(result.AmountUSD).toBe(0);
   });
 });

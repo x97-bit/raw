@@ -22,6 +22,10 @@ type RouteDefaultSource = {
   gov?: Nullable<NamedRef>;
   defaultTransPrice?: Nullable<number>;
   defaultFeeUsd?: Nullable<number>;
+  defaultCostUsd?: Nullable<number>;
+  defaultAmountUsd?: Nullable<number>;
+  defaultCostIqd?: Nullable<number>;
+  defaultAmountIqd?: Nullable<number>;
 };
 
 type RecentTransactionSource = {
@@ -38,6 +42,12 @@ type RecentTransactionSource = {
   CompanyName?: Nullable<string>;
   CarrierID?: Nullable<number>;
   CarrierName?: Nullable<string>;
+  CostUSD?: Nullable<number>;
+  AmountUSD?: Nullable<number>;
+  CostIQD?: Nullable<number>;
+  AmountIQD?: Nullable<number>;
+  FeeUSD?: Nullable<number>;
+  SyrCus?: Nullable<number>;
   CarQty?: Nullable<number>;
   TransPrice?: Nullable<number>;
 };
@@ -96,8 +106,12 @@ export function buildTransactionFormDefaults({
     CompanyName: firstDefined(accountDefaults?.defaultCompany?.name, recentTransaction?.CompanyName),
     CarrierID: firstDefined(accountDefaults?.defaultCarrier?.id, recentTransaction?.CarrierID),
     CarrierName: firstDefined(accountDefaults?.defaultCarrier?.name, recentTransaction?.CarrierName),
-    FeeUSD: firstDefined(accountDefaults?.defaultFeeUsd, routeDefaults?.defaultFeeUsd),
-    SyrCus: firstDefined(accountDefaults?.defaultSyrCus),
+    CostUSD: firstDefined(routeDefaults?.defaultCostUsd, recentTransaction?.CostUSD),
+    AmountUSD: firstDefined(routeDefaults?.defaultAmountUsd, recentTransaction?.AmountUSD),
+    CostIQD: firstDefined(routeDefaults?.defaultCostIqd, recentTransaction?.CostIQD),
+    AmountIQD: firstDefined(routeDefaults?.defaultAmountIqd, recentTransaction?.AmountIQD),
+    FeeUSD: firstDefined(accountDefaults?.defaultFeeUsd, routeDefaults?.defaultFeeUsd, recentTransaction?.FeeUSD),
+    SyrCus: firstDefined(accountDefaults?.defaultSyrCus, recentTransaction?.SyrCus),
     CarQty: firstDefined(accountDefaults?.defaultCarQty, recentTransaction?.CarQty),
     TransPrice: firstDefined(routeDefaults?.defaultTransPrice, recentTransaction?.TransPrice),
     source: {

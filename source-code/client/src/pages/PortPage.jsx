@@ -186,6 +186,8 @@ export default function PortPage({ portId, portName, accountType, initialView = 
   const [traderText, setTraderText] = useState('');
   const [filters, setFilters] = useState({ accountId: '', from: '', to: '' });
   const [listSummary, setListSummary] = useState(EMPTY_SUMMARY);
+  const [savingAccountDefaults, setSavingAccountDefaults] = useState(false);
+  const [savingRouteDefaults, setSavingRouteDefaults] = useState(false);
 
   // Dynamic field config
   const [viewColumns, setViewColumns] = useState({ list: [], statement: [] });
@@ -229,10 +231,17 @@ export default function PortPage({ portId, portName, accountType, initialView = 
     const config = getFieldConfigMap(getFormTarget(type))[fieldKey];
     return config ? config.visible : true;
   }, [formType, getFieldConfigMap, getFormTarget]);
+  const activeFormTarget = useMemo(() => getFormTarget(formType), [formType, getFormTarget]);
   const activeFormLayout = useMemo(
-    () => getSectionFormLayout(sectionKey, getFormTarget(formType)),
-    [formType, getFormTarget, sectionKey],
+    () => getSectionFormLayout(sectionKey, activeFormTarget),
+    [activeFormTarget, sectionKey],
   );
+  const visibleBuiltInFormFieldKeys = useMemo(() => {
+    const visibleKeys = getBuiltInFieldsForTarget(activeFormTarget)
+      .filter((field) => isBuiltInFormFieldVisible(field.key, formType))
+      .map((field) => field.key);
+    return new Set(visibleKeys);
+  }, [activeFormTarget, formType, getBuiltInFieldsForTarget, isBuiltInFormFieldVisible]);
 
   const buildColumnsForTarget = useCallback((target, configMap, customs = []) => {
     const builtInColumns = getSectionColumns(sectionKey, target)
@@ -455,6 +464,7 @@ export default function PortPage({ portId, portName, accountType, initialView = 
     if (!defaults) return;
 
     const isEmpty = (value) => value === undefined || value === null || value === '';
+    const canFillField = (fieldKey) => visibleBuiltInFormFieldKeys.has(fieldKey);
 
     setForm((prev) => {
       const next = { ...prev };
@@ -462,29 +472,35 @@ export default function PortPage({ portId, portName, accountType, initialView = 
         if (!isEmpty(value) && isEmpty(next[key])) next[key] = value;
       };
 
-      fill('Currency', defaults.Currency);
-      fill('DriverID', defaults.DriverID);
-      fill('VehicleID', defaults.VehicleID);
-      fill('GoodTypeID', defaults.GoodTypeID);
-      fill('GovID', defaults.GovID);
-      fill('CompanyID', defaults.CompanyID);
-      fill('CompanyName', defaults.CompanyName);
-      fill('CarrierID', defaults.CarrierID);
-      fill('FeeUSD', defaults.FeeUSD);
-      fill('SyrCus', defaults.SyrCus);
-      fill('CarQty', defaults.CarQty);
-      fill('TransPrice', defaults.TransPrice);
+      if (canFillField('currency')) fill('Currency', defaults.Currency);
+      if (canFillField('driver_name')) fill('DriverID', defaults.DriverID);
+      if (canFillField('vehicle_plate')) fill('VehicleID', defaults.VehicleID);
+      if (canFillField('good_type')) fill('GoodTypeID', defaults.GoodTypeID);
+      if (canFillField('gov_name')) fill('GovID', defaults.GovID);
+      if (canFillField('company_name')) {
+        fill('CompanyID', defaults.CompanyID);
+        fill('CompanyName', defaults.CompanyName);
+      }
+      if (canFillField('carrier_name')) fill('CarrierID', defaults.CarrierID);
+      if (canFillField('cost_usd')) fill('CostUSD', defaults.CostUSD);
+      if (canFillField('amount_usd')) fill('AmountUSD', defaults.AmountUSD);
+      if (canFillField('cost_iqd')) fill('CostIQD', defaults.CostIQD);
+      if (canFillField('amount_iqd')) fill('AmountIQD', defaults.AmountIQD);
+      if (canFillField('fee_usd')) fill('FeeUSD', defaults.FeeUSD);
+      if (canFillField('syr_cus')) fill('SyrCus', defaults.SyrCus);
+      if (canFillField('car_qty')) fill('CarQty', defaults.CarQty);
+      if (canFillField('trans_price')) fill('TransPrice', defaults.TransPrice);
 
-      if (isEmpty(next._driverText) && defaults.DriverName && (!next.DriverID || next.DriverID === defaults.DriverID)) next._driverText = defaults.DriverName;
-      if (isEmpty(next._vehicleText) && defaults.VehiclePlate && (!next.VehicleID || next.VehicleID === defaults.VehicleID)) next._vehicleText = defaults.VehiclePlate;
-      if (isEmpty(next._goodText) && defaults.GoodTypeName && (!next.GoodTypeID || next.GoodTypeID === defaults.GoodTypeID)) next._goodText = defaults.GoodTypeName;
-      if (isEmpty(next._govText) && defaults.GovName && (!next.GovID || next.GovID === defaults.GovID)) next._govText = defaults.GovName;
-      if (isEmpty(next._companyText) && defaults.CompanyName && (!next.CompanyID || next.CompanyID === defaults.CompanyID)) next._companyText = defaults.CompanyName;
-      if (isEmpty(next._carrierText) && defaults.CarrierName && (!next.CarrierID || next.CarrierID === defaults.CarrierID)) next._carrierText = defaults.CarrierName;
+      if (canFillField('driver_name') && isEmpty(next._driverText) && defaults.DriverName && (!next.DriverID || next.DriverID === defaults.DriverID)) next._driverText = defaults.DriverName;
+      if (canFillField('vehicle_plate') && isEmpty(next._vehicleText) && defaults.VehiclePlate && (!next.VehicleID || next.VehicleID === defaults.VehicleID)) next._vehicleText = defaults.VehiclePlate;
+      if (canFillField('good_type') && isEmpty(next._goodText) && defaults.GoodTypeName && (!next.GoodTypeID || next.GoodTypeID === defaults.GoodTypeID)) next._goodText = defaults.GoodTypeName;
+      if (canFillField('gov_name') && isEmpty(next._govText) && defaults.GovName && (!next.GovID || next.GovID === defaults.GovID)) next._govText = defaults.GovName;
+      if (canFillField('company_name') && isEmpty(next._companyText) && defaults.CompanyName && (!next.CompanyID || next.CompanyID === defaults.CompanyID)) next._companyText = defaults.CompanyName;
+      if (canFillField('carrier_name') && isEmpty(next._carrierText) && defaults.CarrierName && (!next.CarrierID || next.CarrierID === defaults.CarrierID)) next._carrierText = defaults.CarrierName;
 
       return next;
     });
-  }, []);
+  }, [visibleBuiltInFormFieldKeys]);
 
   const openForm = (type) => {
     const target = type === 1 ? 'invoice' : 'payment';
@@ -516,6 +532,7 @@ export default function PortPage({ portId, portName, accountType, initialView = 
         });
 
         if (form.GovID) params.set('govId', String(form.GovID));
+        if (form.Currency) params.set('currency', String(form.Currency));
 
         const defaults = await api(`/defaults/transaction-form?${params.toString()}`);
         if (!cancelled) applySuggestedDefaults(defaults);
@@ -528,7 +545,7 @@ export default function PortPage({ portId, portName, accountType, initialView = 
     return () => {
       cancelled = true;
     };
-  }, [api, applySuggestedDefaults, form.AccountID, form.GovID, formType, getFormTarget, sectionKey, view]);
+  }, [api, applySuggestedDefaults, form.AccountID, form.Currency, form.GovID, formType, getFormTarget, sectionKey, view]);
 
   const openStatement = async (accountId) => {
     setStAccount(accountId);
@@ -636,6 +653,73 @@ export default function PortPage({ portId, portName, accountType, initialView = 
     }
     const parsed = parser(rawValue);
     setField(fieldKey, Number.isNaN(parsed) ? '' : parsed);
+  };
+
+  const appendIfPresent = (target, key, value) => {
+    if (value !== undefined && value !== null && value !== '') target[key] = value;
+  };
+
+  const handleSaveAccountDefaults = async () => {
+    if (!form.AccountID) {
+      setMsg('اختر التاجر أولاً لحفظ افتراضياته');
+      return;
+    }
+
+    setSavingAccountDefaults(true);
+    try {
+      const payload = {
+        accountId: form.AccountID,
+        sectionKey,
+      };
+      appendIfPresent(payload, 'defaultCurrency', form.Currency);
+      appendIfPresent(payload, 'defaultDriverId', form.DriverID);
+      appendIfPresent(payload, 'defaultVehicleId', form.VehicleID);
+      appendIfPresent(payload, 'defaultGoodTypeId', form.GoodTypeID);
+      appendIfPresent(payload, 'defaultGovId', form.GovID);
+      appendIfPresent(payload, 'defaultCompanyId', form.CompanyID);
+      appendIfPresent(payload, 'defaultCarrierId', form.CarrierID);
+      appendIfPresent(payload, 'defaultFeeUsd', form.FeeUSD);
+      appendIfPresent(payload, 'defaultSyrCus', form.SyrCus);
+      appendIfPresent(payload, 'defaultCarQty', form.CarQty);
+      await api('/defaults/account', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      alert('تم حفظ افتراضيات التاجر');
+    } catch (e) {
+      setMsg(e.message);
+    }
+    setSavingAccountDefaults(false);
+  };
+
+  const handleSaveRouteDefaults = async () => {
+    if (!form.GovID) {
+      setMsg('اختر المحافظة أولاً لحفظ افتراضيات المسار');
+      return;
+    }
+
+    setSavingRouteDefaults(true);
+    try {
+      const payload = {
+        sectionKey,
+        govId: form.GovID,
+        currency: form.Currency || 'IQD',
+      };
+      appendIfPresent(payload, 'defaultTransPrice', form.TransPrice);
+      appendIfPresent(payload, 'defaultFeeUsd', form.FeeUSD);
+      appendIfPresent(payload, 'defaultCostUsd', form.CostUSD);
+      appendIfPresent(payload, 'defaultAmountUsd', form.AmountUSD);
+      appendIfPresent(payload, 'defaultCostIqd', form.CostIQD);
+      appendIfPresent(payload, 'defaultAmountIqd', form.AmountIQD);
+      await api('/defaults/route', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      alert('تم حفظ افتراضيات المسار');
+    } catch (e) {
+      setMsg(e.message);
+    }
+    setSavingRouteDefaults(false);
   };
 
   const renderBuiltInField = (field, type = formType) => {
@@ -1217,10 +1301,32 @@ export default function PortPage({ portId, portName, accountType, initialView = 
 
             <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/85 p-4 md:p-5">
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button onClick={() => onBack ? onBack() : setView('list')} className="btn-outline w-full sm:w-auto">إلغاء</button>
-                <button onClick={handleSave} disabled={saving} className="btn-primary flex w-full items-center justify-center gap-2 px-8 text-lg sm:w-auto">
-                  <Save size={20} /> {saving ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
+                <button onClick={() => onBack ? onBack() : setView('list')} className="btn-outline w-full sm:w-auto">رجوع</button>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                  {can.isAdmin && (
+                    <>
+                      <button
+                        onClick={handleSaveAccountDefaults}
+                        disabled={savingAccountDefaults || !form.AccountID}
+                        className="btn-outline flex w-full items-center justify-center gap-2 sm:w-auto"
+                      >
+                        <Save size={16} />
+                        {savingAccountDefaults ? 'جارٍ حفظ افتراضيات التاجر...' : 'حفظ افتراضيات التاجر'}
+                      </button>
+                      <button
+                        onClick={handleSaveRouteDefaults}
+                        disabled={savingRouteDefaults || !form.GovID}
+                        className="btn-outline flex w-full items-center justify-center gap-2 sm:w-auto"
+                      >
+                        <Save size={16} />
+                        {savingRouteDefaults ? 'جارٍ حفظ افتراضيات المسار...' : 'حفظ افتراضيات المسار'}
+                      </button>
+                    </>
+                  )}
+                  <button onClick={handleSave} disabled={saving} className="btn-primary flex w-full items-center justify-center gap-2 px-8 text-lg sm:w-auto">
+                    <Save size={20} /> {saving ? 'جارٍ الحفظ...' : 'حفظ'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

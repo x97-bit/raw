@@ -325,6 +325,39 @@ async function getLookupNameById(db: any, type: string, id?: number | null) {
   return null;
 }
 
+function hasBodyValue(value: unknown) {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function parseOptionalInt(value: unknown) {
+  if (!hasBodyValue(value)) return undefined;
+  const parsed = parseInt(String(value), 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalDecimal(value: unknown) {
+  if (!hasBodyValue(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? String(parsed) : undefined;
+}
+
+function parseNullableNumber(value: unknown) {
+  if (!hasBodyValue(value)) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function pickBodyField(body: Record<string, any>, ...keys: string[]) {
+  for (const key of keys) {
+    if (hasBodyValue(body?.[key])) return body[key];
+  }
+  return undefined;
+}
+
+function hasBodyKey(body: Record<string, any>, ...keys: string[]) {
+  return keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
+}
+
 // ==================== AUTH ====================
 router.post("/auth/login", async (req: Request, res: Response) => {
   try {
@@ -619,6 +652,7 @@ router.get("/defaults/transaction-form", authMiddleware, async (req: AuthRequest
     const sectionKey = String(req.query.sectionKey || req.query.portId || "");
     const govId = req.query.govId ? parseInt(String(req.query.govId), 10) : null;
     const formType = String(req.query.formType || "invoice");
+    const requestedCurrency = req.query.currency ? String(req.query.currency) : null;
     const direction = formType === "payment" ? "OUT" : "IN";
 
     if (!accountId || !sectionKey) {
@@ -631,12 +665,17 @@ router.get("/defaults/transaction-form", authMiddleware, async (req: AuthRequest
       eq(accountDefaults.sectionKey, sectionKey),
     )).limit(1);
 
-    const [routeRow] = govId
-      ? await db.select().from(routeDefaults).where(and(
-          eq(routeDefaults.sectionKey, sectionKey),
-          eq(routeDefaults.govId, govId),
-        )).limit(1)
-      : [null];
+    let routeRow = null;
+    if (govId) {
+      const matchingRouteRows = await db.select().from(routeDefaults).where(and(
+        eq(routeDefaults.sectionKey, sectionKey),
+        eq(routeDefaults.govId, govId),
+      ));
+      routeRow = matchingRouteRows.find((row: any) => requestedCurrency && row.currency === requestedCurrency)
+        || matchingRouteRows.find((row: any) => row.active === 1)
+        || matchingRouteRows[0]
+        || null;
+    }
 
     let recentTransaction = null;
     const recentRows = await db.select().from(transactions).where(and(
@@ -678,19 +717,126 @@ router.get("/defaults/transaction-form", authMiddleware, async (req: AuthRequest
         defaultGov: defaultGov || undefined,
         defaultCompany: defaultCompany || undefined,
         defaultCarrier: defaultCarrier || undefined,
-        defaultFeeUsd: defaultRow.defaultFeeUsd ? parseFloat(defaultRow.defaultFeeUsd) : null,
-        defaultSyrCus: defaultRow.defaultSyrCus ? parseFloat(defaultRow.defaultSyrCus) : null,
+        defaultFeeUsd: parseNullableNumber(defaultRow.defaultFeeUsd),
+        defaultSyrCus: parseNullableNumber(defaultRow.defaultSyrCus),
         defaultCarQty: defaultRow.defaultCarQty ?? null,
       } : null,
       routeDefaults: routeRow ? {
         gov: routeGov || undefined,
-        defaultTransPrice: routeRow.defaultTransPrice ? parseFloat(routeRow.defaultTransPrice) : null,
-        defaultFeeUsd: routeRow.defaultFeeUsd ? parseFloat(routeRow.defaultFeeUsd) : null,
+        defaultTransPrice: parseNullableNumber(routeRow.defaultTransPrice),
+        defaultFeeUsd: parseNullableNumber(routeRow.defaultFeeUsd),
+        defaultCostUsd: parseNullableNumber(routeRow.defaultCostUsd),
+        defaultAmountUsd: parseNullableNumber(routeRow.defaultAmountUsd),
+        defaultCostIqd: parseNullableNumber(routeRow.defaultCostIqd),
+        defaultAmountIqd: parseNullableNumber(routeRow.defaultAmountIqd),
       } : null,
       recentTransaction,
     });
 
     return res.json(defaults);
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
+router.post("/defaults/account", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+
+    const accountId = parseOptionalInt(req.body.accountId);
+    const sectionKey = String(req.body.sectionKey || "").trim();
+    if (!accountId || !sectionKey) {
+      return res.status(400).json({ error: "accountId and sectionKey are required" });
+    }
+
+    const [existing] = await db.select().from(accountDefaults).where(and(
+      eq(accountDefaults.accountId, accountId),
+      eq(accountDefaults.sectionKey, sectionKey),
+    )).limit(1);
+
+    const payload: any = {
+      accountId,
+      sectionKey,
+      defaultCurrency: hasBodyValue(req.body.defaultCurrency) ? String(req.body.defaultCurrency) : existing?.defaultCurrency ?? null,
+      defaultDriverId: parseOptionalInt(req.body.defaultDriverId) ?? existing?.defaultDriverId ?? null,
+      defaultVehicleId: parseOptionalInt(req.body.defaultVehicleId) ?? existing?.defaultVehicleId ?? null,
+      defaultGoodTypeId: parseOptionalInt(req.body.defaultGoodTypeId) ?? existing?.defaultGoodTypeId ?? null,
+      defaultGovId: parseOptionalInt(req.body.defaultGovId) ?? existing?.defaultGovId ?? null,
+      defaultCompanyId: parseOptionalInt(req.body.defaultCompanyId) ?? existing?.defaultCompanyId ?? null,
+      defaultCarrierId: parseOptionalInt(req.body.defaultCarrierId) ?? existing?.defaultCarrierId ?? null,
+      defaultFeeUsd: parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null,
+      defaultSyrCus: parseOptionalDecimal(req.body.defaultSyrCus) ?? existing?.defaultSyrCus ?? null,
+      defaultCarQty: parseOptionalInt(req.body.defaultCarQty) ?? existing?.defaultCarQty ?? null,
+      notes: hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null,
+    };
+
+    await db.insert(accountDefaults).values(payload).onDuplicateKeyUpdate({
+      set: {
+        defaultCurrency: payload.defaultCurrency,
+        defaultDriverId: payload.defaultDriverId,
+        defaultVehicleId: payload.defaultVehicleId,
+        defaultGoodTypeId: payload.defaultGoodTypeId,
+        defaultGovId: payload.defaultGovId,
+        defaultCompanyId: payload.defaultCompanyId,
+        defaultCarrierId: payload.defaultCarrierId,
+        defaultFeeUsd: payload.defaultFeeUsd,
+        defaultSyrCus: payload.defaultSyrCus,
+        defaultCarQty: payload.defaultCarQty,
+        notes: payload.notes,
+      },
+    });
+
+    return res.json({ message: "تم حفظ افتراضيات التاجر" });
+  } catch (e: any) { return res.status(500).json({ error: e.message }); }
+});
+
+router.post("/defaults/route", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.appUser.role !== "admin") return res.status(403).json({ error: "غير مصرح" });
+    const db = await getDb();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+
+    const sectionKey = String(req.body.sectionKey || "").trim();
+    const govId = parseOptionalInt(req.body.govId);
+    const currency = String(req.body.currency || "IQD").trim() || "IQD";
+    if (!sectionKey || !govId) {
+      return res.status(400).json({ error: "sectionKey and govId are required" });
+    }
+
+    const [existing] = await db.select().from(routeDefaults).where(and(
+      eq(routeDefaults.sectionKey, sectionKey),
+      eq(routeDefaults.govId, govId),
+      eq(routeDefaults.currency, currency),
+    )).limit(1);
+
+    const payload: any = {
+      sectionKey,
+      govId,
+      currency,
+      defaultTransPrice: parseOptionalDecimal(req.body.defaultTransPrice) ?? existing?.defaultTransPrice ?? null,
+      defaultFeeUsd: parseOptionalDecimal(req.body.defaultFeeUsd) ?? existing?.defaultFeeUsd ?? null,
+      defaultCostUsd: parseOptionalDecimal(req.body.defaultCostUsd) ?? existing?.defaultCostUsd ?? null,
+      defaultAmountUsd: parseOptionalDecimal(req.body.defaultAmountUsd) ?? existing?.defaultAmountUsd ?? null,
+      defaultCostIqd: parseOptionalDecimal(req.body.defaultCostIqd) ?? existing?.defaultCostIqd ?? null,
+      defaultAmountIqd: parseOptionalDecimal(req.body.defaultAmountIqd) ?? existing?.defaultAmountIqd ?? null,
+      notes: hasBodyValue(req.body.notes) ? String(req.body.notes) : existing?.notes ?? null,
+      active: 1,
+    };
+
+    await db.insert(routeDefaults).values(payload).onDuplicateKeyUpdate({
+      set: {
+        defaultTransPrice: payload.defaultTransPrice,
+        defaultFeeUsd: payload.defaultFeeUsd,
+        defaultCostUsd: payload.defaultCostUsd,
+        defaultAmountUsd: payload.defaultAmountUsd,
+        defaultCostIqd: payload.defaultCostIqd,
+        defaultAmountIqd: payload.defaultAmountIqd,
+        notes: payload.notes,
+        active: 1,
+      },
+    });
+
+    return res.json({ message: "تم حفظ افتراضيات المسار" });
   } catch (e: any) { return res.status(500).json({ error: e.message }); }
 });
 
@@ -764,47 +910,47 @@ router.post("/transactions", authMiddleware, async (req: AuthRequest, res: Respo
     const db = await getDb();
     if (!db) return res.status(500).json({ error: "Database unavailable" });
     const b = req.body;
-    const accountId = b.accountId || b.AccountID || b.account_id;
+    const accountId = pickBodyField(b, "accountId", "AccountID", "account_id");
     // Look up account name for search enrichment
     let accountName = '';
     if (accountId) {
-      const [acc] = await db.select().from(accounts).where(eq(accounts.id, parseInt(accountId))).limit(1);
+      const [acc] = await db.select().from(accounts).where(eq(accounts.id, parseInt(String(accountId), 10))).limit(1);
       if (acc) accountName = acc.name;
     }
     // Determine direction
-    const typeVal = b.type || b.TransTypeID || b.direction;
+    const typeVal = pickBodyField(b, "type", "TransTypeID", "direction");
     const direction = getStoredDirectionValue(typeVal);
     // Generate ref_no
     const [lastTx] = await db.select({ id: transactions.id }).from(transactions).orderBy(desc(transactions.id)).limit(1);
     const nextNum = (lastTx?.id || 0) + 1;
-    const rawPort = String(b.portId || b.PortID || b.port_id || 'GEN');
+    const rawPort = String(pickBodyField(b, "portId", "PortID", "port_id") ?? "GEN");
     const prefix = rawPort.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5) || 'GEN';
     const refNo = `${prefix}-${isInvoiceDirection(direction) ? 'INV' : 'PAY'}${String(nextNum).padStart(6, '0')}`;
 
     // Handle driver auto-create
-    let driverId = b.driverId || b.DriverID || b.driver_id || null;
+    let driverId = pickBodyField(b, "driverId", "DriverID", "driver_id") ?? null;
     if (!driverId && b._newDriverName?.trim()) {
       const r = await db.insert(drivers).values({ name: b._newDriverName.trim() });
       driverId = Number(r[0].insertId);
     }
     // Handle vehicle auto-create
-    let vehicleId = b.vehicleId || b.VehicleID || b.vehicle_id || null;
+    let vehicleId = pickBodyField(b, "vehicleId", "VehicleID", "vehicle_id") ?? null;
     if (!vehicleId && b._newPlateNumber?.trim()) {
       const r = await db.insert(vehicles).values({ plateNumber: b._newPlateNumber.trim() });
       vehicleId = Number(r[0].insertId);
     }
     // Handle goods type auto-create
-    let goodTypeId = b.goodTypeId || b.GoodTypeID || b.good_type_id || null;
+    let goodTypeId = pickBodyField(b, "goodTypeId", "GoodTypeID", "good_type_id") ?? null;
     if (!goodTypeId && b._newGoodType?.trim()) {
       const r = await db.insert(goodsTypes).values({ name: b._newGoodType.trim() });
       goodTypeId = Number(r[0].insertId);
     }
-    let companyId = b.companyId || b.CompanyID || b.company_id || null;
-    let companyName = b.companyName || b.CompanyName || b.company_name || null;
+    let companyId = pickBodyField(b, "companyId", "CompanyID", "company_id") ?? null;
+    let companyName = pickBodyField(b, "companyName", "CompanyName", "company_name") ?? null;
     if (companyId) {
-      const [company] = await db.select().from(companies).where(eq(companies.id, parseInt(companyId))).limit(1);
+      const [company] = await db.select().from(companies).where(eq(companies.id, parseInt(String(companyId), 10))).limit(1);
       if (company) companyName = company.name;
-    } else if (companyName?.trim()) {
+    } else if (typeof companyName === "string" && companyName.trim()) {
       const normalizedCompanyName = companyName.trim();
       const [existingCompany] = await db.select().from(companies).where(eq(companies.name, normalizedCompanyName)).limit(1);
       if (existingCompany) {
@@ -816,32 +962,32 @@ router.post("/transactions", authMiddleware, async (req: AuthRequest, res: Respo
     const data = {
       refNo,
       direction,
-      transDate: b.transDate || b.TransDate || b.trans_date || b.date || new Date().toISOString().split('T')[0],
-      accountId: parseInt(accountId),
-      currency: b.currency || b.Currency || 'BOTH',
-      driverId: driverId ? parseInt(driverId) : null,
-      vehicleId: vehicleId ? parseInt(vehicleId) : null,
-      goodTypeId: goodTypeId ? parseInt(goodTypeId) : null,
-      weight: b.weight || b.Weight || null,
-      meters: b.meters || b.Meters || null,
-      costUsd: b.costUsd || b.CostUSD || b.cost_usd || '0',
-      amountUsd: b.amountUsd || b.AmountUSD || b.amount_usd || '0',
-      costIqd: b.costIqd || b.CostIQD || b.cost_iqd || '0',
-      amountIqd: b.amountIqd || b.AmountIQD || b.amount_iqd || '0',
-      feeUsd: b.feeUsd || b.FeeUSD || b.fee_usd || '0',
-      syrCus: b.syrCus || b.SyrCus || b.syr_cus || '0',
-      carQty: b.carQty || b.CarQty || b.car_qty ? parseInt(b.carQty || b.CarQty || b.car_qty) : null,
-      transPrice: b.transPrice || b.TransPrice || b.trans_price || null,
-      carrierId: b.carrierId || b.CarrierID || b.carrier_id ? parseInt(b.carrierId || b.CarrierID || b.carrier_id) : null,
-      qty: b.qty || b.Qty ? parseInt(b.qty || b.Qty) : null,
-      companyId: companyId ? parseInt(companyId) : null,
+      transDate: String(pickBodyField(b, "transDate", "TransDate", "trans_date", "date") ?? new Date().toISOString().split('T')[0]),
+      accountId: parseInt(String(accountId), 10),
+      currency: String(pickBodyField(b, "currency", "Currency") ?? "BOTH"),
+      driverId: parseOptionalInt(driverId) ?? null,
+      vehicleId: parseOptionalInt(vehicleId) ?? null,
+      goodTypeId: parseOptionalInt(goodTypeId) ?? null,
+      weight: pickBodyField(b, "weight", "Weight") ?? null,
+      meters: pickBodyField(b, "meters", "Meters") ?? null,
+      costUsd: parseOptionalDecimal(pickBodyField(b, "costUsd", "CostUSD", "cost_usd")) ?? "0",
+      amountUsd: parseOptionalDecimal(pickBodyField(b, "amountUsd", "AmountUSD", "amount_usd")) ?? "0",
+      costIqd: parseOptionalDecimal(pickBodyField(b, "costIqd", "CostIQD", "cost_iqd")) ?? "0",
+      amountIqd: parseOptionalDecimal(pickBodyField(b, "amountIqd", "AmountIQD", "amount_iqd")) ?? "0",
+      feeUsd: parseOptionalDecimal(pickBodyField(b, "feeUsd", "FeeUSD", "fee_usd")) ?? "0",
+      syrCus: parseOptionalDecimal(pickBodyField(b, "syrCus", "SyrCus", "syr_cus")) ?? "0",
+      carQty: parseOptionalInt(pickBodyField(b, "carQty", "CarQty", "car_qty")) ?? null,
+      transPrice: parseOptionalDecimal(pickBodyField(b, "transPrice", "TransPrice", "trans_price")) ?? null,
+      carrierId: parseOptionalInt(pickBodyField(b, "carrierId", "CarrierID", "carrier_id")) ?? null,
+      qty: parseOptionalInt(pickBodyField(b, "qty", "Qty")) ?? null,
+      companyId: parseOptionalInt(companyId) ?? null,
       companyName,
-      govId: b.govId || b.GovID || b.gov_id ? parseInt(b.govId || b.GovID || b.gov_id) : null,
-      notes: b.notes || b.Notes || null,
-      traderNote: b.traderNote || b.TraderNote || b.trader_note || null,
-      recordType: b.recordType || b.RecordType || b.record_type || 'shipment',
-      portId: b.portId || b.PortID || b.port_id || '',
-      accountType: b.accountType || b.AccountTypeID || b.account_type || '',
+      govId: parseOptionalInt(pickBodyField(b, "govId", "GovID", "gov_id")) ?? null,
+      notes: pickBodyField(b, "notes", "Notes") ?? null,
+      traderNote: pickBodyField(b, "traderNote", "TraderNote", "trader_note") ?? null,
+      recordType: String(pickBodyField(b, "recordType", "RecordType", "record_type") ?? "shipment"),
+      portId: String(pickBodyField(b, "portId", "PortID", "port_id") ?? ""),
+      accountType: String(pickBodyField(b, "accountType", "AccountTypeID", "account_type") ?? ""),
       createdBy: req.appUser.id,
     };
     const result = await db.insert(transactions).values(data);
@@ -855,37 +1001,42 @@ router.put("/transactions/:id", authMiddleware, async (req: AuthRequest, res: Re
     if (!db) return res.status(500).json({ error: "Database unavailable" });
     const b = req.body;
     const updates: any = {};
-    if (b.transDate || b.TransDate || b.trans_date || b.date) updates.transDate = b.transDate || b.TransDate || b.trans_date || b.date;
-    if (b.amountUsd !== undefined || b.AmountUSD !== undefined || b.amount_usd !== undefined) updates.amountUsd = b.amountUsd || b.AmountUSD || b.amount_usd;
-    if (b.amountIqd !== undefined || b.AmountIQD !== undefined || b.amount_iqd !== undefined) updates.amountIqd = b.amountIqd || b.AmountIQD || b.amount_iqd;
-    if (b.costUsd !== undefined || b.CostUSD !== undefined || b.cost_usd !== undefined) updates.costUsd = b.costUsd || b.CostUSD || b.cost_usd;
-    if (b.costIqd !== undefined || b.CostIQD !== undefined || b.cost_iqd !== undefined) updates.costIqd = b.costIqd || b.CostIQD || b.cost_iqd;
-    if (b.feeUsd !== undefined || b.FeeUSD !== undefined || b.fee_usd !== undefined) updates.feeUsd = b.feeUsd || b.FeeUSD || b.fee_usd;
-    if (b.weight !== undefined || b.Weight !== undefined) updates.weight = b.weight || b.Weight;
-    if (b.meters !== undefined || b.Meters !== undefined) updates.meters = b.meters || b.Meters;
-    if (b.notes || b.Notes) updates.notes = b.notes || b.Notes;
-    if (b.traderNote || b.TraderNote || b.trader_note) updates.traderNote = b.traderNote || b.TraderNote || b.trader_note;
-    if (b.driverId || b.DriverID || b.driver_id) updates.driverId = parseInt(b.driverId || b.DriverID || b.driver_id);
-    if (b.vehicleId || b.VehicleID || b.vehicle_id) updates.vehicleId = parseInt(b.vehicleId || b.VehicleID || b.vehicle_id);
-    if (b.goodTypeId || b.GoodTypeID || b.good_type_id) updates.goodTypeId = parseInt(b.goodTypeId || b.GoodTypeID || b.good_type_id);
-    if (b.govId || b.GovID || b.gov_id) updates.govId = parseInt(b.govId || b.GovID || b.gov_id);
-    if (b.syrCus !== undefined || b.SyrCus !== undefined || b.syr_cus !== undefined) updates.syrCus = b.syrCus || b.SyrCus || b.syr_cus;
-    if (b.carQty !== undefined || b.CarQty !== undefined || b.car_qty !== undefined) updates.carQty = b.carQty || b.CarQty || b.car_qty ? parseInt(b.carQty || b.CarQty || b.car_qty) : null;
-    if (b.transPrice !== undefined || b.TransPrice !== undefined || b.trans_price !== undefined) updates.transPrice = b.transPrice || b.TransPrice || b.trans_price;
-    if (b.carrierId || b.CarrierID || b.carrier_id) updates.carrierId = parseInt(b.carrierId || b.CarrierID || b.carrier_id);
-    if (b.qty !== undefined || b.Qty !== undefined) updates.qty = b.qty || b.Qty ? parseInt(b.qty || b.Qty) : null;
-    const companyId = b.companyId || b.CompanyID || b.company_id;
-    const companyName = b.companyName || b.CompanyName || b.company_name;
+    if (hasBodyKey(b, "transDate", "TransDate", "trans_date", "date")) updates.transDate = pickBodyField(b, "transDate", "TransDate", "trans_date", "date") ?? null;
+    if (hasBodyKey(b, "amountUsd", "AmountUSD", "amount_usd")) updates.amountUsd = parseOptionalDecimal(pickBodyField(b, "amountUsd", "AmountUSD", "amount_usd")) ?? "0";
+    if (hasBodyKey(b, "amountIqd", "AmountIQD", "amount_iqd")) updates.amountIqd = parseOptionalDecimal(pickBodyField(b, "amountIqd", "AmountIQD", "amount_iqd")) ?? "0";
+    if (hasBodyKey(b, "costUsd", "CostUSD", "cost_usd")) updates.costUsd = parseOptionalDecimal(pickBodyField(b, "costUsd", "CostUSD", "cost_usd")) ?? "0";
+    if (hasBodyKey(b, "costIqd", "CostIQD", "cost_iqd")) updates.costIqd = parseOptionalDecimal(pickBodyField(b, "costIqd", "CostIQD", "cost_iqd")) ?? "0";
+    if (hasBodyKey(b, "feeUsd", "FeeUSD", "fee_usd")) updates.feeUsd = parseOptionalDecimal(pickBodyField(b, "feeUsd", "FeeUSD", "fee_usd")) ?? "0";
+    if (hasBodyKey(b, "weight", "Weight")) updates.weight = pickBodyField(b, "weight", "Weight") ?? null;
+    if (hasBodyKey(b, "meters", "Meters")) updates.meters = pickBodyField(b, "meters", "Meters") ?? null;
+    if (hasBodyKey(b, "notes", "Notes")) updates.notes = pickBodyField(b, "notes", "Notes") ?? null;
+    if (hasBodyKey(b, "traderNote", "TraderNote", "trader_note")) updates.traderNote = pickBodyField(b, "traderNote", "TraderNote", "trader_note") ?? null;
+    if (hasBodyKey(b, "driverId", "DriverID", "driver_id")) updates.driverId = parseOptionalInt(pickBodyField(b, "driverId", "DriverID", "driver_id")) ?? null;
+    if (hasBodyKey(b, "vehicleId", "VehicleID", "vehicle_id")) updates.vehicleId = parseOptionalInt(pickBodyField(b, "vehicleId", "VehicleID", "vehicle_id")) ?? null;
+    if (hasBodyKey(b, "goodTypeId", "GoodTypeID", "good_type_id")) updates.goodTypeId = parseOptionalInt(pickBodyField(b, "goodTypeId", "GoodTypeID", "good_type_id")) ?? null;
+    if (hasBodyKey(b, "govId", "GovID", "gov_id")) updates.govId = parseOptionalInt(pickBodyField(b, "govId", "GovID", "gov_id")) ?? null;
+    if (hasBodyKey(b, "syrCus", "SyrCus", "syr_cus")) updates.syrCus = parseOptionalDecimal(pickBodyField(b, "syrCus", "SyrCus", "syr_cus")) ?? "0";
+    if (hasBodyKey(b, "carQty", "CarQty", "car_qty")) updates.carQty = parseOptionalInt(pickBodyField(b, "carQty", "CarQty", "car_qty")) ?? null;
+    if (hasBodyKey(b, "transPrice", "TransPrice", "trans_price")) updates.transPrice = parseOptionalDecimal(pickBodyField(b, "transPrice", "TransPrice", "trans_price")) ?? null;
+    if (hasBodyKey(b, "carrierId", "CarrierID", "carrier_id")) updates.carrierId = parseOptionalInt(pickBodyField(b, "carrierId", "CarrierID", "carrier_id")) ?? null;
+    if (hasBodyKey(b, "qty", "Qty")) updates.qty = parseOptionalInt(pickBodyField(b, "qty", "Qty")) ?? null;
+    const companyId = pickBodyField(b, "companyId", "CompanyID", "company_id");
+    const companyName = pickBodyField(b, "companyName", "CompanyName", "company_name");
     if (companyId) {
-      updates.companyId = parseInt(companyId);
-      const [company] = await db.select().from(companies).where(eq(companies.id, parseInt(companyId))).limit(1);
+      updates.companyId = parseInt(String(companyId), 10);
+      const [company] = await db.select().from(companies).where(eq(companies.id, parseInt(String(companyId), 10))).limit(1);
       if (company) updates.companyName = company.name;
-    } else if (companyName) {
-      updates.companyName = companyName;
-      const [existingCompany] = await db.select().from(companies).where(eq(companies.name, String(companyName))).limit(1);
-      updates.companyId = existingCompany?.id ?? null;
+    } else if (hasBodyKey(b, "companyName", "CompanyName", "company_name")) {
+      if (hasBodyValue(companyName)) {
+        updates.companyName = String(companyName);
+        const [existingCompany] = await db.select().from(companies).where(eq(companies.name, String(companyName))).limit(1);
+        updates.companyId = existingCompany?.id ?? null;
+      } else {
+        updates.companyName = null;
+        updates.companyId = null;
+      }
     }
-    if (b.accountId || b.AccountID || b.account_id) updates.accountId = parseInt(b.accountId || b.AccountID || b.account_id);
+    if (hasBodyKey(b, "accountId", "AccountID", "account_id")) updates.accountId = parseOptionalInt(pickBodyField(b, "accountId", "AccountID", "account_id")) ?? null;
     await db.update(transactions).set(updates).where(eq(transactions.id, parseInt(req.params.id)));
     return res.json({ message: "طھظ… طھط­ط¯ظٹط« ط§ظ„ظ…ط¹ط§ظ…ظ„ط©" });
   } catch (e: any) { return res.status(500).json({ error: e.message }); }
