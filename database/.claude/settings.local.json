@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/lenovo/OneDrive/Desktop/rawi/v4/alrawi-full-export/alrawi-full-export/**)",
+      "Bash(wc -l \"/c/Users/lenovo/OneDrive/Desktop/rawi/v4/alrawi-full-export/alrawi-full-export/source-code/client/src/pages\"/*.jsx)"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+# Root-level project ignores
+.git/
+
+# Runtime / local env
+source-code/.env
+source-code/.manus-logs/
+source-code/codex-start.err.log
+source-code/codex-start.out.log
+source-code/test-results.txt
+
+# Dependencies / build output
+source-code/node_modules/
+source-code/dist/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

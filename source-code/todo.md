@@ -1,0 +1,103 @@
+# Project TODO
+
+- [x] Migrate client code from uploaded zip to permanent scaffold
+- [x] Upgrade to full-stack with database and user management
+- [x] Create database schema for app users, accounts, transactions, debts, lookups, payment matching
+- [x] Build REST API routes matching client expectations (auth, transactions, accounts, reports, lookups, debts, payment-matching, special)
+- [x] Seed database with initial admin user
+- [x] Fix AuthContext to work with new backend
+- [x] Test login flow end-to-end
+- [x] Save checkpoint and deliver to user
+- [x] Add shipment count (عدد الشحنات) field to account summary only
+- [x] Fix TrialBalancePage: Cannot read 'account_count' of undefined
+- [x] Fix TrialBalancePage: Missing unique key prop in select children
+- [x] Add shipment count (عدد الشحنات) to Trial Balance (ميزان المراجعة) page per row and in totals
+- [x] Investigate and fix empty data across entire system
+- [x] Restructure Transactions table with new fields (weight, meters, cost_usd, cost_iqd, fee_usd, direction, record_type, trader_note)
+- [x] Add Drivers and Vehicles lookup tables with proper foreign keys
+- [x] Update API routes to use new field names and relationships
+- [x] Update frontend components to match new schema
+- [x] Run migrations and test
+- [x] Fix toUpperCase error: portId returned as number instead of string
+- [x] Fix PortPage.jsx: Cannot read 'count' of undefined at line 1129
+- [x] Fix PortPage.jsx: Cannot read 'map' of undefined at line 1295
+- [x] Update account statement table in PortPage to show all required columns: رقم الفاتورة, نوع الحركة, التاريخ, اسم التاجر, العملة, اسم السائق, رقم السيارة, نوع البضاعة, الوزن, الامتار, الكلفة دولار, المبلغ دولار, الكلفة دينار, المبلغ دينار, النقل السعودي $, المحافظات, ملاحظات
+- [x] Add total demand USD (الطلب الكلي دولار) and total demand IQD (الطلب الكلي دينار) summary cards to account statement page
+- [x] Fix AccountsPage.jsx: Cannot read 'count' of undefined at line 612
+- [x] Create database tables for field configuration (field_config for visibility, custom_fields for new fields)
+- [x] Build API endpoints for field configuration CRUD
+- [x] Build admin UI page for managing field visibility and custom fields per port/section
+- [x] Update PortPage to dynamically render columns based on field configuration
+- [x] Test the complete field management system
+- [x] Debug and fix field management system - ensure field visibility and custom fields work correctly
+  - Fixed api() call signature in FieldManagementPage (was using 3 params instead of options object)
+  - Fixed portId to sectionKey mapping in PortPage (1 -> port-1, 2 -> port-2, etc.)
+  - Fixed list view to use dynamic visibleColumns instead of hardcoded columns
+  - Fixed custom field key generation to use timestamp-based unique keys
+- [x] Add drag-and-drop reordering for fields in field management page
+- [x] Add ability to edit custom field names after creation
+- [x] Add export/import field settings between sections
+- [x] Update FieldManagementPage SECTIONS to include ALL system sections (debts, special accounts, exchange, account summaries, etc.)
+- [x] Add compound formula support to custom fields (multiple fields + operators: +, -, ×, ÷)
+- [x] Build visual formula builder UI with field dropdowns and operator buttons
+- [x] Update PortPage and other pages to auto-calculate formula field values
+- [x] Add ability to edit compound formulas for custom fields after creation
+- [x] Fix NaN children error on main page (fixed null safety in TrialBalancePage, Dashboard, AccountsPage)
+- [x] Integrate field config with DebtsPage for dynamic column visibility
+- [x] Integrate field config with AccountsPage for dynamic column visibility
+- [x] Integrate field config with TrialBalancePage for dynamic column visibility
+- [x] Reviewed ReportsPage and PaymentMatchingPage - special layout pages, field config not applicable
+- [x] Fix PaymentMatchingPage: dashboard.shipmentStats.find is not a function
+- [x] Implement real database queries for payment-matching dashboard instead of stub zero values
+- [x] Add ability to create a new trader (تاجر) directly from within the port page transaction form
+- [x] Add duplicate prevention for traders, drivers, vehicles, and goods types (prevent same name from being added twice)
+- [x] Add autocomplete search to ALL input fields across the system (debts, partnership, special accounts, reports, transaction modal edit)
+- [x] Add missing fields to transactions table: syrCus, carrierId (removed amountIqd2, mealNo per user)
+- [x] Add missing field to accounts table: currency (default currency), merchantReport
+- [x] Add missing fields to governorates table: trancePrice
+- [x] Add missing fields to debts table: feeUsd, feeIqd, transType, driverName, carNumber, goodType, weight, meters, state, fxNote
+- [x] Add expenses table (unified with portId)
+- [x] Add cash_state table
+- [x] SP_Yaser already exists in special accounts (ياسر عادل) - no separate tables needed
+- [x] Update backend API routes for new fields
+- [x] Update frontend forms to show new fields
+- [x] Update all user-facing Arabic labels to match original Access system naming
+- [x] Change النقل السعودي $ to النقل السعودي (remove $)
+- [x] Add الجمارك السورية field for MNZ port
+- [x] Remove المبلغ2 دينار field (Amount_IQD2)
+- [x] Add عدد السيارات field for transport (Car_Qty)
+- [x] Add سعر النقل field for transport (Trans_Price)
+- [x] Add اسم الناقل field for transport (separate from اسم التاجر)
+- [x] Match each section's fields exactly to original Access database (per-port field mapping)
+- [x] Rename حيدر to حيدر شركة الأنوار in special accounts
+- [x] Update DebtsPage: each debtor (باسم، نعمان، لؤي، لؤي2، عبد الكريم) has unique fields matching original Access DB
+- [x] Add Expenses page (unified for all ports: عام، منذرية، قائم)
+- [x] Redesign dashboard with new section grouping: المنافذ، النقل والشراكة، الديون، المصروفات، حسابات خاصة، صيرفة، تقارير، ميزان المراجعة، ربط التسديد
+- [x] Apply beautiful UI/UX design with consistent colors and smooth animations
+- [x] Move ربط التسديد from التقارير والمراجعة to الحسابات section
+- [x] Change port icons to unique icons per port
+- [x] Redesign all internal pages to match new dashboard aesthetic (SectionPage, PortPage, DebtsPage, ExpensesPage, AccountsPage, ReportsPage, TrialBalancePage, PaymentMatchingPage)
+- [x] Update all Arabic labels to match user's document exactly (له/عليه, رقم الوصل, الترانزيت السعودي, الذمم, etc.)
+- [x] Add profit calculation per transaction and per trader
+- [x] Add running balance (رصيد تراكمي) to trader statements
+- [x] Fix trial balance with proper debit/credit logic
+- [ ] Improve expenses page with summaries and date filters
+- [ ] Improve debts page with partial payments and totals
+- [ ] Complete Yaser special fields (CLR, SUP, Diff, TX, Amount_USD_Ya)
+- [ ] Add RBAC enforcement on frontend (hide unauthorized pages)
+- [ ] Add audit log for tracking changes
+- [x] Implement profit calculation per shipment and per trader (difference between cost and amount)
+- [x] Add running balance (رصيد تراكمي) to trader account statements
+- [x] Fix trial balance with proper debit/credit accounting logic
+- [x] Improve PDF export to support IQD currency separately from USD (not all money columns should show $)
+- [x] Design review: refine global color palette, typography, and spacing
+- [x] Design review: improve input forms, modals, and interactive elements
+- [x] Design review: improve data tables, cards, and display components
+- [x] Design review: improve print styles and PDF export appearance
+- [x] Design review: polish page layouts, navigation, and transitions
+- [x] Remove OAuth authentication and keep only local username/password login
+- [x] Ensure admin/admin is the default main user credentials
+- [x] Import production data from Access database (.accdb) into MySQL
+- [x] Import trader data from Excel files into MySQL
+- [x] Clean and verify all imported data
+- [x] Import missing transactions from Excel files (only add what doesn't exist, avoid duplicates)
