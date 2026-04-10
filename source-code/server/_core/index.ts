@@ -10,6 +10,7 @@ import apiRoutes from "../apiRoutes";
 import { apiBodyParserErrorMiddleware, apiSecurityMiddleware } from "./apiSecurity";
 import { securityHeadersMiddleware } from "./securityHeaders";
 import { closeDb } from "../db";
+import { parseTrustProxySetting } from "./trustProxy";
 
 const API_BODY_LIMIT = process.env.API_BODY_LIMIT || "10mb";
 const URLENCODED_PARAMETER_LIMIT = 250;
@@ -40,7 +41,7 @@ async function startServer() {
     process.env.HOST ||
     (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
-  app.set("trust proxy", process.env.TRUST_PROXY || "loopback");
+  app.set("trust proxy", parseTrustProxySetting(process.env.TRUST_PROXY));
   app.disable("x-powered-by");
   app.use(securityHeadersMiddleware);
   // Keep payloads bounded; the app does not rely on direct large file uploads.
