@@ -18,7 +18,7 @@ if [[ ! -f "${RELEASE_ARCHIVE}" ]]; then
 fi
 
 apt update
-apt install -y unzip rsync
+apt install -y unzip rsync curl
 
 if ! id -u "${APP_USER}" >/dev/null 2>&1; then
   useradd --system --create-home --shell /bin/bash "${APP_USER}"
@@ -57,6 +57,17 @@ fi
 if [[ -f "${ENV_DIR}/alrawi.env" ]]; then
   systemctl restart "${SERVICE_NAME}" || systemctl start "${SERVICE_NAME}"
   systemctl status "${SERVICE_NAME}" --no-pager
+  for attempt in {1..15}; do
+    if curl -fsS "http://127.0.0.1:3000/healthz" >/dev/null 2>&1; then
+      echo "Health check passed:"
+      curl -fsS "http://127.0.0.1:3000/healthz"
+      echo
+      exit 0
+    fi
+    sleep 2
+  done
+  echo "Health check did not pass after deploy."
+  exit 1
 else
   echo "Create ${ENV_DIR}/alrawi.env first, then run:"
   echo "systemctl start ${SERVICE_NAME}"

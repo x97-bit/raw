@@ -2,6 +2,7 @@
 .git/
 
 # Runtime / local env
+.release/
 source-code/.env
 source-code/.manus-logs/
 source-code/codex-start.err.log

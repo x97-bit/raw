@@ -136,7 +136,43 @@ After the service is live:
 - create a test payment
 - export PDF and Excel
 
-## 9. Updating the app later
+## 9. Post-go-live hardening
+
+After the first successful login, run the bundled security helper on the VPS:
+
+```bash
+chmod +x /var/www/alrawi/source-code/deploy/vps/setup-security.sh
+bash /var/www/alrawi/source-code/deploy/vps/setup-security.sh
+```
+
+If your SSH server uses a custom port, pass it explicitly:
+
+```bash
+SSH_PORT=2222 bash /var/www/alrawi/source-code/deploy/vps/setup-security.sh
+```
+
+## 10. Automatic database backups
+
+Run a manual backup any time with:
+
+```bash
+chmod +x /var/www/alrawi/source-code/deploy/vps/backup-db.sh
+/var/www/alrawi/source-code/deploy/vps/backup-db.sh
+```
+
+That script reads `DATABASE_URL` from `/etc/alrawi/alrawi.env` and writes compressed dumps to:
+
+```text
+/var/backups/alrawi/mysql
+```
+
+To keep a daily 3:00 AM backup schedule:
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * * /var/www/alrawi/source-code/deploy/vps/backup-db.sh >> /var/log/alrawi-db-backup.log 2>&1") | crontab -
+```
+
+## 11. Updating the app later
 
 ```bash
 cd /var/www/alrawi/source-code
@@ -144,6 +180,19 @@ git pull
 pnpm install --frozen-lockfile
 pnpm build
 sudo systemctl restart alrawi
+```
+
+Or keep using the clean Windows upload flow:
+
+```powershell
+cd "C:\Users\lenovo\OneDrive\Desktop\v0.05\v0.5\source-code\deploy\vps"
+.\package-upload.cmd 195.35.29.31 root
+```
+
+Then on the VPS:
+
+```bash
+bash /root/deploy-on-vps.sh
 ```
 
 ## Notes
