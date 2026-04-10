@@ -66,6 +66,36 @@ pnpm db:sync-old-trade-import-to-production:apply
 
 This sync is add-only. It refuses to run when the core table counts between staging and production do not match.
 
+## VPS live workflow
+
+1. Deploy the latest code to the VPS:
+
+```bat
+cd source-code\deploy\vps
+package-upload.cmd 195.35.29.31 root
+```
+
+Then on the VPS:
+
+```bash
+chmod +x /root/deploy-on-vps.sh
+bash /root/deploy-on-vps.sh
+```
+
+2. Upload the legacy JSON export and the live import helper:
+
+```bat
+cd source-code\deploy\vps
+upload-legacy-import-assets.cmd 195.35.29.31 root
+```
+
+3. On the VPS run the full staging-import-production workflow:
+
+```bash
+chmod +x /root/run-legacy-import-on-vps.sh
+bash /root/run-legacy-import-on-vps.sh
+```
+
 You can also point to another export:
 
 ```bash
