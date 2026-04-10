@@ -3,7 +3,8 @@
 This guide assumes:
 - Ubuntu or Debian VPS
 - Domain already pointing to the VPS public IP
-- App code stored in `/var/www/alrawi/source-code`
+- Repository cloned to `/var/www/alrawi/source-code`
+- App root is `/var/www/alrawi/source-code/source-code`
 - HTTPS handled by Caddy
 
 ## 1. Install system packages
@@ -36,16 +37,22 @@ sudo chown -R alrawi:alrawi /etc/alrawi
 
 ## 4. Upload the code
 
-Clone or copy the repository so the app root becomes:
+Clone or copy the repository to:
 
 ```text
 /var/www/alrawi/source-code
 ```
 
+Then use this app root:
+
+```text
+/var/www/alrawi/source-code/source-code
+```
+
 Then install and build:
 
 ```bash
-cd /var/www/alrawi/source-code
+cd /var/www/alrawi/source-code/source-code
 pnpm install --frozen-lockfile
 pnpm check
 pnpm test
@@ -132,7 +139,7 @@ After the service is live:
 ## 9. Updating the app later
 
 ```bash
-cd /var/www/alrawi/source-code
+cd /var/www/alrawi/source-code/source-code
 git pull
 pnpm install --frozen-lockfile
 pnpm build
