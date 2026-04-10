@@ -4,6 +4,7 @@
 # Runtime / local env
 .release/
 source-code/.env
+source-code/old db/
 source-code/.manus-logs/
 source-code/codex-start.err.log
 source-code/codex-start.out.log
