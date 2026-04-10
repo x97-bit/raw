@@ -1,3 +1,5 @@
+import { getFieldDisplayLabel } from './fieldDisplayLabels';
+
 const asFieldType = (columnType) => {
   switch (columnType) {
     case 'date':
@@ -15,7 +17,7 @@ const asFieldType = (columnType) => {
   }
 };
 
-const createColumn = (key, dataKey, label, type = 'text') => ({ key, dataKey, label, type });
+const createColumn = (key, dataKey, label, type = 'text', extra = {}) => ({ key, dataKey, label, type, ...extra });
 const createField = (key, label, type = 'text', extra = {}) => ({ key, label, type, ...extra });
 const createFormSection = (title, keys, subtitle = '') => ({ title, subtitle, keys });
 export const STATEMENT_CORE_COLUMN_KEYS = ['ref_no', 'direction', 'trans_date', 'currency', 'amount_usd', 'amount_iqd'];
@@ -36,7 +38,41 @@ const withStatementCoreColumns = (columns) => {
   ];
 };
 
-export const SECTION_SCREEN_SPECS = {
+function shouldKeepSectionFallbackLabel(sectionKey, fieldKey) {
+  return sectionKey === 'transport-1' && fieldKey === 'ref_no';
+}
+
+const normalizeColumns = (columns = [], sectionKey) => columns.map((column) => ({
+  ...column,
+  label: shouldKeepSectionFallbackLabel(sectionKey, column.key)
+    ? column.label
+    : getFieldDisplayLabel(column.key, { fallback: column.label }),
+}));
+
+const normalizeFields = (fields = [], targetKey, sectionKey) => fields.map((field) => ({
+  ...field,
+  label: shouldKeepSectionFallbackLabel(sectionKey, field.key)
+    ? field.label
+    : getFieldDisplayLabel(field.key, {
+      variant: targetKey === 'payment' ? 'payment-ref' : 'screen',
+      fallback: field.label,
+    }),
+}));
+
+const normalizeSectionScreenSpecs = (specs) => Object.fromEntries(
+  Object.entries(specs).map(([sectionKey, spec]) => ([
+    sectionKey,
+    {
+      ...spec,
+      ...(spec.list ? { list: { ...spec.list, columns: normalizeColumns(spec.list.columns, sectionKey) } } : {}),
+      ...(spec.statement ? { statement: { ...spec.statement, columns: normalizeColumns(spec.statement.columns, sectionKey) } } : {}),
+      ...(spec.invoice ? { invoice: { ...spec.invoice, fields: normalizeFields(spec.invoice.fields, 'invoice', sectionKey) } } : {}),
+      ...(spec.payment ? { payment: { ...spec.payment, fields: normalizeFields(spec.payment.fields, 'payment', sectionKey) } } : {}),
+    },
+  ])),
+);
+
+const RAW_SECTION_SCREEN_SPECS = {
   'transport-1': {
     targets: ['list', 'statement', 'invoice', 'payment'],
     list: {
@@ -85,7 +121,7 @@ export const SECTION_SCREEN_SPECS = {
     },
     payment: {
       fields: [
-        createField('ref_no', 'رقم السند', 'text', { readOnly: true }),
+        createField('ref_no', 'رقم سند القبض', 'text', { readOnly: true }),
         createField('trans_date', 'التاريخ', 'date'),
         createField('currency', 'العملة', 'text'),
         createField('account_name', 'اسم التاجر', 'text'),
@@ -104,6 +140,8 @@ export const SECTION_SCREEN_SPECS = {
     targets: ['list', 'statement', 'invoice', 'payment'],
     list: {
       columns: [
+        createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),
+        createColumn('direction', 'TransTypeName', 'نوع الحركة', 'badge'),
         createColumn('trans_date', 'TransDate', 'التاريخ', 'date'),
         createColumn('account_name', 'AccountName', 'اسم التاجر'),
         createColumn('currency', 'Currency', 'العملة', 'currency'),
@@ -115,6 +153,10 @@ export const SECTION_SCREEN_SPECS = {
         createColumn('cost_usd', 'CostUSD', 'الكلفة دولار', 'money_usd'),
         createColumn('amount_usd', 'AmountUSD', 'المبلغ دولار', 'money_usd_bold'),
         createColumn('cost_iqd', 'CostIQD', 'الكلفة دينار', 'money_iqd'),
+        createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
+        createColumn('gov_name', 'Governorate', 'المحافظة'),
+        createColumn('fee_usd', 'FeeUSD', 'النقل السعودي $', 'money_usd'),
+        createColumn('trans_price', 'TransPrice', 'نقل عراقي (دينار)', 'money_iqd'),
       ],
     },
     statement: {
@@ -122,6 +164,7 @@ export const SECTION_SCREEN_SPECS = {
         createColumn('cost_iqd', 'CostIQD', 'الكلفة دينار', 'money_iqd'),
         createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
         createColumn('fee_usd', 'FeeUSD', 'النقل السعودي $', 'money_usd'),
+        createColumn('trans_price', 'TransPrice', 'نقل عراقي (دينار)', 'money_iqd'),
         createColumn('gov_name', 'Governorate', 'المحافظات'),
         createColumn('trader_note', 'TraderNote', 'ملاحظات', 'notes'),
         createColumn('notes', 'Notes', 'ملاحظات المالك', 'notes'),
@@ -144,6 +187,7 @@ export const SECTION_SCREEN_SPECS = {
         createField('amount_iqd', 'المبلغ دينار', 'money'),
         createField('gov_name', 'المحافظة', 'text'),
         createField('fee_usd', 'النقل السعودي $', 'money'),
+        createField('trans_price', 'نقل عراقي (دينار)', 'money'),
         createField('trader_note', 'ملاحظات التاجر', 'text'),
         createField('notes', 'ملاحظات المالك', 'text'),
       ],
@@ -151,13 +195,13 @@ export const SECTION_SCREEN_SPECS = {
         createFormSection('المعلومات الأساسية', ['ref_no', 'trans_date', 'account_name', 'currency']),
         createFormSection('بيانات الشحنة', ['driver_name', 'vehicle_plate', 'good_type', 'weight', 'meters']),
         createFormSection('القيم المالية', ['cost_usd', 'amount_usd', 'cost_iqd', 'amount_iqd']),
-        createFormSection('تفاصيل إضافية', ['gov_name', 'fee_usd']),
+        createFormSection('تفاصيل إضافية', ['gov_name', 'fee_usd', 'trans_price']),
         createFormSection('الملاحظات', ['trader_note', 'notes']),
       ],
     },
     payment: {
       fields: [
-        createField('ref_no', 'رقم السند', 'text', { readOnly: true }),
+        createField('ref_no', 'رقم سند القبض', 'text', { readOnly: true }),
         createField('trans_date', 'التاريخ', 'date'),
         createField('account_name', 'اسم التاجر', 'text'),
         createField('currency', 'العملة', 'text'),
@@ -186,21 +230,27 @@ export const SECTION_SCREEN_SPECS = {
         createColumn('vehicle_plate', 'VehiclePlate', 'رقم السيارة'),
         createColumn('good_type', 'GoodTypeName', 'نوع البضاعة'),
         createColumn('weight', 'Weight', 'الوزن', 'number'),
+        createColumn('qty', 'Qty', 'العدد', 'number'),
         createColumn('cost_usd', 'CostUSD', 'الكلفة دولار', 'money_usd'),
         createColumn('amount_usd', 'AmountUSD', 'المبلغ دولار', 'money_usd_bold'),
       ],
     },
     statement: {
       columns: withStatementCoreColumns([
+        createColumn('account_name', 'AccountName', 'اسم التاجر', 'text', { defaultVisible: false }),
         createColumn('currency', 'Currency', 'العملة', 'currency'),
         createColumn('driver_name', 'DriverName', 'اسم السائق'),
         createColumn('vehicle_plate', 'VehiclePlate', 'رقم السيارة'),
         createColumn('good_type', 'GoodTypeName', 'نوع البضاعة'),
         createColumn('weight', 'Weight', 'الوزن', 'number'),
+        createColumn('qty', 'Qty', 'العدد', 'number'),
         createColumn('cost_usd', 'CostUSD', 'الكلفة دولار', 'money_usd'),
         createColumn('amount_usd', 'AmountUSD', 'المبلغ دولار', 'money_usd_bold'),
         createColumn('cost_iqd', 'CostIQD', 'الكلفة دينار', 'money_iqd'),
         createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
+        createColumn('syr_cus', 'SyrCus', 'الكمرك السوري', 'money_usd', { defaultVisible: false }),
+        createColumn('trader_note', 'TraderNote', 'ملاحظات التاجر', 'notes', { defaultVisible: false }),
+        createColumn('notes', 'Notes', 'ملاحظات المالك', 'notes', { defaultVisible: false }),
       ]),
     },
     invoice: {
@@ -213,6 +263,7 @@ export const SECTION_SCREEN_SPECS = {
         createField('vehicle_plate', 'رقم السيارة', 'text'),
         createField('good_type', 'نوع البضاعة', 'text'),
         createField('weight', 'الوزن', 'number'),
+        createField('qty', 'العدد', 'number'),
         createField('cost_usd', 'الكلفة دولار', 'money'),
         createField('amount_usd', 'المبلغ دولار', 'money'),
         createField('cost_iqd', 'الكلفة دينار', 'money'),
@@ -223,7 +274,7 @@ export const SECTION_SCREEN_SPECS = {
       ],
       layout: [
         createFormSection('المعلومات الأساسية', ['ref_no', 'trans_date', 'account_name', 'currency']),
-        createFormSection('بيانات الشحنة', ['driver_name', 'vehicle_plate', 'good_type', 'weight']),
+        createFormSection('بيانات الشحنة', ['driver_name', 'vehicle_plate', 'good_type', 'weight', 'qty']),
         createFormSection('القيم المالية', ['cost_usd', 'amount_usd', 'cost_iqd', 'amount_iqd']),
         createFormSection('تفاصيل إضافية', ['syr_cus']),
         createFormSection('الملاحظات', ['trader_note', 'notes']),
@@ -231,7 +282,7 @@ export const SECTION_SCREEN_SPECS = {
     },
     payment: {
       fields: [
-        createField('ref_no', 'رقم السند', 'text', { readOnly: true }),
+        createField('ref_no', 'رقم سند القبض', 'text', { readOnly: true }),
         createField('trans_date', 'التاريخ', 'date'),
         createField('account_name', 'اسم التاجر', 'text'),
         createField('currency', 'العملة', 'text'),
@@ -264,7 +315,13 @@ export const SECTION_SCREEN_SPECS = {
       ],
     },
     statement: {
-      columns: withStatementCoreColumns([
+      columns: [
+        createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),
+        createColumn('direction', 'TransTypeName', 'نوع الحركة', 'badge'),
+        createColumn('trans_date', 'TransDate', 'التاريخ', 'date'),
+        createColumn('account_name', 'AccountName', 'اسم التاجر'),
+        createColumn('currency', 'Currency', 'العملة', 'currency'),
+        createColumn('driver_name', 'DriverName', 'اسم السائق'),
         createColumn('vehicle_plate', 'VehiclePlate', 'رقم السيارة'),
         createColumn('good_type', 'GoodTypeName', 'نوع البضاعة'),
         createColumn('weight', 'Weight', 'الوزن', 'number'),
@@ -272,7 +329,11 @@ export const SECTION_SCREEN_SPECS = {
         createColumn('cost_usd', 'CostUSD', 'الكلفة دولار', 'money_usd'),
         createColumn('amount_usd', 'AmountUSD', 'المبلغ دولار', 'money_usd_bold'),
         createColumn('cost_iqd', 'CostIQD', 'الكلفة دينار', 'money_iqd'),
-      ]),
+        createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
+        createColumn('company_name', 'CompanyName', 'الشركة'),
+        createColumn('trader_note', 'TraderNote', 'ملاحظات التاجر', 'notes'),
+        createColumn('notes', 'Notes', 'ملاحظات المالك', 'notes'),
+      ],
     },
     invoice: {
       fields: [
@@ -303,7 +364,7 @@ export const SECTION_SCREEN_SPECS = {
     },
     payment: {
       fields: [
-        createField('ref_no', 'رقم السند', 'text', { readOnly: true }),
+        createField('ref_no', 'رقم سند القبض', 'text', { readOnly: true }),
         createField('trans_date', 'التاريخ', 'date'),
         createField('account_name', 'اسم التاجر', 'text'),
         createField('currency', 'العملة', 'text'),
@@ -369,7 +430,7 @@ export const SECTION_SCREEN_SPECS = {
     },
     payment: {
       fields: [
-        createField('ref_no', 'رقم السند', 'text', { readOnly: true }),
+        createField('ref_no', 'رقم سند القبض', 'text', { readOnly: true }),
         createField('trans_date', 'التاريخ', 'date'),
         createField('currency', 'العملة', 'text'),
         createField('account_name', 'اسم التاجر', 'text'),
@@ -385,6 +446,8 @@ export const SECTION_SCREEN_SPECS = {
     },
   },
 };
+
+export const SECTION_SCREEN_SPECS = normalizeSectionScreenSpecs(RAW_SECTION_SCREEN_SPECS);
 
 export function isConfiguredTransactionSection(sectionKey) {
   return Boolean(SECTION_SCREEN_SPECS[sectionKey]);
@@ -412,10 +475,11 @@ export function getSectionTargetFields(sectionKey, targetKey) {
 
   if (Array.isArray(spec.fields)) return spec.fields;
   if (Array.isArray(spec.columns)) {
-    return spec.columns.map(({ key, label, type }) => ({
+    return spec.columns.map(({ key, label, type, defaultVisible }) => ({
       key,
       label,
       type: asFieldType(type),
+      defaultVisible,
     }));
   }
 

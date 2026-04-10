@@ -4,16 +4,17 @@ import { addRunningBalances, calculateTransactionTotals } from "./transactionSum
 describe("transaction summary helpers", () => {
   it("calculates invoice and payment totals across legacy and current direction values", () => {
     const totals = calculateTransactionTotals([
-      { direction: "IN", amountUsd: "1000", costUsd: "700", feeUsd: "25" },
+      { direction: "IN", amountUsd: "1000", costUsd: "700", feeUsd: "25", weight: "12500" },
       { direction: "out", amountUsd: "-300" },
       { direction: "CR", amountUsd: "200", amountIqd: "-150000" },
-      { direction: "DR", amountIqd: "500000", costIqd: "320000" },
+      { direction: "DR", amountIqd: "500000", costIqd: "320000", Weight: "3600" },
     ]);
 
     expect(totals.count).toBe(4);
     expect(totals.invoiceCount).toBe(2);
     expect(totals.paymentCount).toBe(2);
     expect(totals.shipmentCount).toBe(2);
+    expect(totals.totalWeight).toBe(16100);
     expect(totals.totalInvoicesUSD).toBe(1000);
     expect(totals.totalInvoicesIQD).toBe(500000);
     expect(totals.totalPaymentsUSD).toBe(500);

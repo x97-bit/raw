@@ -7,10 +7,16 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
 export async function setupVite(app: Express, server: Server) {
+  const configuredServer = typeof viteConfig.server === "object" && viteConfig.server !== null
+    ? viteConfig.server
+    : {};
   const serverOptions = {
+    ...configuredServer,
     middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true as const,
+    hmr: {
+      ...(typeof configuredServer.hmr === "object" && configuredServer.hmr !== null ? configuredServer.hmr : {}),
+      server,
+    },
   };
 
   const vite = await createViteServer({
@@ -34,10 +40,7 @@ export async function setupVite(app: Express, server: Server) {
 
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
+      template = injectClientEntryVersion(template);
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -45,6 +48,19 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+}
+
+function injectClientEntryVersion(template: string) {
+  const supportedEntries = ["main.jsx"];
+
+  for (const entry of supportedEntries) {
+    const source = `src="/src/${entry}"`;
+    if (template.includes(source)) {
+      return template.replace(source, `src="/src/${entry}?v=${nanoid()}"`);
+    }
+  }
+
+  return template;
 }
 
 export function serveStatic(app: Express) {

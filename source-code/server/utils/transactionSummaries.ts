@@ -24,6 +24,7 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     invoiceCount: 0,
     paymentCount: 0,
     shipmentCount: 0,
+    totalWeight: 0,
     totalInvoicesUSD: 0,
     totalInvoicesIQD: 0,
     totalPaymentsUSD: 0,
@@ -44,10 +45,12 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     const costUsd = getAbsoluteAmount(getAmountValue(transaction, "costUsd", "CostUSD"));
     const costIqd = getAbsoluteAmount(getAmountValue(transaction, "costIqd", "CostIQD"));
     const feeUsd = getAbsoluteAmount(getAmountValue(transaction, "feeUsd", "FeeUSD"));
+    const weight = getAbsoluteAmount(getAmountValue(transaction, "weight", "Weight"));
 
     if (isInvoiceDirection(direction)) {
       totals.invoiceCount += 1;
       totals.shipmentCount += 1;
+      totals.totalWeight += weight;
       totals.totalInvoicesUSD += amountUsd;
       totals.totalInvoicesIQD += amountIqd;
       totals.totalCostUSD += costUsd;

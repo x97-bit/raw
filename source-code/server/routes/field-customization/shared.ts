@@ -1,0 +1,10 @@
+export const FIELDS_ARRAY_REQUIRED_MESSAGE = "fields array required";
+export const VALUES_ARRAY_REQUIRED_MESSAGE = "values array required";
+export const CUSTOM_FIELD_NOT_FOUND_MESSAGE = "الحقل غير موجود";
+export const FIELD_SETTINGS_UPDATED_MESSAGE = "تم تحديث إعدادات الحقول";
+export const CUSTOM_FIELD_CREATED_MESSAGE = "تم إضافة الحقل المخصص";
+export const CUSTOM_FIELD_UPDATED_MESSAGE = "تم تحديث الحقل المخصص";
+export const CUSTOM_FIELD_DELETED_MESSAGE = "تم حذف الحقل المخصص";
+export const CUSTOM_FIELD_VALUES_SAVED_MESSAGE = "تم حفظ القيم";
+export const CUSTOM_FIELD_ID_LABEL = "معرف الحقل المخصص";
+export const CUSTOM_FIELD_VALUE_ENTITY_ID_LABEL = "معرف الكيان";

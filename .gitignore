@@ -7,10 +7,17 @@ source-code/.manus-logs/
 source-code/codex-start.err.log
 source-code/codex-start.out.log
 source-code/test-results.txt
+.tmp-playwright/
+tmpplaywright/
+source-code/database/tmp/
 
 # Dependencies / build output
 source-code/node_modules/
 source-code/dist/
+
+# Local import safety artifacts
+source-code/database/backups/
+source-code/database/import-reports/
 
 # OS / editor noise
 .DS_Store

@@ -8,7 +8,7 @@ export const FIELD_CONFIG_TARGETS = {
   list: { key: 'list', label: 'القائمة / الكشف', shortLabel: 'قائمة' },
   statement: { key: 'statement', label: 'كشف الحساب', shortLabel: 'كشف' },
   invoice: { key: 'invoice', label: 'الفاتورة', shortLabel: 'فاتورة' },
-  payment: { key: 'payment', label: 'التسديد', shortLabel: 'تسديد' },
+  payment: { key: 'payment', label: 'سند قبض', shortLabel: 'سند قبض' },
 };
 
 export const INVOICE_FORM_FIELDS = [];

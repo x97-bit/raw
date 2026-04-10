@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json, date, uniqueIndex } from "drizzle-orm/mysql-core";
 
 // ==================== AUTH USERS (Template/Manus OAuth - NOT used by the app) ====================
 export const users = mysqlTable("users", {
@@ -22,6 +22,7 @@ export const appUsers = mysqlTable("app_users", {
   username: varchar("username", { length: 100 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  profileImage: text("profile_image"),
   role: mysqlEnum("role", ["admin", "user"]).default("user").notNull(),
   permissions: json("permissions").$type<string[]>().default([]),
   active: int("active").default(1).notNull(),
@@ -63,7 +64,7 @@ export const transactions = mysqlTable("transactions", {
   id: int("id").autoincrement().primaryKey(),
   refNo: varchar("ref_no", { length: 50 }),
   direction: varchar("direction", { length: 5 }).notNull(),
-  transDate: varchar("trans_date", { length: 20 }).notNull(),
+  transDate: date("trans_date", { mode: "string" }).notNull(),
   accountId: int("account_id").notNull(),
   currency: varchar("currency", { length: 10 }).default("BOTH"),
   driverId: int("driver_id"),
@@ -92,7 +93,9 @@ export const transactions = mysqlTable("transactions", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  refNoUnique: uniqueIndex("uk_transactions_ref_no").on(table.refNo),
+}));
 
 // ==================== DEBTS (unified) ====================
 export const debts = mysqlTable("debts", {
@@ -110,7 +113,7 @@ export const debts = mysqlTable("debts", {
   weight: decimal("weight", { precision: 15, scale: 2 }),
   meters: decimal("meters", { precision: 15, scale: 2 }),
   description: text("description"),
-  date: varchar("date", { length: 20 }),
+  date: date("date", { mode: "string" }),
   status: mysqlEnum("status", ["pending", "partial", "paid"]).default("pending").notNull(),
   paidAmountUSD: decimal("paidAmountUSD", { precision: 15, scale: 2 }).default("0"),
   paidAmountIQD: decimal("paidAmountIQD", { precision: 15, scale: 0 }).default("0"),
@@ -123,7 +126,7 @@ export const debts = mysqlTable("debts", {
 // ==================== EXPENSES (unified) ====================
 export const expenses = mysqlTable("expenses", {
   id: int("id").autoincrement().primaryKey(),
-  expenseDate: varchar("expense_date", { length: 20 }).notNull(),
+  expenseDate: date("expense_date", { mode: "string" }).notNull(),
   amountUSD: decimal("amount_usd", { precision: 15, scale: 2 }).default("0"),
   amountIQD: decimal("amount_iqd", { precision: 15, scale: 0 }).default("0"),
   description: text("description"),
@@ -200,7 +203,9 @@ export const accountDefaults = mysqlTable("account_defaults", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  accountSectionUnique: uniqueIndex("uk_account_defaults").on(table.accountId, table.sectionKey),
+}));
 
 export const routeDefaults = mysqlTable("route_defaults", {
   id: int("id").autoincrement().primaryKey(),
@@ -217,7 +222,9 @@ export const routeDefaults = mysqlTable("route_defaults", {
   active: int("active").default(1).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  routeCurrencyUnique: uniqueIndex("uk_route_defaults").on(table.sectionKey, table.govId, table.currency),
+}));
 
 // ==================== PAYMENT MATCHING ====================
 export const paymentMatching = mysqlTable("payment_matching", {
@@ -228,7 +235,9 @@ export const paymentMatching = mysqlTable("payment_matching", {
   amountIQD: decimal("amountIQD", { precision: 15, scale: 0 }).default("0"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  invoicePaymentUnique: uniqueIndex("uk_payment_matching_invoice_payment").on(table.invoiceId, table.paymentId),
+}));
 
 // ==================== FIELD CONFIGURATION ====================
 export const fieldConfig = mysqlTable("field_config", {
@@ -271,10 +280,45 @@ export const specialAccounts = mysqlTable("special_accounts", {
   id: int("id").autoincrement().primaryKey(),
   type: varchar("type", { length: 50 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  traderName: varchar("traderName", { length: 255 }),
+  driverName: varchar("driverName", { length: 255 }),
+  vehiclePlate: varchar("vehiclePlate", { length: 100 }),
+  goodType: varchar("goodType", { length: 255 }),
+  govName: varchar("govName", { length: 255 }),
+  portName: varchar("portName", { length: 255 }),
+  companyName: varchar("companyName", { length: 255 }),
+  batchName: varchar("batchName", { length: 255 }),
+  destination: varchar("destination", { length: 255 }),
   amountUSD: decimal("amountUSD", { precision: 15, scale: 2 }).default("0"),
   amountIQD: decimal("amountIQD", { precision: 15, scale: 0 }).default("0"),
+  costUSD: decimal("costUSD", { precision: 15, scale: 2 }).default("0"),
+  costIQD: decimal("costIQD", { precision: 15, scale: 0 }).default("0"),
+  amountUSDPartner: decimal("amountUSDPartner", { precision: 15, scale: 2 }).default("0"),
+  differenceIQD: decimal("differenceIQD", { precision: 15, scale: 0 }).default("0"),
+  clr: decimal("clr", { precision: 15, scale: 2 }).default("0"),
+  tx: decimal("tx", { precision: 15, scale: 2 }).default("0"),
+  taxiWater: decimal("taxiWater", { precision: 15, scale: 2 }).default("0"),
+  weight: decimal("weight", { precision: 15, scale: 2 }),
+  meters: decimal("meters", { precision: 15, scale: 2 }),
+  qty: int("qty"),
   description: text("description"),
-  date: varchar("date", { length: 20 }),
+  notes: text("notes"),
+  date: date("date", { mode: "string" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  entityType: varchar("entity_type", { length: 100 }).notNull(),
+  entityId: int("entity_id"),
+  action: varchar("action", { length: 20 }).notNull(),
+  summary: varchar("summary", { length: 255 }).notNull(),
+  beforeData: json("before_data"),
+  afterData: json("after_data"),
+  changes: json("changes"),
+  metadata: json("metadata"),
+  userId: int("user_id"),
+  username: varchar("username", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
