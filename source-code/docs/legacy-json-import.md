@@ -30,16 +30,22 @@ the final report under `database/import-reports/`.
 
 1. Create an empty import database.
 
-```sql
-CREATE DATABASE alrawi_import CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```bash
+pnpm db:bootstrap-old-trade-import-db
 ```
 
-2. Load the schema only. Do not run seed data before the import.
+2. If you want to rebuild the staging database from scratch, run it with reset:
 
 ```bash
-mysql -u root alrawi_import < database/sql/01_schema.sql
-mysql -u root alrawi_import < database/sql/03_indexes.sql
+pnpm db:bootstrap-old-trade-import-db -- --reset
 ```
+
+This creates `alrawi_import` with:
+- full schema
+- performance indexes
+- minimal base records only: `admin`, `ports`, `account_types`, `users`
+
+It intentionally does not seed `goods_types` or `governorates`, so the legacy import can still run.
 
 3. Run the importer against that database without changing your main `.env`.
 

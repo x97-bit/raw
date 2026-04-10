@@ -18,6 +18,7 @@
     "db:reset-safe-production:apply": "node scripts/database/reset-safe-production-data.mjs --apply",
     "db:migrate-old-trade-db:dry-run": "node scripts/imports/migrate-old-trade-db.mjs",
     "db:migrate-old-trade-db:apply": "node scripts/imports/migrate-old-trade-db.mjs --apply",
+    "db:bootstrap-old-trade-import-db": "node scripts/imports/bootstrap-old-trade-import-db.mjs",
     "db:import-old-trade-json:dry-run": "node scripts/imports/import-old-trade-json.mjs",
     "db:import-old-trade-json:apply": "node scripts/imports/import-old-trade-json.mjs --apply",
     "db:import-yaser-pdf:dry-run": "node scripts/imports/import-yaser-pdf.mjs",

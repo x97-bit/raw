@@ -27,6 +27,7 @@ This folder keeps operational scripts out of the source root.
 - `database/reset-safe-production-data.mjs`
 
 ## Active Imports
+- `imports/bootstrap-old-trade-import-db.mjs`
 - `imports/generate-system-import-templates.mjs`
 - `imports/import-real-workbook.mjs`
 - `imports/import-old-trade-json.mjs`
