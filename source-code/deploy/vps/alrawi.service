@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=alrawi
 Group=alrawi
-WorkingDirectory=/var/www/alrawi/source-code/source-code
+WorkingDirectory=/var/www/alrawi/source-code
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EnvironmentFile=/etc/alrawi/alrawi.env
 ExecStart=/usr/bin/env pnpm start
