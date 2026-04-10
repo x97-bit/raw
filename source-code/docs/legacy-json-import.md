@@ -55,6 +55,17 @@ node scripts/imports/import-old-trade-json.mjs --apply --database-url "mysql://U
 
 4. Review the generated report under `database/import-reports/` before copying any of the imported data into production.
 
+## Production completion sync
+
+If your main production database already contains the imported core records and you only want to complete missing lookup rows safely, run:
+
+```bash
+pnpm db:sync-old-trade-import-to-production:dry-run
+pnpm db:sync-old-trade-import-to-production:apply
+```
+
+This sync is add-only. It refuses to run when the core table counts between staging and production do not match.
+
 You can also point to another export:
 
 ```bash

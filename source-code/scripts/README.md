@@ -31,6 +31,7 @@ This folder keeps operational scripts out of the source root.
 - `imports/generate-system-import-templates.mjs`
 - `imports/import-real-workbook.mjs`
 - `imports/import-old-trade-json.mjs`
+- `imports/sync-old-trade-import-to-production.mjs`
 - `imports/import-yaser-pdf.mjs`
 - `imports/migrate-old-trade-db.mjs`
 - `imports/sync-real-workbook-operational.mjs`

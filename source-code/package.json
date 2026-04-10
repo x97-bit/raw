@@ -21,6 +21,8 @@
     "db:bootstrap-old-trade-import-db": "node scripts/imports/bootstrap-old-trade-import-db.mjs",
     "db:import-old-trade-json:dry-run": "node scripts/imports/import-old-trade-json.mjs",
     "db:import-old-trade-json:apply": "node scripts/imports/import-old-trade-json.mjs --apply",
+    "db:sync-old-trade-import-to-production:dry-run": "node scripts/imports/sync-old-trade-import-to-production.mjs",
+    "db:sync-old-trade-import-to-production:apply": "node scripts/imports/sync-old-trade-import-to-production.mjs --apply",
     "db:import-yaser-pdf:dry-run": "node scripts/imports/import-yaser-pdf.mjs",
     "db:import-yaser-pdf:apply": "node scripts/imports/import-yaser-pdf.mjs --apply",
     "db:import-real-workbook:dry-run": "node scripts/imports/import-real-workbook.mjs",
