@@ -86,15 +86,29 @@ function normalizeTemplate(baseConfig, template, runtimeContext = {}) {
   };
 }
 
-function TemplateSelect({ templates, value, onChange, inHeader }) {
+function TemplateSelect({
+  templates,
+  value,
+  onChange,
+  inHeader,
+  themeAccent = '#648ea9',
+  themeAccentSoft = 'rgba(100,142,169,0.16)',
+}) {
   if (!templates?.length) return null;
 
   const baseClass = inHeader
-    ? 'rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/85 outline-none transition hover:bg-white/12'
+    ? 'rounded-2xl px-3 py-2 text-xs font-semibold text-white/90 outline-none transition'
     : 'rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 outline-none transition shadow-[0_10px_22px_rgba(15,23,42,0.04)]';
 
+  const headerStyle = inHeader
+    ? {
+        background: `linear-gradient(135deg, ${themeAccentSoft} 0%, rgba(255,255,255,0.05) 100%)`,
+        border: `1px solid ${themeAccent}26`,
+      }
+    : undefined;
+
   return (
-    <select value={value} onChange={(event) => onChange(event.target.value)} className={baseClass}>
+    <select value={value} onChange={(event) => onChange(event.target.value)} className={baseClass} style={headerStyle}>
       {templates.map((template) => (
         <option key={template.id} value={template.id} className="text-slate-900">
           {template.label}
@@ -104,20 +118,48 @@ function TemplateSelect({ templates, value, onChange, inHeader }) {
   );
 }
 
-function ExportActionButton({ icon: Icon, label, onClick, disabled = false, inHeader = false, tone = 'neutral' }) {
-  const headerClasses = 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60';
+function ExportActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  disabled = false,
+  inHeader = false,
+  tone = 'neutral',
+  themeAccent = '#648ea9',
+  themeAccentSoft = 'rgba(100,142,169,0.16)',
+}) {
+  const headerClasses = 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5';
   const bodyClasses = 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60';
+
+  const headerTone = {
+    className: headerClasses,
+    style: {
+      background: `linear-gradient(135deg, ${themeAccentSoft} 0%, rgba(255,255,255,0.05) 100%)`,
+      border: `1px solid ${themeAccent}26`,
+      color: 'rgba(255,255,255,0.94)',
+      boxShadow: '0 12px 24px rgba(0,0,0,0.18)',
+    },
+  };
 
   const tones = {
     pdf: inHeader
-      ? { className: headerClasses, style: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.92)' } }
-      : { className: `${bodyClasses} bg-white text-red-700 hover:-translate-y-0.5 hover:bg-red-50`, style: { border: '1px solid rgba(225,45,57,0.14)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' } },
+      ? headerTone
+      : {
+          className: `${bodyClasses} bg-white text-red-700 hover:-translate-y-0.5 hover:bg-red-50`,
+          style: { border: '1px solid rgba(225,45,57,0.14)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' },
+        },
     excel: inHeader
-      ? { className: headerClasses, style: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.92)' } }
-      : { className: `${bodyClasses} bg-white text-emerald-700 hover:-translate-y-0.5 hover:bg-emerald-50`, style: { border: '1px solid rgba(39,171,131,0.14)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' } },
+      ? headerTone
+      : {
+          className: `${bodyClasses} bg-white text-emerald-700 hover:-translate-y-0.5 hover:bg-emerald-50`,
+          style: { border: '1px solid rgba(39,171,131,0.14)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' },
+        },
     neutral: inHeader
-      ? { className: headerClasses, style: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.92)' } }
-      : { className: `${bodyClasses} bg-white text-slate-700 hover:-translate-y-0.5 hover:bg-slate-50`, style: { border: '1px solid rgba(148,163,184,0.2)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' } },
+      ? headerTone
+      : {
+          className: `${bodyClasses} bg-white text-slate-700 hover:-translate-y-0.5 hover:bg-slate-50`,
+          style: { border: '1px solid rgba(148,163,184,0.2)', boxShadow: '0 10px 22px rgba(15,23,42,0.04)' },
+        },
   };
 
   const resolvedTone = tones[tone] || tones.neutral;
@@ -147,6 +189,8 @@ export default function ExportButtons({
   selectedTemplateId,
   onTemplateChange,
   sectionKey,
+  themeAccent = '#648ea9',
+  themeAccentSoft = 'rgba(100,142,169,0.16)',
 }) {
   const availableTemplates = useMemo(() => {
     if (!templates?.length) return [];
@@ -178,21 +222,24 @@ export default function ExportButtons({
     }
   }, [availableTemplates, currentTemplateId, internalSelectedTemplateId, selectedTemplateId]);
 
-  const baseConfig = useMemo(() => ({
-    rows,
-    columns,
-    title,
-    subtitle,
-    filename,
-    summaryCards,
-    totalsRow,
-    orientation,
-    printSections,
-    printMetaItems,
-    printEmptyMessage,
-    printContext,
-    sectionKey,
-  }), [rows, columns, title, subtitle, filename, summaryCards, totalsRow, orientation, printSections, printMetaItems, printEmptyMessage, printContext, sectionKey]);
+  const baseConfig = useMemo(
+    () => ({
+      rows,
+      columns,
+      title,
+      subtitle,
+      filename,
+      summaryCards,
+      totalsRow,
+      orientation,
+      printSections,
+      printMetaItems,
+      printEmptyMessage,
+      printContext,
+      sectionKey,
+    }),
+    [rows, columns, title, subtitle, filename, summaryCards, totalsRow, orientation, printSections, printMetaItems, printEmptyMessage, printContext, sectionKey],
+  );
 
   const selectedTemplate = useMemo(
     () => availableTemplates.find((template) => template.id === currentTemplateId) || null,
@@ -228,9 +275,34 @@ export default function ExportButtons({
   if (inHeader) {
     return (
       <>
-        <TemplateSelect templates={availableTemplates} value={currentTemplateId} onChange={handleTemplateChange} inHeader />
-        <ExportActionButton icon={FileDown} label={pdfLabel} onClick={handlePDF} disabled={isBusy} inHeader tone="pdf" />
-        <ExportActionButton icon={FileSpreadsheet} label={excelLabel} onClick={handleExcel} disabled={isBusy} inHeader tone="excel" />
+        <TemplateSelect
+          templates={availableTemplates}
+          value={currentTemplateId}
+          onChange={handleTemplateChange}
+          inHeader
+          themeAccent={themeAccent}
+          themeAccentSoft={themeAccentSoft}
+        />
+        <ExportActionButton
+          icon={FileDown}
+          label={pdfLabel}
+          onClick={handlePDF}
+          disabled={isBusy}
+          inHeader
+          tone="pdf"
+          themeAccent={themeAccent}
+          themeAccentSoft={themeAccentSoft}
+        />
+        <ExportActionButton
+          icon={FileSpreadsheet}
+          label={excelLabel}
+          onClick={handleExcel}
+          disabled={isBusy}
+          inHeader
+          tone="excel"
+          themeAccent={themeAccent}
+          themeAccentSoft={themeAccentSoft}
+        />
       </>
     );
   }

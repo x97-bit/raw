@@ -58,6 +58,18 @@ export default function AccountsPage({ onBack }) {
     return null;
   }
 
+  const addButtonStyle = {
+    background: `linear-gradient(135deg, ${activeDef.accent}24 0%, rgba(18,22,28,0.96) 100%)`,
+    border: `1px solid ${activeDef.accent}30`,
+    boxShadow: '0 16px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.05)',
+  };
+
+  const messageStyle = {
+    background: `linear-gradient(135deg, ${activeDef.accentSoft} 0%, rgba(18,22,28,0.94) 72%)`,
+    border: `1px solid ${activeDef.accent}26`,
+    boxShadow: '0 14px 28px rgba(0,0,0,0.2)',
+  };
+
   return (
     <div className="page-shell">
       <PageHeader title={activeDef.label} subtitle="حسابات خاصة" onBack={resetView}>
@@ -72,10 +84,16 @@ export default function AccountsPage({ onBack }) {
             summaryCards={summaryCards.map((card) => ({ label: card.label, value: card.value }))}
             totalsRow={activeDef.buildExportTotalsRow(derivedTotals)}
             printStrategy="table"
+            themeAccent={activeDef.accent}
+            themeAccentSoft={activeDef.accentSoft}
           />
         )}
         {can.isAdmin && (
-          <button onClick={openCreateModal} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium transition-all hover:bg-white/20">
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-[#eef3f7] transition-all duration-200 hover:-translate-y-0.5"
+            style={addButtonStyle}
+          >
             <Plus size={16} /> إضافة سجل
           </button>
         )}
@@ -83,12 +101,13 @@ export default function AccountsPage({ onBack }) {
 
       <div className="space-y-4 p-5">
         {message && (
-          <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
+          <div className="rounded-[24px] px-4 py-3 text-sm font-semibold text-[#eef3f7]" style={messageStyle}>
             {message}
           </div>
         )}
 
         <SpecialAccountsFiltersBar
+          account={activeDef}
           filters={filters}
           onFieldChange={handleFilterChange}
           onApply={() => openAccount(activeDef.id)}
@@ -102,12 +121,14 @@ export default function AccountsPage({ onBack }) {
             <SpecialAccountsSummaryGrid cards={summaryCards} />
 
             <SpecialAccountsResultsMeta
+              account={activeDef}
               filteredCount={filteredRows.length}
               totalCount={activeRows.length}
               search={filters.search}
             />
 
             <SpecialAccountsTable
+              account={activeDef}
               accountId={activeDef.id}
               visibleColumns={visibleColumns}
               rows={filteredRows}
@@ -124,6 +145,7 @@ export default function AccountsPage({ onBack }) {
 
       {showForm && (
         <SpecialAccountFormModal
+          account={activeDef}
           activeLabel={activeDef.label}
           editingRecord={editingRecord}
           formFields={formFields}

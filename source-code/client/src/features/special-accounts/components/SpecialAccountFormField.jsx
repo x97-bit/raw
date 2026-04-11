@@ -1,30 +1,35 @@
-export default function SpecialAccountFormField({ field, value, onChange }) {
+export default function SpecialAccountFormField({ field, value, onChange, accent }) {
   const resolvedValue = value ?? '';
   const commonClass = 'input-field';
+  const inputStyle = {
+    borderColor: `${accent}18`,
+  };
 
   if (field.type === 'textarea') {
     return (
-      <div className={field.className || ''}>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">{field.label}</label>
+      <div className={`space-y-2 ${field.className || ''}`}>
+        <label className="block text-sm font-semibold text-[#c5d1db]">{field.label}</label>
         <textarea
           value={resolvedValue}
           onChange={(event) => onChange(field.key, event.target.value)}
           rows="4"
-          className={`${commonClass} min-h-[110px] resize-y`}
+          className={`${commonClass} min-h-[120px] resize-y`}
+          style={inputStyle}
         />
       </div>
     );
   }
 
   return (
-    <div className={field.className || ''}>
-      <label className="mb-1.5 block text-sm font-medium text-gray-700">{field.label}</label>
+    <div className={`space-y-2 ${field.className || ''}`}>
+      <label className="block text-sm font-semibold text-[#c5d1db]">{field.label}</label>
       <input
         type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
         step={field.step}
         value={resolvedValue}
         onChange={(event) => onChange(field.key, event.target.value)}
         className={commonClass}
+        style={inputStyle}
       />
     </div>
   );
