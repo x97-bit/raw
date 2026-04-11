@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { registerAccountLookupRoutes } from "./routes/account-lookups";
 import { registerAuthUserRoutes } from "./routes/auth-users";
+import { registerBackupRoutes } from "./routes/backups";
 import { registerDebtRoutes } from "./routes/debts";
 import { registerDefaultRoutes } from "./routes/defaults";
 import { registerExpenseRoutes } from "./routes/expenses";
@@ -14,6 +15,7 @@ const router = Router();
 
 registerAuthUserRoutes(router);
 registerAccountLookupRoutes(router);
+registerBackupRoutes(router);
 registerDefaultRoutes(router);
 registerDebtRoutes(router);
 registerExpenseRoutes(router);

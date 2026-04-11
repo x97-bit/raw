@@ -1,13 +1,14 @@
 import { sectionConfig } from './sectionCatalog';
 
 export const MAIN_PAGE = 'main';
-export const ADMIN_ONLY_PAGES = new Set(['users', 'field-management', 'defaults-management', 'audit-logs']);
+export const ADMIN_ONLY_PAGES = new Set(['users', 'field-management', 'defaults-management', 'backups', 'audit-logs']);
 
 const directPageTargets = {
   debts: { page: 'debts' },
   reports: { page: 'reports' },
   special: { page: 'accounts' },
   users: { page: 'users' },
+  backups: { page: 'backups' },
   'trial-balance': { page: 'trial-balance' },
   'payment-matching': { page: 'payment-matching' },
   'field-management': { page: 'field-management' },

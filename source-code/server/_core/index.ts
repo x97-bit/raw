@@ -12,7 +12,7 @@ import { securityHeadersMiddleware } from "./securityHeaders";
 import { closeDb } from "../db";
 import { parseTrustProxySetting } from "./trustProxy";
 
-const API_BODY_LIMIT = process.env.API_BODY_LIMIT || "10mb";
+const API_BODY_LIMIT = process.env.API_BODY_LIMIT || "25mb";
 const URLENCODED_PARAMETER_LIMIT = 250;
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -44,7 +44,7 @@ async function startServer() {
   app.set("trust proxy", parseTrustProxySetting(process.env.TRUST_PROXY));
   app.disable("x-powered-by");
   app.use(securityHeadersMiddleware);
-  // Keep payloads bounded; the app does not rely on direct large file uploads.
+  // Keep payloads bounded while allowing administrative backup imports.
   app.use(express.json({ limit: API_BODY_LIMIT }));
   app.use(express.urlencoded({
     limit: API_BODY_LIMIT,

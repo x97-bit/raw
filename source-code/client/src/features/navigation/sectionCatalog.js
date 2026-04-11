@@ -1,4 +1,5 @@
 import {
+  ArchiveRestore,
   BarChart3,
   Building2,
   ClipboardList,
@@ -131,6 +132,7 @@ const adminSectionGroup = {
     { id: 'users', label: 'المستخدمون', icon: Users, accent: '#667789', bg: 'rgba(102,119,137,0.16)' },
     { id: 'field-management', label: 'إدارة الحقول', icon: Settings2, accent: '#4f7d74', bg: 'rgba(79,125,116,0.16)' },
     { id: 'defaults-management', label: 'إدارة الافتراضيات', icon: Database, accent: '#648ea9', bg: 'rgba(100,142,169,0.16)' },
+    { id: 'backups', label: 'النسخ الاحتياطي', icon: ArchiveRestore, accent: '#7c6f63', bg: 'rgba(124,111,99,0.16)' },
     { id: 'audit-logs', label: 'سجل العمليات', icon: FileClock, accent: '#7b8397', bg: 'rgba(123,131,151,0.16)' },
   ],
 };
