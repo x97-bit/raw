@@ -17,6 +17,7 @@ const SOURCE_JSON = path.resolve(process.cwd(), arg("--source-json") || DEFAULT_
 const DATABASE_URL = arg("--database-url") || process.env.DATABASE_URL || "";
 const APPLY = has("--apply");
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+const REQUIRED_DATE_FALLBACK = "2000-01-01";
 
 const TARGET_TABLES = [
   "accounts",
@@ -112,9 +113,41 @@ function k(value) {
 }
 
 function dateOnly(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? t(value).split(" ")[0] : date.toISOString().slice(0, 10);
+  if (value === null || value === undefined) return null;
+
+  const raw = t(value);
+  if (!raw) return null;
+
+  const direct = new Date(raw);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct.toISOString().slice(0, 10);
+  }
+
+  const dmy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    const [, day, month, year] = dmy;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  const ymd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) {
+    return raw;
+  }
+
+  return null;
+}
+
+function requiredDate(value, issues, context = {}) {
+  const normalized = dateOnly(value);
+  if (normalized) return normalized;
+
+  issues.push({
+    type: "missing_required_date_fallback",
+    fallbackDate: REQUIRED_DATE_FALLBACK,
+    ...context,
+  });
+
+  return REQUIRED_DATE_FALLBACK;
 }
 
 function money(value) {
@@ -425,7 +458,11 @@ function buildApplyPayload(src) {
       accountType: "1",
       accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-1" }),
       carrierKey: null,
-      transDate: dateOnly(row.tran_date),
+      transDate: requiredDate(row.tran_date, issues, {
+        table: "Tbl_KSA_Trans",
+        refNo: t(row.ref_no),
+        legacyId: row.trans_id ?? null,
+      }),
       direction: direction(row.tran_type_id),
       recordType: recordType(row.tran_type_id),
       currency: currency(row.currency_id),
@@ -466,7 +503,11 @@ function buildApplyPayload(src) {
       accountType: "1",
       accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-2" }),
       carrierKey: null,
-      transDate: dateOnly(row.tran_date),
+      transDate: requiredDate(row.tran_date, issues, {
+        table: "Tbl_MNZ_Trans",
+        refNo: t(row.ref_no_mnz),
+        legacyId: row.trans_id ?? null,
+      }),
       direction: direction(row.tran_type_id),
       recordType: recordType(row.tran_type_id),
       currency: currency(row.currency_id),
@@ -508,7 +549,11 @@ function buildApplyPayload(src) {
       accountType: "1",
       accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-3" }),
       carrierKey: null,
-      transDate: dateOnly(row.tran_date),
+      transDate: requiredDate(row.tran_date, issues, {
+        table: "Tbl_QAIM_Trans",
+        refNo: t(row.ref_no_qaim),
+        legacyId: row.trans_id ?? null,
+      }),
       direction: direction(row.tran_type_id),
       recordType: recordType(row.tran_type_id),
       currency: currency(row.currency_id),
@@ -552,7 +597,11 @@ function buildApplyPayload(src) {
       carrierKey: carrierName
         ? addAccount({ name: carrierName, accountType: "2", portId: "transport-1" })
         : null,
-      transDate: dateOnly(row.tran_date),
+      transDate: requiredDate(row.tran_date, issues, {
+        table: "Tbl_TRANS_Trans",
+        refNo: t(row.ref_no_trans),
+        legacyId: row.trans_id ?? null,
+      }),
       direction: direction(row.tran_type_id),
       recordType: recordType(row.tran_type_id),
       currency: currency(row.currency_id),
@@ -589,7 +638,11 @@ function buildApplyPayload(src) {
       accountType: "5",
       accountKey: addAccount({ name: accountName, accountType: "5", portId: "partnership-1" }),
       carrierKey: null,
-      transDate: dateOnly(row.tran_date),
+      transDate: requiredDate(row.tran_date, issues, {
+        table: "Tbl_SHR_Trans",
+        refNo: t(row.ref_no_shr),
+        legacyId: row.trans_id ?? null,
+      }),
       direction: direction(row.tran_type_id),
       recordType: recordType(row.tran_type_id),
       currency: currency(row.currency_id),
@@ -807,7 +860,10 @@ function buildApplyPayload(src) {
 
   for (const row of src.exp1) {
     expenses.push({
-      expenseDate: dateOnly(row.expense_date),
+      expenseDate: requiredDate(row.expense_date, issues, {
+        table: "Tbl_Expenses",
+        legacyId: row.expense_id ?? row.id ?? null,
+      }),
       amountUSD: money(row.amount_usd),
       amountIQD: money(row.amount_iqd),
       description: t(row.notes),
@@ -817,7 +873,10 @@ function buildApplyPayload(src) {
 
   for (const row of src.exp2) {
     expenses.push({
-      expenseDate: dateOnly(row.expense_date),
+      expenseDate: requiredDate(row.expense_date, issues, {
+        table: "Tbl_Expenses_MNZ",
+        legacyId: row.expense_id ?? row.id ?? null,
+      }),
       amountUSD: money(row.amount_usd),
       amountIQD: money(row.amount_iqd),
       description: t(row.notes),
@@ -827,7 +886,10 @@ function buildApplyPayload(src) {
 
   for (const row of src.exp3) {
     expenses.push({
-      expenseDate: dateOnly(row.expense_date),
+      expenseDate: requiredDate(row.expense_date, issues, {
+        table: "Tbl_Expenses_Qaim",
+        legacyId: row.expense_id ?? row.id ?? null,
+      }),
       amountUSD: money(row.amount_usd),
       amountIQD: money(row.amount_iqd),
       description: t(row.notes),

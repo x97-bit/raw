@@ -107,3 +107,5 @@ The dry-run report is written to:
 ```text
 database/import-reports/
 ```
+
+If a legacy row is missing a required transaction date, the importer now records an issue and uses the fallback date `2000-01-01` so strict MySQL/MariaDB production servers do not fail the whole import.
