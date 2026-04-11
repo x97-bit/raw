@@ -68,6 +68,12 @@ This sync is add-only. It refuses to run when the core table counts between stag
 
 ## VPS live workflow
 
+For the exact saved live procedure, use:
+
+```text
+docs/legacy-json-import-vps-runbook.md
+```
+
 1. Deploy the latest code to the VPS:
 
 ```bat
