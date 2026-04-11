@@ -96,6 +96,9 @@ chmod +x /root/run-legacy-import-on-vps.sh
 bash /root/run-legacy-import-on-vps.sh
 ```
 
+If production is empty, this helper now imports directly into production.
+If production already contains the core imported records, it switches to staging + add-only sync automatically.
+
 You can also point to another export:
 
 ```bash
