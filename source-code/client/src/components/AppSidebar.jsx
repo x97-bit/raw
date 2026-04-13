@@ -4,16 +4,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppShell } from '../contexts/AppShellContext';
 import { getVisibleMainSectionGroups } from '../features/navigation/sectionCatalog';
 import BrandLogo from './BrandLogo';
+import PortIconBadge from './PortIconBadge';
+import ThemeToggleButton from './ThemeToggleButton';
 
 function SidebarNavButton({
   active = false,
   collapsed = false,
   icon: Icon,
+  iconLabel,
   label,
   accent,
   onClick,
 }) {
   const accentColor = accent || '#648ea9';
+  const hasIconLabel = Array.isArray(iconLabel) && iconLabel.length > 0;
 
   return (
     <button
@@ -23,10 +27,8 @@ function SidebarNavButton({
         collapsed ? 'justify-center' : 'gap-3.5'
       }`}
       style={{
-        background: active
-          ? 'linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)'
-          : 'rgba(255,255,255,0)',
-        boxShadow: active ? '0 16px 30px rgba(0,0,0,0.26)' : 'none',
+        background: active ? 'var(--sidebar-nav-active-bg)' : 'transparent',
+        boxShadow: active ? 'var(--sidebar-nav-active-shadow)' : 'none',
       }}
     >
       <span
@@ -45,20 +47,36 @@ function SidebarNavButton({
         />
       )}
 
-      <span
-        className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] transition-all duration-200 group-hover:scale-[1.03]"
-        style={{
-          color: active ? '#f4f8fb' : '#ced9e3',
-          background: active ? `${accentColor}20` : 'rgba(255,255,255,0.06)',
-          boxShadow: active ? `0 12px 24px ${accentColor}14` : '0 8px 16px rgba(0,0,0,0.16)',
-        }}
-      >
-        <Icon size={18} strokeWidth={1.9} />
-      </span>
+      {hasIconLabel ? (
+        <PortIconBadge
+          lines={iconLabel}
+          accent={accentColor}
+          background={active ? `${accentColor}18` : 'var(--sidebar-nav-icon-bg)'}
+          textColor={active ? 'var(--sidebar-nav-icon-active)' : 'var(--sidebar-nav-icon-inactive)'}
+          borderColor={active ? `${accentColor}3b` : 'rgba(255,255,255,0.08)'}
+          className={`relative z-10 shrink-0 transition-all duration-200 group-hover:scale-[1.03] ${
+            collapsed ? 'h-9 min-w-[3.85rem] px-1.5 text-[7px]' : 'h-10 min-w-[5.1rem] px-2 text-[8px]'
+          }`}
+        />
+      ) : (
+        <span
+          className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] transition-all duration-200 group-hover:scale-[1.03]"
+          style={{
+            color: active ? 'var(--sidebar-nav-icon-active)' : 'var(--sidebar-nav-icon-inactive)',
+            background: active ? `${accentColor}20` : 'var(--sidebar-nav-icon-bg)',
+            boxShadow: active ? 'var(--sidebar-nav-icon-shadow-active)' : 'var(--sidebar-nav-icon-shadow)',
+          }}
+        >
+          <Icon size={18} strokeWidth={1.9} />
+        </span>
+      )}
 
       {!collapsed && (
         <span className="relative z-10 min-w-0 flex-1 text-right">
-          <span className={`block truncate text-[13.5px] font-extrabold ${active ? 'text-white' : 'text-[#ced9e3]'}`}>
+          <span
+            className="block truncate text-[13.5px] font-extrabold"
+            style={{ color: active ? 'var(--sidebar-nav-label-active)' : 'var(--sidebar-nav-label)' }}
+          >
             {label}
           </span>
         </span>
@@ -73,14 +91,13 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
 
   const visibleGroups = useMemo(
     () => getVisibleMainSectionGroups(hasPerm, can.manageUsers),
-    [can.manageUsers, hasPerm]
+    [can.manageUsers, hasPerm],
   );
 
   const sidebarCollapsedState = isDesktop ? sidebarCollapsed : false;
   const sidebarWidth = sidebarCollapsedState ? 88 : 288;
   const displayName = user?.fullName || user?.FullName || 'المستخدم';
   const roleLabel = user?.role === 'admin' || user?.Role === 'admin' ? 'مدير النظام' : 'مستخدم';
-
   const profileTitle = can.manageUsers ? 'إدارة المستخدمين' : 'ملفي الشخصي';
   const profileActive = !can.manageUsers && activeItemId === 'profile';
 
@@ -105,13 +122,16 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
           width: sidebarWidth,
           transform: isDesktop || mobileSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1), width 240ms cubic-bezier(0.22, 1, 0.36, 1)',
-          background: 'linear-gradient(180deg, #0c1117 0%, #101720 52%, #141c26 100%)',
-          boxShadow: '0 26px 58px rgba(0,0,0,0.32)',
+          background: 'var(--sidebar-bg)',
+          boxShadow: 'var(--sidebar-shadow)',
         }}
       >
         <div className="relative overflow-hidden px-4 py-5">
           <div className="pointer-events-none absolute -left-10 top-0 h-28 w-28 animate-ambient-drift rounded-full bg-[radial-gradient(circle,rgba(100,142,169,0.14),transparent_72%)]" />
-          <div className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 animate-glow-pulse rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.05),transparent_72%)]" />
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 animate-glow-pulse rounded-full"
+            style={{ background: 'var(--sidebar-glow)' }}
+          />
 
           <div className={`relative z-10 flex items-center ${sidebarCollapsedState ? 'justify-center' : 'justify-between'} gap-3`}>
             <button
@@ -120,14 +140,24 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
               title="الرئيسية"
               className={`flex min-w-0 items-center text-right transition-all duration-200 hover:opacity-100 ${sidebarCollapsedState ? 'justify-center' : 'gap-3'}`}
             >
-              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white/8 shadow-[0_18px_32px_rgba(0,0,0,0.2)]">
+              <div
+                className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px]"
+                style={{
+                  background: 'var(--sidebar-soft-bg)',
+                  boxShadow: 'var(--sidebar-soft-shadow)',
+                }}
+              >
                 <BrandLogo className="h-11 w-11 animate-logo-float" />
               </div>
 
               {!sidebarCollapsedState && (
                 <div className="min-w-0 text-right">
-                  <div className="truncate text-[15px] font-black tracking-tight text-white">Tay Alrawi</div>
-                  <div className="truncate text-[11px] font-medium text-[#8592a0]">النقل والتخليص الكمركي</div>
+                  <div className="truncate text-[15px] font-black tracking-tight" style={{ color: 'var(--sidebar-title)' }}>
+                    Tay Alrawi
+                  </div>
+                  <div className="truncate text-[11px] font-medium" style={{ color: 'var(--sidebar-muted)' }}>
+                    النقل والتخليص الكمركي
+                  </div>
                 </div>
               )}
             </button>
@@ -135,7 +165,11 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
             {!isDesktop && (
               <button
                 onClick={closeSidebar}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-slate-200 transition-colors hover:bg-white/12 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl transition-colors"
+                style={{
+                  background: 'var(--sidebar-soft-bg)',
+                  color: 'var(--sidebar-title)',
+                }}
                 title="إغلاق القائمة"
               >
                 <X size={17} />
@@ -160,8 +194,11 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
                 {!sidebarCollapsedState && (
                   <div className="px-2 pt-2">
                     <div className="flex items-center gap-2">
-                      <span className="h-px flex-1 bg-white/8" />
-                      <span className="text-[10px] font-black tracking-[0.14em] text-[#6f7b88]">
+                      <span className="h-px flex-1" style={{ background: 'var(--sidebar-separator)' }} />
+                      <span
+                        className="text-[10px] font-black tracking-[0.14em]"
+                        style={{ color: 'var(--sidebar-group-label)' }}
+                      >
                         {group.title}
                       </span>
                     </div>
@@ -175,6 +212,7 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
                       active={activeItemId === item.id}
                       collapsed={sidebarCollapsedState}
                       icon={item.icon}
+                      iconLabel={item.iconLines}
                       label={item.label}
                       accent={item.accent}
                       onClick={() => onSelectItem(item.id)}
@@ -187,23 +225,38 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
         </div>
 
         <div className="px-3 py-3">
+          <ThemeToggleButton
+            compact={sidebarCollapsedState}
+            className={sidebarCollapsedState ? 'mb-3 w-full justify-center' : 'mb-3 w-full justify-center sm:justify-between'}
+          />
+
           <button
             type="button"
             onClick={onProfileClick}
             title={sidebarCollapsedState ? profileTitle : undefined}
-            className={`mb-3 flex w-full items-center ${sidebarCollapsedState ? 'justify-center' : 'gap-3'} rounded-[22px] px-3 py-3 text-right transition-all duration-200 ${
-              profileActive
-                ? 'bg-white/10 shadow-[0_16px_30px_rgba(0,0,0,0.24)]'
-                : 'bg-white/6 shadow-[0_12px_22px_rgba(0,0,0,0.16)] hover:bg-white/10'
-            }`}
+            className={`mb-3 flex w-full items-center ${sidebarCollapsedState ? 'justify-center' : 'gap-3'} rounded-[22px] px-3 py-3 text-right transition-all duration-200`}
+            style={{
+              background: profileActive ? 'var(--sidebar-profile-active-bg)' : 'var(--sidebar-profile-bg)',
+              boxShadow: profileActive ? 'var(--sidebar-profile-active-shadow)' : 'var(--sidebar-profile-shadow)',
+            }}
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[15px] bg-white/10 text-sm font-black text-white">
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[15px] text-sm font-black"
+              style={{
+                background: 'var(--sidebar-avatar-bg)',
+                color: 'var(--sidebar-avatar-text)',
+              }}
+            >
               {displayName.trim().charAt(0) || 'م'}
             </div>
             {!sidebarCollapsedState && (
               <div className="min-w-0 flex-1 text-right">
-                <div className="truncate text-[12.5px] font-bold text-white">{displayName}</div>
-                <div className="truncate text-[10.5px] font-medium text-[#8592a0]">{roleLabel}</div>
+                <div className="truncate text-[12.5px] font-bold" style={{ color: 'var(--sidebar-title)' }}>
+                  {displayName}
+                </div>
+                <div className="truncate text-[10.5px] font-medium" style={{ color: 'var(--sidebar-muted)' }}>
+                  {roleLabel}
+                </div>
               </div>
             )}
           </button>
@@ -211,11 +264,22 @@ export default function AppSidebar({ activeItemId, onSelectItem, onGoHome, onPro
           <button
             onClick={logout}
             title={sidebarCollapsedState ? 'تسجيل الخروج' : undefined}
-            className={`flex w-full items-center rounded-[18px] bg-white/6 px-3 py-2.5 text-[#edf2f7] transition-colors hover:bg-white/10 ${
+            className={`flex w-full items-center rounded-[18px] px-3 py-2.5 transition-colors ${
               sidebarCollapsedState ? 'justify-center' : 'gap-3'
             }`}
+            style={{
+              background: 'var(--sidebar-profile-bg)',
+              color: 'var(--sidebar-title)',
+            }}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-[15px] bg-[#b76169]/16 text-[#f2d6d9] shadow-[0_8px_18px_rgba(183,97,105,0.12)]">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-[15px]"
+              style={{
+                background: 'var(--sidebar-logout-bg)',
+                color: 'var(--sidebar-logout-text)',
+                boxShadow: 'var(--sidebar-logout-shadow)',
+              }}
+            >
               <LogOut size={18} />
             </span>
             {!sidebarCollapsedState && <span className="text-[13px] font-extrabold">تسجيل الخروج</span>}

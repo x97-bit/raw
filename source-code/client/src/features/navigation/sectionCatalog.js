@@ -33,8 +33,8 @@ export const sectionConfig = {
     actions: ['payment', 'invoice', 'statement', 'traders'],
     actionOverrides: {
       payment: {
-        label: 'دفعة نقل',
-        desc: 'تسجيل دفعة مسددة للناقل',
+        label: 'سند دفع',
+        desc: 'تسجيل سند دفع مسدد للناقل',
       },
       invoice: {
         label: 'استحقاق نقل',
@@ -87,9 +87,9 @@ const mainSectionGroups = [
     subtitle: 'الوصول السريع إلى المنافذ الرئيسية',
     accent: '#648ea9',
     items: [
-      { id: 'port-1', perm: 'port-1', label: 'السعودية', icon: Globe, accent: '#648ea9', bg: 'rgba(100,142,169,0.16)' },
-      { id: 'port-2', perm: 'port-2', label: 'المنذرية', icon: MapPin, accent: '#5f8d95', bg: 'rgba(95,141,149,0.16)' },
-      { id: 'port-3', perm: 'port-3', label: 'القائم', icon: Building2, accent: '#7087a6', bg: 'rgba(112,135,166,0.16)' },
+      { id: 'port-1', perm: 'port-1', label: 'السعودية', icon: Globe, iconLines: ['السعودية'], accent: '#648ea9', bg: 'rgba(100,142,169,0.16)' },
+      { id: 'port-2', perm: 'port-2', label: 'المنذرية', icon: MapPin, iconLines: ['المنذرية'], accent: '#5f8d95', bg: 'rgba(95,141,149,0.16)' },
+      { id: 'port-3', perm: 'port-3', label: 'القائم', icon: Building2, iconLines: ['القائم'], accent: '#7087a6', bg: 'rgba(112,135,166,0.16)' },
     ],
   },
   {

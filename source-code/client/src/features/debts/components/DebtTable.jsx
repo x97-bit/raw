@@ -2,9 +2,11 @@ import EmptyTableRow from '../../../components/EmptyTableRow';
 
 function resolveDebtCellClass(column, debt) {
   const amountValue = Number(debt[column.dataKey] || 0);
+  const isDateColumn = column?.format === 'date' || column?.key === 'trans_date' || column?.dataKey === 'TransDate';
 
   return [
     'px-4 py-3',
+    isDateColumn ? 'whitespace-nowrap' : '',
     column.bold ? 'font-bold' : '',
     column.color && amountValue < 0 ? 'text-red-600' : column.color ? 'text-emerald-600' : '',
     column.isNotes ? 'max-w-[220px] truncate text-xs text-gray-500' : '',
@@ -19,7 +21,7 @@ export default function DebtTable({ activeColumns, debts, onSelectDebt }) {
           <thead>
             <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
               {activeColumns.map((column) => (
-                <th key={column.key} className="px-4 py-3 font-semibold">{column.label}</th>
+                <th key={column.key} className={`px-4 py-3 font-semibold ${column?.key === 'trans_date' || column?.dataKey === 'TransDate' ? 'whitespace-nowrap' : ''}`}>{column.label}</th>
               ))}
             </tr>
           </thead>

@@ -1,11 +1,12 @@
 import { Router, Response } from "express";
 import { desc, eq } from "drizzle-orm";
 import { accounts, debts } from "../../../drizzle/schema";
-import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { AuthRequest, authMiddleware, requireAppUser } from "../../_core/appAuth";
 import { financialWriteRateLimit } from "../../_core/financialRateLimits";
 import { respondRouteError } from "../../_core/routeResponses";
 import { assertPositiveIntegerParam, validateInput } from "../../_core/requestValidation";
 import { getDb } from "../../db";
+import type { AppDb } from "../../dbTypes";
 import { hasBodyValue, parseOptionalInt, pickBodyField } from "../../utils/bodyFields";
 import { buildDebtMutationData, mapDebtRow } from "../../utils/debts";
 import { safeWriteAuditLog } from "../../utils/safeAuditLog";
@@ -13,20 +14,20 @@ import { debtCreateSchema, debtUpdateSchema } from "../../utils/financialValidat
 
 type DebtInsert = typeof debts.$inferInsert;
 
-const DEBT_VALIDATION_MESSAGE = "بيانات الدين غير صالحة";
+const DEBT_VALIDATION_MESSAGE = "ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ظٹظ† ط؛ظٹط± طµط§ظ„ط­ط©";
 const DEBT_UPDATE_VALIDATION_MESSAGE =
-  "بيانات تحديث الدين غير صالحة";
-const DEBT_ID_LABEL = "معرف الدين";
-const DEBT_NOT_FOUND_MESSAGE = "الدين غير موجود";
-const DEBT_CREATED_MESSAGE = "تم إضافة الدين";
-const DEBT_UPDATED_MESSAGE = "تم تحديث الدين";
-const DEBT_DELETED_MESSAGE = "تم حذف الدين";
-const DEBT_NO_CHANGES_MESSAGE = "لا توجد تغييرات";
-const DEBT_CREATE_SUMMARY_PREFIX = "إنشاء دين";
-const DEBT_UPDATE_SUMMARY_PREFIX = "تحديث دين";
-const DEBT_DELETE_SUMMARY_PREFIX = "حذف دين";
+  "ط¨ظٹط§ظ†ط§طھ طھط­ط¯ظٹط« ط§ظ„ط¯ظٹظ† ط؛ظٹط± طµط§ظ„ط­ط©";
+const DEBT_ID_LABEL = "ظ…ط¹ط±ظپ ط§ظ„ط¯ظٹظ†";
+const DEBT_NOT_FOUND_MESSAGE = "ط§ظ„ط¯ظٹظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯";
+const DEBT_CREATED_MESSAGE = "طھظ… ط¥ط¶ط§ظپط© ط§ظ„ط¯ظٹظ†";
+const DEBT_UPDATED_MESSAGE = "طھظ… طھط­ط¯ظٹط« ط§ظ„ط¯ظٹظ†";
+const DEBT_DELETED_MESSAGE = "طھظ… ط­ط°ظپ ط§ظ„ط¯ظٹظ†";
+const DEBT_NO_CHANGES_MESSAGE = "ظ„ط§ طھظˆط¬ط¯ طھط؛ظٹظٹط±ط§طھ";
+const DEBT_CREATE_SUMMARY_PREFIX = "ط¥ظ†ط´ط§ط، ط¯ظٹظ†";
+const DEBT_UPDATE_SUMMARY_PREFIX = "طھط­ط¯ظٹط« ط¯ظٹظ†";
+const DEBT_DELETE_SUMMARY_PREFIX = "ط­ط°ظپ ط¯ظٹظ†";
 
-async function resolveDebtDebtorName(db: any, body: Record<string, any>) {
+async function resolveDebtDebtorName(db: AppDb, body: Record<string, unknown>) {
   const directName = pickBodyField(body, "debtorName", "accountName", "AccountName");
   if (hasBodyValue(directName)) return String(directName).trim();
 
@@ -47,22 +48,23 @@ export function registerDebtRoutes(router: Router) {
 
       const rows = await db.select().from(debts).orderBy(desc(debts.id));
       return res.json(rows.map(mapDebtRow));
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
   router.post("/debts", authMiddleware, financialWriteRateLimit, async (req: AuthRequest, res: Response) => {
     try {
+      const appUser = requireAppUser(req);
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
       const debtorName = await resolveDebtDebtorName(db, req.body);
-      const data = validateInput(
+      const data: DebtInsert = validateInput(
         debtCreateSchema,
-        buildDebtMutationData(req.body, debtorName) as DebtInsert,
+        buildDebtMutationData(req.body, debtorName),
         DEBT_VALIDATION_MESSAGE,
-      ) as DebtInsert;
+      );
 
       const result = await db.insert(debts).values(data);
       const debtId = Number(result[0].insertId);
@@ -73,18 +75,19 @@ export function registerDebtRoutes(router: Router) {
         action: "create",
         summary: `${DEBT_CREATE_SUMMARY_PREFIX} ${debtorName || debtId}`,
         after: { id: debtId, ...data },
-        appUser: req.appUser,
+        appUser,
         metadata: { debtorName },
       });
 
       return res.json({ id: debtId, message: DEBT_CREATED_MESSAGE });
-    } catch (error: any) {
+    } catch (error) {
       return respondRouteError(res, error);
     }
   });
 
   router.put("/debts/:id", authMiddleware, financialWriteRateLimit, async (req: AuthRequest, res: Response) => {
     try {
+      const appUser = requireAppUser(req);
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
@@ -93,11 +96,11 @@ export function registerDebtRoutes(router: Router) {
       if (!existingDebt) return res.status(404).json({ error: DEBT_NOT_FOUND_MESSAGE });
 
       const debtorName = await resolveDebtDebtorName(db, req.body);
-      const updates = validateInput(
+      const updates: Partial<DebtInsert> = validateInput(
         debtUpdateSchema,
-        buildDebtMutationData(req.body, debtorName || undefined, { partial: true }) as Partial<DebtInsert>,
+        buildDebtMutationData(req.body, debtorName || undefined, { partial: true }),
         DEBT_UPDATE_VALIDATION_MESSAGE,
-      ) as Partial<DebtInsert>;
+      );
       if (Object.keys(updates).length === 0) {
         return res.json({ message: DEBT_NO_CHANGES_MESSAGE });
       }
@@ -110,18 +113,19 @@ export function registerDebtRoutes(router: Router) {
         summary: `${DEBT_UPDATE_SUMMARY_PREFIX} ${existingDebt.debtorName || debtId}`,
         before: existingDebt,
         after: { ...existingDebt, ...updates },
-        appUser: req.appUser,
+        appUser,
         metadata: { debtorName: existingDebt.debtorName || debtorName || null, changedKeys: Object.keys(updates) },
       });
 
       return res.json({ message: DEBT_UPDATED_MESSAGE });
-    } catch (error: any) {
+    } catch (error) {
       return respondRouteError(res, error);
     }
   });
 
   router.delete("/debts/:id", authMiddleware, financialWriteRateLimit, async (req: AuthRequest, res: Response) => {
     try {
+      const appUser = requireAppUser(req);
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
@@ -136,12 +140,12 @@ export function registerDebtRoutes(router: Router) {
         action: "delete",
         summary: `${DEBT_DELETE_SUMMARY_PREFIX} ${existingDebt.debtorName || debtId}`,
         before: existingDebt,
-        appUser: req.appUser,
+        appUser,
         metadata: { debtorName: existingDebt.debtorName || null },
       });
 
       return res.json({ message: DEBT_DELETED_MESSAGE });
-    } catch (error: any) {
+    } catch (error) {
       return respondRouteError(res, error);
     }
   });

@@ -1,15 +1,22 @@
+import { z } from "zod";
 import { desc } from "drizzle-orm";
 import { drivers, goodsTypes, transactions, vehicles } from "../../../drizzle/schema";
 import { validateInput } from "../../_core/requestValidation";
+import type { AppDb } from "../../dbTypes";
 import { getStoredDirectionValue, isInvoiceDirection } from "../../utils/direction";
 import { parseOptionalDecimal, parseOptionalInt, pickBodyField } from "../../utils/bodyFields";
 import { transactionCreateSchema } from "../../utils/financialValidation";
 import { TRANSACTION_VALIDATION_MESSAGE } from "./shared";
 import { getTrimmedText, resolveCompanySelection, resolveNewLookupId } from "./builderHelpers";
 
-type TransactionMutationBody = Record<string, any>;
+type TransactionMutationBody = Record<string, unknown>;
+type TransactionCreatePayload = z.infer<typeof transactionCreateSchema>;
 
-export async function buildTransactionCreateInput(db: any, body: TransactionMutationBody, createdBy: number) {
+export async function buildTransactionCreateInput(
+  db: AppDb,
+  body: TransactionMutationBody,
+  createdBy: number,
+): Promise<{ data: TransactionCreatePayload; refNo: string }> {
   const accountId = pickBodyField(body, "accountId", "AccountID", "account_id");
   const direction = getStoredDirectionValue(pickBodyField(body, "type", "TransTypeID", "direction"));
 
@@ -26,26 +33,29 @@ export async function buildTransactionCreateInput(db: any, body: TransactionMuta
   const inputDriverId = pickBodyField(body, "driverId", "DriverID", "driver_id") ?? null;
   const inputVehicleId = pickBodyField(body, "vehicleId", "VehicleID", "vehicle_id") ?? null;
   const inputGoodTypeId = pickBodyField(body, "goodTypeId", "GoodTypeID", "good_type_id") ?? null;
+  const newDriverName = getTrimmedText(body._newDriverName);
+  const newPlateNumber = getTrimmedText(body._newPlateNumber);
+  const newGoodType = getTrimmedText(body._newGoodType);
 
   const resolvedDriverId = await resolveNewLookupId(
     db,
     inputDriverId,
     drivers,
-    { name: getTrimmedText(body._newDriverName) },
+    { name: newDriverName ?? "" },
     body._newDriverName,
   );
   const resolvedVehicleId = await resolveNewLookupId(
     db,
     inputVehicleId,
     vehicles,
-    { plateNumber: getTrimmedText(body._newPlateNumber) },
+    { plateNumber: newPlateNumber ?? "" },
     body._newPlateNumber,
   );
   const resolvedGoodTypeId = await resolveNewLookupId(
     db,
     inputGoodTypeId,
     goodsTypes,
-    { name: getTrimmedText(body._newGoodType) },
+    { name: newGoodType ?? "" },
     body._newGoodType,
   );
 

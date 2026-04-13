@@ -1,9 +1,69 @@
 import { Router, Response } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import { accountTypes, accounts, transactions } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
 import { calculateTransactionTotals } from "../../utils/transactionSummaries";
+
+type AccountRow = typeof accounts.$inferSelect;
+type AccountTypeRow = typeof accountTypes.$inferSelect;
+type TransactionRow = typeof transactions.$inferSelect;
+
+type TrialBalanceRow = {
+  AccountID: number;
+  AccountName: string;
+  AccountType: string;
+  AccountTypeName: string;
+  opening_usd: number;
+  opening_iqd: number;
+  debit_usd: number;
+  debit_iqd: number;
+  credit_usd: number;
+  credit_iqd: number;
+  balance_usd: number;
+  balance_iqd: number;
+  profit_usd: number;
+  profit_iqd: number;
+  cost_usd: number;
+  cost_iqd: number;
+  shipment_count: number;
+  trans_count: number;
+};
+
+type TrialBalanceNumericKey =
+  | "opening_usd"
+  | "opening_iqd"
+  | "debit_usd"
+  | "debit_iqd"
+  | "credit_usd"
+  | "credit_iqd"
+  | "balance_usd"
+  | "balance_iqd"
+  | "profit_usd"
+  | "profit_iqd"
+  | "cost_usd"
+  | "cost_iqd"
+  | "shipment_count"
+  | "trans_count";
+
+function readQueryString(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const [firstValue] = value;
+    return typeof firstValue === "string" ? readQueryString(firstValue) : undefined;
+  }
+
+  return undefined;
+}
+
+function sumTrialBalanceField(rows: TrialBalanceRow[], field: TrialBalanceNumericKey): number {
+  return rows.reduce((sum, row) => sum + row[field], 0);
+}
 
 export function registerReportTrialBalanceRoutes(router: Router) {
   router.get("/reports/trial-balance", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -12,41 +72,52 @@ export function registerReportTrialBalanceRoutes(router: Router) {
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
       const { startDate, endDate, portId, accountType } = req.query;
+      const requestedStartDate = readQueryString(startDate);
+      const requestedEndDate = readQueryString(endDate);
+      const requestedPortId = readQueryString(portId);
+      const requestedAccountType = readQueryString(accountType);
       const allAccounts = await db.select().from(accounts);
       const allAccountTypes = await db.select().from(accountTypes);
-      const accountTypeNameMap = new Map(allAccountTypes.map((row: any) => [row.typeId, row.name]));
+      const accountTypeNameMap = new Map(
+        allAccountTypes.map((row: AccountTypeRow) => [row.typeId, row.name]),
+      );
 
-      const periodConditions: any[] = [];
-      if (startDate) periodConditions.push(sql`${transactions.transDate} >= ${startDate}`);
-      if (endDate) periodConditions.push(sql`${transactions.transDate} <= ${endDate}`);
-      if (portId) periodConditions.push(eq(transactions.portId, String(portId)));
-      if (accountType) periodConditions.push(eq(transactions.accountType, String(accountType)));
+      const periodConditions: SQL<unknown>[] = [];
+      if (requestedStartDate) periodConditions.push(sql`${transactions.transDate} >= ${requestedStartDate}`);
+      if (requestedEndDate) periodConditions.push(sql`${transactions.transDate} <= ${requestedEndDate}`);
+      if (requestedPortId) periodConditions.push(eq(transactions.portId, requestedPortId));
+      if (requestedAccountType) periodConditions.push(eq(transactions.accountType, requestedAccountType));
 
-      const accountScopeConditions: any[] = [];
-      if (portId) accountScopeConditions.push(eq(transactions.portId, String(portId)));
-      if (accountType) accountScopeConditions.push(eq(transactions.accountType, String(accountType)));
+      const accountScopeConditions: SQL<unknown>[] = [];
+      if (requestedPortId) accountScopeConditions.push(eq(transactions.portId, requestedPortId));
+      if (requestedAccountType) accountScopeConditions.push(eq(transactions.accountType, requestedAccountType));
 
-      let allTransactionsQuery = db.select().from(transactions);
-      if (accountScopeConditions.length > 0) {
-        allTransactionsQuery = allTransactionsQuery.where(and(...accountScopeConditions)) as any;
-      }
+      const allTransactionsQuery = accountScopeConditions.length > 0
+        ? db.select().from(transactions).where(and(...accountScopeConditions))
+        : db.select().from(transactions);
       const allTransactions = await allTransactionsQuery;
 
-      let periodTransactionsQuery = db.select().from(transactions);
-      if (periodConditions.length > 0) {
-        periodTransactionsQuery = periodTransactionsQuery.where(and(...periodConditions)) as any;
-      }
+      const periodTransactionsQuery = periodConditions.length > 0
+        ? db.select().from(transactions).where(and(...periodConditions))
+        : db.select().from(transactions);
       const periodTransactions = await periodTransactionsQuery;
 
       const rows = allAccounts
-        .map((account: any) => {
-          const accountPeriodTransactions = periodTransactions.filter((transaction: any) => transaction.accountId === account.id);
-          const accountAllTransactions = allTransactions.filter((transaction: any) => transaction.accountId === account.id);
+        .map((account: AccountRow): TrialBalanceRow | null => {
+          const accountPeriodTransactions = periodTransactions.filter(
+            (transaction: TransactionRow) => transaction.accountId === account.id,
+          );
+          const accountAllTransactions = allTransactions.filter(
+            (transaction: TransactionRow) => transaction.accountId === account.id,
+          );
 
           if (accountAllTransactions.length === 0) return null;
 
-          const priorTransactions = startDate
-            ? accountAllTransactions.filter((transaction: any) => transaction.transDate && transaction.transDate < String(startDate))
+          const priorTransactions = requestedStartDate
+            ? accountAllTransactions.filter(
+                (transaction: TransactionRow) =>
+                  Boolean(transaction.transDate) && transaction.transDate < requestedStartDate,
+              )
             : [];
 
           const openingTotals = calculateTransactionTotals(priorTransactions);
@@ -88,29 +159,29 @@ export function registerReportTrialBalanceRoutes(router: Router) {
             trans_count: accountPeriodTransactions.length,
           };
         })
-        .filter(Boolean);
+        .filter((row): row is TrialBalanceRow => row !== null);
 
       const totals = {
         account_count: rows.length,
-        opening_usd: rows.reduce((sum: number, row: any) => sum + row.opening_usd, 0),
-        opening_iqd: rows.reduce((sum: number, row: any) => sum + row.opening_iqd, 0),
-        debit_usd: rows.reduce((sum: number, row: any) => sum + row.debit_usd, 0),
-        debit_iqd: rows.reduce((sum: number, row: any) => sum + row.debit_iqd, 0),
-        credit_usd: rows.reduce((sum: number, row: any) => sum + row.credit_usd, 0),
-        credit_iqd: rows.reduce((sum: number, row: any) => sum + row.credit_iqd, 0),
-        balance_usd: rows.reduce((sum: number, row: any) => sum + row.balance_usd, 0),
-        balance_iqd: rows.reduce((sum: number, row: any) => sum + row.balance_iqd, 0),
-        profit_usd: rows.reduce((sum: number, row: any) => sum + row.profit_usd, 0),
-        profit_iqd: rows.reduce((sum: number, row: any) => sum + row.profit_iqd, 0),
-        cost_usd: rows.reduce((sum: number, row: any) => sum + row.cost_usd, 0),
-        cost_iqd: rows.reduce((sum: number, row: any) => sum + row.cost_iqd, 0),
-        shipment_count: rows.reduce((sum: number, row: any) => sum + row.shipment_count, 0),
-        trans_count: rows.reduce((sum: number, row: any) => sum + row.trans_count, 0),
+        opening_usd: sumTrialBalanceField(rows, "opening_usd"),
+        opening_iqd: sumTrialBalanceField(rows, "opening_iqd"),
+        debit_usd: sumTrialBalanceField(rows, "debit_usd"),
+        debit_iqd: sumTrialBalanceField(rows, "debit_iqd"),
+        credit_usd: sumTrialBalanceField(rows, "credit_usd"),
+        credit_iqd: sumTrialBalanceField(rows, "credit_iqd"),
+        balance_usd: sumTrialBalanceField(rows, "balance_usd"),
+        balance_iqd: sumTrialBalanceField(rows, "balance_iqd"),
+        profit_usd: sumTrialBalanceField(rows, "profit_usd"),
+        profit_iqd: sumTrialBalanceField(rows, "profit_iqd"),
+        cost_usd: sumTrialBalanceField(rows, "cost_usd"),
+        cost_iqd: sumTrialBalanceField(rows, "cost_iqd"),
+        shipment_count: sumTrialBalanceField(rows, "shipment_count"),
+        trans_count: sumTrialBalanceField(rows, "trans_count"),
       };
 
       return res.json({ rows, totals });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

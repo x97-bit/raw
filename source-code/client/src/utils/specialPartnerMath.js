@@ -23,8 +23,11 @@ export function getSpecialPartnerRowTaxiAndOfficer(row) {
 }
 
 export function getSpecialPartnerRowAmountFor(row) {
+  return getSpecialPartnerRowPartnerBase(row);
+}
+
+export function getSpecialPartnerRowAmountForIqd(row) {
   return (
-    getSpecialPartnerRowPartnerBase(row) +
     getSpecialPartnerRowClearance(row) +
     getSpecialPartnerRowDifference(row) +
     getSpecialPartnerRowTaxiAndOfficer(row)
@@ -35,6 +38,7 @@ export function buildSpecialPartnerTotals(rows) {
   const totals = rows.reduce((acc, row) => {
     acc.count += 1;
     acc.totalAmountUSD += getSpecialPartnerRowAmountOn(row);
+    acc.totalAmountIQD += toNumber(row?.AmountIQD);
     acc.totalPartnerBaseUSD += getSpecialPartnerRowPartnerBase(row);
     acc.totalDifferenceIQD += getSpecialPartnerRowDifference(row);
     acc.totalCLR += getSpecialPartnerRowClearance(row);
@@ -45,6 +49,7 @@ export function buildSpecialPartnerTotals(rows) {
   }, {
     count: 0,
     totalAmountUSD: 0,
+    totalAmountIQD: 0,
     totalPartnerBaseUSD: 0,
     totalDifferenceIQD: 0,
     totalCLR: 0,
@@ -53,7 +58,9 @@ export function buildSpecialPartnerTotals(rows) {
     totalTaxiWater: 0,
   });
 
-  totals.totalPartnerUSD = totals.totalPartnerBaseUSD + totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
+  totals.totalPartnerUSD = totals.totalPartnerBaseUSD;
+  totals.totalPartnerIQD = totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
   totals.totalNetUSD = totals.totalAmountUSD - totals.totalPartnerUSD;
+  totals.totalNetIQD = totals.totalAmountIQD - totals.totalPartnerIQD;
   return totals;
 }

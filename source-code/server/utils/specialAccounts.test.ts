@@ -39,7 +39,7 @@ describe('buildHaiderSpecialReport', () => {
     expect(report.totals.totalAmountIQD).toBe(150000);
     expect(report.totals.totalCostIQD).toBe(100000);
     expect(report.totals.totalDifferenceIQD).toBe(20000);
-    expect(report.totals.totalNetIQD).toBe(50000);
+    expect(report.totals.totalNetIQD).toBe(70000);
     expect(report.totals.totalWeight).toBe(15);
   });
 });
@@ -59,12 +59,17 @@ describe('buildPartnershipSpecialReport', () => {
     expect(report.rows[0].TraderName).toBe('ياسر');
     expect(report.rows[0].CompanyName).toBe('الأنوار');
     expect(report.totals.totalAmountUSD).toBe(100);
+    expect(report.totals.totalAmountIQD).toBe(0);
+    expect(report.totals.totalPartnerBaseUSD).toBe(35);
     expect(report.totals.totalPartnerUSD).toBe(35);
     expect(report.totals.totalCLR).toBe(8);
     expect(report.totals.totalTX).toBe(3);
     expect(report.totals.totalTaxiWater).toBe(3);
+    expect(report.totals.totalTaxiAndOfficer).toBe(6);
     expect(report.totals.totalDifferenceIQD).toBe(3000);
-    expect(report.totals.totalNetUSD).toBe(-65);
+    expect(report.totals.totalPartnerIQD).toBe(3014);
+    expect(report.totals.totalNetUSD).toBe(65);
+    expect(report.totals.totalNetIQD).toBe(-3014);
   });
 });
 

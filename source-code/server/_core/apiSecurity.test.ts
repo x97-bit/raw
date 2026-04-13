@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { apiBodyParserErrorMiddleware, apiSecurityMiddleware } from "./apiSecurity";
+import { INVALID_HOST_ERROR, apiBodyParserErrorMiddleware, apiSecurityMiddleware } from "./apiSecurity";
 
 function createRequest(overrides: Record<string, unknown> = {}) {
   const headers = Object.fromEntries(
@@ -80,6 +80,22 @@ describe("apiSecurityMiddleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(415);
     expect(res.json).toHaveBeenCalledWith({ error: "Requests with a body must use application/json." });
+  });
+
+  it("rejects suspicious host headers before handling api requests", () => {
+    const req = createRequest({
+      headers: {
+        host: "localhost:3000/evil",
+      },
+    });
+    const res = createResponse();
+    const next = vi.fn();
+
+    apiSecurityMiddleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: INVALID_HOST_ERROR });
   });
 
   it("allows same-origin json mutations", () => {

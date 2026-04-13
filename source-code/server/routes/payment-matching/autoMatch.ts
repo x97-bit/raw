@@ -3,7 +3,14 @@ import { sql } from "drizzle-orm";
 import { paymentMatching } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { getDb } from "../../db";
+import {
+  AutoMatchInvoiceRow,
+  AutoMatchPaymentRow,
+  buildAutoMatchAllocations,
+} from "../../utils/paymentMatchingAutoMatch";
 import { AUTO_MATCH_NOTE, buildAutoMatchSuccessMessage, heavyJobRateLimit } from "./mutationShared";
+
+export { buildAutoMatchAllocations } from "../../utils/paymentMatchingAutoMatch";
 
 export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
   router.post("/payment-matching/auto-match-all", authMiddleware, heavyJobRateLimit, async (_req: AuthRequest, res: Response) => {
@@ -32,15 +39,17 @@ export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
         ORDER BY t.trans_date ASC
       `);
 
-      let matchCount = 0;
-      for (const payment of payments) {
-        let availableUsd = (Number(payment.total_usd) || 0) - (Number(payment.used_usd) || 0);
-        let availableIqd = (Number(payment.total_iqd) || 0) - (Number(payment.used_iqd) || 0);
-        if (availableUsd <= 0 && availableIqd <= 0) continue;
+      const accountIds = Array.from(new Set(
+        payments
+          .map((payment) => Number(payment.account_id))
+          .filter((accountId) => Number.isInteger(accountId) && accountId > 0),
+      ));
 
-        const invoices: any[] = await db.execute(sql`
+      const invoices: AutoMatchInvoiceRow[] = accountIds.length > 0
+        ? await db.execute(sql`
           SELECT
             t.id AS invoice_id,
+            t.account_id,
             COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)), 0) AS amount_usd,
             COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)), 0) AS amount_iqd,
             COALESCE(pm_agg.paid_usd, 0) AS paid_usd,
@@ -53,37 +62,27 @@ export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
             FROM payment_matching
             GROUP BY invoiceId
           ) pm_agg ON pm_agg.invoiceId = t.id
-          WHERE t.direction IN ('IN', 'in', 'DR', 'dr') AND t.account_id = ${payment.account_id}
+          WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
+            AND t.account_id IN (${sql.join(accountIds.map((accountId) => sql`${accountId}`), sql`, `)})
           HAVING (amount_usd - COALESCE(paid_usd, 0) > 0) OR (amount_iqd - COALESCE(paid_iqd, 0) > 0)
-          ORDER BY t.trans_date ASC
-        `);
+          ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
+        `) as unknown as AutoMatchInvoiceRow[]
+        : [];
 
-        for (const invoice of invoices) {
-          if (availableUsd <= 0 && availableIqd <= 0) break;
+      const allocations = buildAutoMatchAllocations(payments as AutoMatchPaymentRow[], invoices)
+        .map((allocation) => ({ ...allocation, notes: AUTO_MATCH_NOTE }));
 
-          const needUsd = Math.max(0, (Number(invoice.amount_usd) || 0) - (Number(invoice.paid_usd) || 0));
-          const needIqd = Math.max(0, (Number(invoice.amount_iqd) || 0) - (Number(invoice.paid_iqd) || 0));
-          const allocatedUsd = Math.min(availableUsd, needUsd);
-          const allocatedIqd = Math.min(availableIqd, needIqd);
-
-          if (allocatedUsd > 0 || allocatedIqd > 0) {
-            await db.insert(paymentMatching).values({
-              invoiceId: invoice.invoice_id,
-              paymentId: payment.payment_id,
-              amountUSD: String(allocatedUsd),
-              amountIQD: String(allocatedIqd),
-              notes: AUTO_MATCH_NOTE,
-            });
-            availableUsd -= allocatedUsd;
-            availableIqd -= allocatedIqd;
-            matchCount += 1;
-          }
+      const chunkSize = 250;
+      for (let start = 0; start < allocations.length; start += chunkSize) {
+        const chunk = allocations.slice(start, start + chunkSize);
+        if (chunk.length > 0) {
+          await db.insert(paymentMatching).values(chunk);
         }
       }
 
       return res.json({
-        message: buildAutoMatchSuccessMessage(matchCount),
-        matched: matchCount,
+        message: buildAutoMatchSuccessMessage(allocations.length),
+        matched: allocations.length,
       });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });

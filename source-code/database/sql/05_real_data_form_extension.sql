@@ -132,7 +132,14 @@ CREATE TABLE IF NOT EXISTS `account_defaults` (
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_account_defaults` (`account_id`, `section_key`),
-  KEY `idx_account_defaults_section` (`section_key`)
+  KEY `idx_account_defaults_section` (`section_key`),
+  KEY `idx_account_id` (`account_id`),
+  KEY `idx_default_driver_id` (`default_driver_id`),
+  KEY `idx_default_vehicle_id` (`default_vehicle_id`),
+  KEY `idx_default_good_type_id` (`default_good_type_id`),
+  KEY `idx_default_gov_id` (`default_gov_id`),
+  KEY `idx_default_company_id` (`default_company_id`),
+  KEY `idx_default_carrier_id` (`default_carrier_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

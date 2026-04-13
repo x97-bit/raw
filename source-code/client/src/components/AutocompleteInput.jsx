@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Plus, Search } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { normalizeAutocompleteOptions } from '../utils/optionLists';
 
 /**
@@ -20,6 +21,7 @@ export default function AutocompleteInput({
   disabled = false,
   dropdownSide = 'auto',
 }) {
+  const { isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(value || '');
   const [dropdownPlacement, setDropdownPlacement] = useState('bottom');
@@ -48,9 +50,9 @@ export default function AutocompleteInput({
     [labelKey, options, valueKey],
   );
 
-  const filtered = useMemo(() => {
-    return normalizedOptions.filter(({ label }) => !normalizedText || label.toLowerCase().includes(normalizedText));
-  }, [normalizedOptions, normalizedText]);
+  const filtered = useMemo(() => (
+    normalizedOptions.filter(({ label }) => !normalizedText || label.toLowerCase().includes(normalizedText))
+  ), [normalizedOptions, normalizedText]);
 
   const visibleOptions = filtered.slice(0, 10);
   const hiddenCount = Math.max(filtered.length - visibleOptions.length, 0);
@@ -122,11 +124,21 @@ export default function AutocompleteInput({
   const dropdownContent = showDropdown && dropdownStyle ? (
     <div
       ref={dropdownRef}
-      className="fixed z-[140] flex flex-col overflow-hidden rounded-2xl bg-[#121820]/95 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_44px_rgba(0,0,0,0.28),0_30px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm animate-fade-up"
+      className={`fixed z-[140] flex flex-col overflow-hidden rounded-2xl animate-fade-up ${
+        isDark
+          ? 'bg-[#121820]/95 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_44px_rgba(0,0,0,0.28),0_30px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm'
+          : 'border border-[#d7e1e2] bg-white shadow-[0_20px_40px_rgba(53,78,89,0.12),0_4px_14px_rgba(53,78,89,0.08)]'
+      }`}
       style={dropdownStyle}
       data-placement={dropdownPlacement}
     >
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.04] px-4 py-2 text-[11px] font-semibold text-[#91a0ad]">
+      <div
+        className={`flex items-center justify-between px-4 py-2 text-[11px] font-semibold ${
+          isDark
+            ? 'border-b border-white/[0.06] bg-white/[0.04] text-[#91a0ad]'
+            : 'border-b border-[#d7e1e2] bg-[#f4f8f8] text-[#667480]'
+        }`}
+      >
         <span>{filtered.length} نتيجة</span>
         <span className="truncate pr-3">{text ? `بحث: ${text}` : 'ابدأ بالكتابة'}</span>
       </div>
@@ -139,7 +151,11 @@ export default function AutocompleteInput({
               onAddNew(text.trim());
               setOpen(false);
             }}
-            className="mx-1.5 flex w-[calc(100%-0.75rem)] items-center justify-between rounded-xl bg-[#8eb8ad]/[0.12] px-3.5 py-3 text-right text-sm font-semibold text-[#dceee8] ring-1 ring-[#8eb8ad]/[0.18] transition-all hover:bg-[#8eb8ad]/[0.18]"
+            className={`mx-1.5 flex w-[calc(100%-0.75rem)] items-center justify-between rounded-xl px-3.5 py-3 text-right text-sm font-semibold transition-all ${
+              isDark
+                ? 'bg-[#8eb8ad]/[0.12] text-[#dceee8] ring-1 ring-[#8eb8ad]/[0.18] hover:bg-[#8eb8ad]/[0.18]'
+                : 'bg-[#e8f2ed] text-[#315245] ring-1 ring-[#c7d9d1] hover:bg-[#deece5]'
+            }`}
           >
             <span className="truncate pl-3">{addNewLabel}: "{text.trim()}"</span>
             <Plus size={16} className="shrink-0" />
@@ -158,10 +174,24 @@ export default function AutocompleteInput({
                 if (onSelect) onSelect(option);
                 setOpen(false);
               }}
-              className="mx-1.5 flex w-[calc(100%-0.75rem)] items-center justify-between rounded-xl px-3.5 py-3 text-right text-sm text-[#d8e1ea] transition-all hover:bg-white/[0.06] hover:text-white"
+              className={`mx-1.5 flex w-[calc(100%-0.75rem)] items-center justify-between rounded-xl px-3.5 py-3 text-right text-sm transition-all ${
+                isDark
+                  ? 'text-[#d8e1ea] hover:bg-white/[0.06] hover:text-white'
+                  : 'text-[#26343e] hover:bg-[#eef4f3] hover:text-[#24313c]'
+              }`}
             >
               <span className="truncate pl-3 font-medium">{label}</span>
-              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${isSelected ? 'bg-[#9ab6ca]/[0.16] text-[#dce8f2]' : 'bg-white/[0.06] text-[#91a0ad]'}`}>
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                  isSelected
+                    ? isDark
+                      ? 'bg-[#9ab6ca]/[0.16] text-[#dce8f2]'
+                      : 'bg-[#dbecef] text-[#2f6670]'
+                    : isDark
+                      ? 'bg-white/[0.06] text-[#91a0ad]'
+                      : 'bg-[#edf3f3] text-[#6b7883]'
+                }`}
+              >
                 <Check size={14} />
               </span>
             </button>
@@ -169,14 +199,20 @@ export default function AutocompleteInput({
         })}
 
         {!showAddNew && visibleOptions.length === 0 && (
-          <div className="px-4 py-5 text-center text-sm text-[#91a0ad]">
+          <div className={`px-4 py-5 text-center text-sm ${isDark ? 'text-[#91a0ad]' : 'text-[#667480]'}`}>
             لا توجد نتائج مطابقة.
           </div>
         )}
       </div>
 
       {hiddenCount > 0 && (
-        <div className="border-t border-white/[0.06] bg-white/[0.04] px-4 py-2 text-center text-[11px] font-semibold text-[#91a0ad]">
+        <div
+          className={`px-4 py-2 text-center text-[11px] font-semibold ${
+            isDark
+              ? 'border-t border-white/[0.06] bg-white/[0.04] text-[#91a0ad]'
+              : 'border-t border-[#d7e1e2] bg-[#f4f8f8] text-[#667480]'
+          }`}
+        >
           هناك {hiddenCount} نتائج إضافية. واصل الكتابة لتضييق البحث.
         </div>
       )}

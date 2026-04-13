@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function ExpensesPage({ onBack }) {
   const { api, can } = useAuth();
   const [data, setData] = useState({ expenses: [], summary: [], totals: {} });
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({});
@@ -56,6 +57,10 @@ export default function ExpensesPage({ onBack }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api('/accounts').then(setAccounts).catch(() => setAccounts([]));
+  }, [api]);
 
   const closeForm = () => {
     setShowForm(false);
@@ -96,7 +101,14 @@ export default function ExpensesPage({ onBack }) {
   };
 
   const handleFormChange = (key, value) => {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      if (key === 'chargeTarget' && value !== 'trader') {
+        next.accountId = null;
+        next.accountName = '';
+      }
+      return next;
+    });
   };
 
   return (
@@ -156,6 +168,7 @@ export default function ExpensesPage({ onBack }) {
 
       {showForm && (
         <ExpenseFormModal
+          accounts={accounts}
           form={form}
           editId={editId}
           onClose={closeForm}

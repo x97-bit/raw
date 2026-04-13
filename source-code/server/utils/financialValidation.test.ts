@@ -87,10 +87,14 @@ describe("financial validation schemas", () => {
       amountIQD: "0",
       description: "مصروف",
       portId: "general",
+      chargeTarget: "port",
+      accountId: null,
+      accountName: null,
       createdBy: 1,
     });
 
     expect(parsed.portId).toBe("general");
+    expect(parsed.chargeTarget).toBe("port");
   });
 
   it("accepts partial expense updates and rejects empty ones", () => {

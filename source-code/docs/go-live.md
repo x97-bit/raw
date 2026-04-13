@@ -30,7 +30,8 @@ This project currently uses in-memory rate limiting, so a single app instance is
 - `HOST=0.0.0.0`
 - `PORT=3000`
 - `TRUST_PROXY=1`
-- `JWT_SECRET=<32+ chars>`
+- `APP_ACCESS_TOKEN_SECRET=<32+ chars>`
+- `APP_REFRESH_TOKEN_SECRET=<32+ chars>`
 - `DATABASE_URL=mysql://username:password@host:3306/database_name`
 
 ## Optional Environment Variables
@@ -85,6 +86,6 @@ After deployment:
 
 ## Operations Notes
 - Turn on automatic database backups before real use
-- Keep `JWT_SECRET` only in provider secrets, never in git
+- Keep `APP_ACCESS_TOKEN_SECRET` and `APP_REFRESH_TOKEN_SECRET` only in provider secrets, never in git
 - Do not scale the app to multiple instances until rate limiting moves to a shared store such as Redis
 - Keep a staging database or backup before running data migration scripts

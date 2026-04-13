@@ -11,6 +11,10 @@ import SpecialAccountsTable from './components/SpecialAccountsTable';
 import useSpecialAccountsPageState from './useSpecialAccountsPageState';
 import { useAuth } from '../../contexts/AuthContext';
 import { SPECIAL_ACCOUNT_DEFS } from '../../utils/specialAccountsConfig';
+import {
+  getAccountHeaderActionStyle,
+  getAccountMessageStyle,
+} from './specialAccountsTheme';
 
 export default function AccountsPage({ onBack }) {
   const { api, can } = useAuth();
@@ -58,17 +62,8 @@ export default function AccountsPage({ onBack }) {
     return null;
   }
 
-  const addButtonStyle = {
-    background: `linear-gradient(135deg, ${activeDef.accent}24 0%, rgba(18,22,28,0.96) 100%)`,
-    border: `1px solid ${activeDef.accent}30`,
-    boxShadow: '0 16px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.05)',
-  };
-
-  const messageStyle = {
-    background: `linear-gradient(135deg, ${activeDef.accentSoft} 0%, rgba(18,22,28,0.94) 72%)`,
-    border: `1px solid ${activeDef.accent}26`,
-    boxShadow: '0 14px 28px rgba(0,0,0,0.2)',
-  };
+  const addButtonStyle = getAccountHeaderActionStyle(activeDef);
+  const messageStyle = getAccountMessageStyle(activeDef);
 
   return (
     <div className="page-shell">

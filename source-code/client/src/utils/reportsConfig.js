@@ -1,17 +1,16 @@
-﻿export const REPORT_PORTS = [
-  { id: 'port-1', name: 'السعودية', icon: '🇸🇦' },
-  { id: 'port-2', name: 'المنذرية', icon: '🚛' },
-  { id: 'port-3', name: 'القائم', icon: '🧾' },
+export const REPORT_PORTS = [
+  { id: 'port-1', name: 'السعودية', iconLines: ['السعودية'] },
+  { id: 'port-2', name: 'المنذرية', iconLines: ['المنذرية'] },
+  { id: 'port-3', name: 'القائم', iconLines: ['القائم'] },
 ];
 
 export const EXPENSES_EXPORT_COLUMNS = [
-  { key: 'TransDate', label: 'التاريخ', format: 'date' },
-  { key: 'RefNo', label: 'المرجع' },
-  { key: 'AccountName', label: 'التاجر' },
-  { key: 'GoodType', label: 'البضاعة' },
-  { key: 'Weight', label: 'الوزن', format: 'number' },
-  { key: 'CostUSD', label: 'التكلفة ($)', format: 'money' },
-  { key: 'AmountUSD', label: 'المبلغ ($)', format: 'money' },
+  { key: 'expenseDate', label: 'التاريخ', format: 'date' },
+  { key: 'description', label: 'البيان' },
+  { key: 'chargeTarget', label: 'التحميل' },
+  { key: 'accountName', label: 'التاجر' },
+  { key: 'amountUSD', label: 'المبلغ ($)', format: 'money' },
+  { key: 'amountIQD', label: 'المبلغ (د.ع)', format: 'money_iqd' },
 ];
 
 export const PROFITS_EXPORT_COLUMNS = [
@@ -37,9 +36,11 @@ const formatNum = (value) => (value ? Number(value).toLocaleString('en-US') : '0
 
 export function buildExpensesSummaryCards(data) {
   return [
-    { label: 'عدد الفواتير', value: data?.rows?.length || 0 },
-    { label: 'إجمالي التكلفة', value: `$${formatNum(data?.totals?.totalCostUSD)}` },
-    { label: 'إجمالي المبلغ', value: `$${formatNum(data?.totals?.totalAmountUSD)}` },
+    { label: 'عدد المصاريف', value: data?.totals?.count || data?.rows?.length || 0 },
+    { label: 'على المنفذ ($)', value: `$${formatNum(data?.totals?.directExpenseUSD)}` },
+    { label: 'على المنفذ (د.ع)', value: formatNum(data?.totals?.directExpenseIQD) },
+    { label: 'محمل على التاجر ($)', value: `$${formatNum(data?.totals?.chargedToTraderUSD)}` },
+    { label: 'محمل على التاجر (د.ع)', value: formatNum(data?.totals?.chargedToTraderIQD) },
   ];
 }
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -81,42 +81,139 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => readStoredToken());
   const [loading, setLoading] = useState(true);
+  const refreshPromiseRef = useRef(null);
+  const skipRefreshRef = useRef(false);
 
-  const logout = () => {
+  const clearAuthState = () => {
     clearStoredToken();
     setToken(null);
     setUser(null);
   };
 
+  const refreshSession = async () => {
+    if (skipRefreshRef.current) {
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
+
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const refreshRequest = (async () => {
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+
+      const data = await parseApiResponse(res);
+      if (!res.ok || typeof data?.token !== 'string' || !data.token.trim()) {
+        throw new Error(data?.error || SESSION_EXPIRED_MESSAGE);
+      }
+
+      skipRefreshRef.current = false;
+      persistToken(data.token);
+      setToken(data.token);
+      setUser(data.user || null);
+      return data.token;
+    })();
+
+    refreshPromiseRef.current = refreshRequest;
+
+    try {
+      return await refreshRequest;
+    } finally {
+      refreshPromiseRef.current = null;
+    }
+  };
+
+  const performAuthenticatedFetch = async (url, options = {}, accessToken = null) => (
+    fetch(`${API}${url}`, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      ...options,
+      headers: buildRequestHeaders(accessToken, options),
+    })
+  );
+
+  const authFetch = async (url, options = {}, config = {}) => {
+    const { retryOn401 = true, initialToken = token } = config;
+    let activeToken = initialToken;
+
+    if (!activeToken) {
+      try {
+        activeToken = await refreshSession();
+      } catch {
+        clearAuthState();
+        throw new Error(SESSION_EXPIRED_MESSAGE);
+      }
+    }
+
+    let res = await performAuthenticatedFetch(url, options, activeToken);
+
+    if (res.status === 401 && retryOn401) {
+      try {
+        activeToken = await refreshSession();
+      } catch {
+        clearAuthState();
+        throw new Error(SESSION_EXPIRED_MESSAGE);
+      }
+
+      res = await performAuthenticatedFetch(url, options, activeToken);
+      if (res.status === 401) {
+        clearAuthState();
+        throw new Error(SESSION_EXPIRED_MESSAGE);
+      }
+    }
+
+    return res;
+  };
+
+  const logout = async () => {
+    skipRefreshRef.current = true;
+
+    try {
+      await fetch(`${API}/auth/logout`, {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+    } catch {
+      // Best effort; local auth state is still cleared below.
+    } finally {
+      clearAuthState();
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
-    if (!token) {
-      setLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-
     const verifySession = async () => {
-      try {
-        const res = await fetch(`${API}/auth/me`, {
-          cache: 'no-store',
-          credentials: 'same-origin',
-          headers: buildRequestHeaders(token),
-        });
+      setLoading(true);
 
-        if (!res.ok) {
-          throw new Error('UNAUTHORIZED');
+      try {
+        let activeToken = token;
+
+        if (!activeToken) {
+          try {
+            activeToken = await refreshSession();
+          } catch {
+            if (!cancelled) {
+              clearAuthState();
+            }
+            return;
+          }
         }
 
+        const res = await authFetch('/auth/me', { method: 'GET' }, { initialToken: activeToken });
         const nextUser = await parseApiResponse(res);
+
         if (!cancelled) {
           setUser(nextUser);
         }
       } catch {
         if (!cancelled) {
-          logout();
+          clearAuthState();
         }
       } finally {
         if (!cancelled) {
@@ -125,7 +222,7 @@ export function AuthProvider({ children }) {
       }
     };
 
-    verifySession();
+    void verifySession();
 
     return () => {
       cancelled = true;
@@ -152,6 +249,7 @@ export function AuthProvider({ children }) {
       throw new Error(REQUEST_FAILED_MESSAGE);
     }
 
+    skipRefreshRef.current = false;
     persistToken(data.token);
     setToken(data.token);
     setUser(data.user || null);
@@ -159,24 +257,9 @@ export function AuthProvider({ children }) {
   };
 
   const api = async (url, options = {}) => {
-    if (!token) {
-      logout();
-      throw new Error(SESSION_EXPIRED_MESSAGE);
-    }
-
-    const res = await fetch(`${API}${url}`, {
-      cache: 'no-store',
-      credentials: 'same-origin',
-      ...options,
-      headers: buildRequestHeaders(token, options),
-    });
-
-    if (res.status === 401) {
-      logout();
-      throw new Error(SESSION_EXPIRED_MESSAGE);
-    }
-
+    const res = await authFetch(url, options);
     const data = await parseApiResponse(res);
+
     if (!res.ok) {
       throw new Error(data?.error || data?.message || REQUEST_FAILED_MESSAGE);
     }
@@ -211,7 +294,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, api, can, role, permissions, hasPerm }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, api, authFetch, can, role, permissions, hasPerm }}>
       {children}
     </AuthContext.Provider>
   );

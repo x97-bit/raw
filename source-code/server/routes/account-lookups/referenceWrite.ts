@@ -2,10 +2,12 @@ import { Router, Response } from "express";
 import { eq } from "drizzle-orm";
 import { companies, drivers, goodsTypes, vehicles } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
+import type { AppDb } from "../../dbTypes";
 import { COMPANY_NAME_REQUIRED, invalidateLookupReadCache } from "./shared";
 
-async function getLookupDb(res: Response) {
+async function getLookupDb(res: Response): Promise<AppDb | null> {
   const db = await getDb();
   if (!db) {
     res.status(500).json({ error: "Database unavailable" });
@@ -33,8 +35,8 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
       const driverId = Number(result[0].insertId);
       invalidateLookupReadCache();
       return res.json({ id: driverId, DriverID: driverId, DriverName: name });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -55,8 +57,8 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
       const vehicleId = Number(result[0].insertId);
       invalidateLookupReadCache();
       return res.json({ id: vehicleId, VehicleID: vehicleId, PlateNumber: plateNumber });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -77,8 +79,8 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
       const companyId = Number(result[0].insertId);
       invalidateLookupReadCache();
       return res.json({ id: companyId, CompanyID: companyId, CompanyName: name });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -99,8 +101,8 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
       const goodTypeId = Number(result[0].insertId);
       invalidateLookupReadCache();
       return res.json({ id: goodTypeId, GoodTypeID: goodTypeId, TypeName: name });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

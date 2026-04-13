@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Receipt } from 'lucide-react';
 import DateRangeFilters from '../../../components/DateRangeFilters';
 import EmptyTableRow from '../../../components/EmptyTableRow';
@@ -6,7 +6,6 @@ import ExportButtons from '../../../components/ExportButtons';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import PageHeader from '../../../components/PageHeader';
 import SummaryCard from '../../../components/SummaryCard';
-import TransactionModal from '../../../components/TransactionModal';
 import {
   buildReportPrintMetaItems,
   buildExpensesSummaryCards,
@@ -23,7 +22,6 @@ export default function ReportsExpensesView({
   onFilterChange,
   onRefresh,
 }) {
-  const [selectedTx, setSelectedTx] = useState(null);
   const expenseSummaryCards = useMemo(() => buildExpensesSummaryCards(data), [data]);
 
   return (
@@ -42,7 +40,7 @@ export default function ReportsExpensesView({
             subtitle="التقارير"
             filename={`مصاريف_${activePort?.name || ''}`}
             summaryCards={expenseSummaryCards}
-            totalsRow={{ CostUSD: data.totals.totalCostUSD, AmountUSD: data.totals.totalAmountUSD }}
+            totalsRow={{ amountUSD: data.totals.totalUSD, amountIQD: data.totals.totalIQD }}
             printStrategy="table"
             printMetaItems={buildReportPrintMetaItems(activePort, filters)}
           />
@@ -54,10 +52,12 @@ export default function ReportsExpensesView({
 
         {loading ? <LoadingSpinner /> : data && (
           <>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <SummaryCard label="عدد الفواتير" value={data.rows.length} tone="text-[#eef3f7]" />
-              <SummaryCard label="إجمالي التكلفة" value={`$${formatReportNumber(data.totals.totalCostUSD)}`} tone="text-[#c8d4df]" />
-              <SummaryCard label="إجمالي المبلغ" value={`$${formatReportNumber(data.totals.totalAmountUSD)}`} tone="text-[#9ab6ca]" />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <SummaryCard label="عدد المصاريف" value={data.totals.count || data.rows.length} tone="text-[#eef3f7]" />
+              <SummaryCard label="على المنفذ ($)" value={`$${formatReportNumber(data.totals.directExpenseUSD)}`} tone="text-[#c8d4df]" />
+              <SummaryCard label="على المنفذ (د.ع)" value={formatReportNumber(data.totals.directExpenseIQD)} tone="text-[#9ab6ca]" />
+              <SummaryCard label="محمل على التاجر ($)" value={`$${formatReportNumber(data.totals.chargedToTraderUSD)}`} tone="text-[#8eb8ad]" />
+              <SummaryCard label="محمل على التاجر (د.ع)" value={formatReportNumber(data.totals.chargedToTraderIQD)} tone="text-[#d1b58b]" />
             </div>
 
             <div className="surface-card overflow-hidden p-0">
@@ -67,7 +67,7 @@ export default function ReportsExpensesView({
                   المصاريف ({data.rows.length} معاملة)
                 </span>
                 <span className="font-bold text-[#c8d4df]">
-                  إجمالي التكلفة: ${formatReportNumber(data.totals.totalCostUSD)}
+                  الإجمالي: ${formatReportNumber(data.totals.totalUSD)}
                 </span>
               </div>
 
@@ -76,43 +76,34 @@ export default function ReportsExpensesView({
                   <thead>
                     <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
                       <th className="px-4 py-3 font-semibold">التاريخ</th>
-                      <th className="px-4 py-3 font-semibold">المرجع</th>
+                      <th className="px-4 py-3 font-semibold">البيان</th>
+                      <th className="px-4 py-3 font-semibold">التحميل</th>
                       <th className="px-4 py-3 font-semibold">التاجر</th>
-                      <th className="px-4 py-3 font-semibold">البضاعة</th>
-                      <th className="px-4 py-3 font-semibold">الوزن</th>
-                      <th className="px-4 py-3 font-semibold">التكلفة ($)</th>
                       <th className="px-4 py-3 font-semibold">المبلغ ($)</th>
-                      <th className="px-4 py-3 font-semibold">ملاحظات</th>
+                      <th className="px-4 py-3 font-semibold">المبلغ (د.ع)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.rows.length === 0 ? (
-                      <EmptyTableRow colSpan={8} message="لا توجد مصاريف مطابقة." />
+                      <EmptyTableRow colSpan={6} message="لا توجد مصاريف مطابقة." />
                     ) : (
                       data.rows.map((row, index) => (
-                        <tr
-                          key={index}
-                          onClick={() => setSelectedTx(row)}
-                          className="cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04]"
-                        >
-                          <td className="px-4 py-3">{formatReportDate(row.TransDate)}</td>
-                          <td className="px-4 py-3 text-xs text-[#91a0ad]">{row.RefNo}</td>
-                          <td className="px-4 py-3 font-semibold text-[#eef3f7]">{row.AccountName}</td>
-                          <td className="px-4 py-3">{row.GoodType || '-'}</td>
-                          <td className="px-4 py-3">{row.Weight ? formatReportNumber(row.Weight) : '-'}</td>
-                          <td className="px-4 py-3 font-bold text-[#c8d4df]">${formatReportNumber(row.CostUSD)}</td>
-                          <td className="px-4 py-3 text-[#9ab6ca]">${formatReportNumber(row.AmountUSD)}</td>
-                          <td className="max-w-[200px] truncate px-4 py-3 text-xs text-[#91a0ad]">{row.Notes || '-'}</td>
+                        <tr key={index} className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.04]">
+                          <td className="px-4 py-3">{formatReportDate(row.expenseDate)}</td>
+                          <td className="max-w-[260px] truncate px-4 py-3 text-xs text-[#91a0ad]">{row.description || '-'}</td>
+                          <td className="px-4 py-3 font-semibold text-[#c8d4df]">{row.chargeTarget === 'trader' ? 'على التاجر' : 'على المنفذ'}</td>
+                          <td className="px-4 py-3 font-semibold text-[#eef3f7]">{row.accountName || '-'}</td>
+                          <td className="px-4 py-3 font-bold text-[#c8d4df]">{row.amountUSD ? `$${formatReportNumber(row.amountUSD)}` : '-'}</td>
+                          <td className="px-4 py-3 text-[#9ab6ca]">{row.amountIQD ? formatReportNumber(row.amountIQD) : '-'}</td>
                         </tr>
                       ))
                     )}
                   </tbody>
                   <tfoot>
                     <tr className="border-t border-white/[0.08] bg-white/[0.03] font-bold">
-                      <td colSpan="5" className="px-4 py-3 text-[#eef3f7]">المجموع</td>
-                      <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(data.totals.totalCostUSD)}</td>
-                      <td className="px-4 py-3 text-[#9ab6ca]">${formatReportNumber(data.totals.totalAmountUSD)}</td>
-                      <td />
+                      <td colSpan="4" className="px-4 py-3 text-[#eef3f7]">المجموع</td>
+                      <td className="px-4 py-3 text-[#c8d4df]">{data.totals.totalUSD ? `$${formatReportNumber(data.totals.totalUSD)}` : '-'}</td>
+                      <td className="px-4 py-3 text-[#9ab6ca]">{data.totals.totalIQD ? formatReportNumber(data.totals.totalIQD) : '-'}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -120,8 +111,6 @@ export default function ReportsExpensesView({
             </div>
           </>
         )}
-
-        <TransactionModal transaction={selectedTx} onClose={() => setSelectedTx(null)} readOnly />
       </div>
     </div>
   );

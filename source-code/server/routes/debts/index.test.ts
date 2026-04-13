@@ -84,6 +84,7 @@ async function loadDebtsHarness(fakeDb: ReturnType<typeof createDebtsDb>) {
       req.appUser = { id: 55, role: "admin", username: "tester" };
       next();
     },
+    requireAppUser: (req: Record<string, unknown>) => req.appUser,
   }));
   vi.doMock("../../_core/financialRateLimits", () => ({
     financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) => next(),

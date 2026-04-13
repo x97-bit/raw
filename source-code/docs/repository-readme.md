@@ -17,7 +17,8 @@ pnpm dev
 **المتغيرات المطلوبة (.env):**
 ```
 DATABASE_URL=mysql://user:password@localhost:3306/alrawi_db
-JWT_SECRET=your-secret-key-here
+APP_ACCESS_TOKEN_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+APP_REFRESH_TOKEN_SECRET=replace-with-a-different-random-secret-at-least-32-characters-long
 ```
 
 ### 📁 database/

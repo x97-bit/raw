@@ -1,3 +1,7 @@
+import { PASSWORD_MIN_LENGTH, isStrongPassword } from '../../../../shared/passwordPolicy';
+
+export const PROFILE_PASSWORD_REQUIREMENTS_MESSAGE = `يجب أن تتكون كلمة المرور الجديدة من ${PASSWORD_MIN_LENGTH} أحرف على الأقل وأن تتضمن حرفًا كبيرًا وحرفًا صغيرًا ورقمًا.`;
+
 export const createInitialProfilePasswordForm = () => ({
   currentPassword: '',
   newPassword: '',
@@ -9,8 +13,8 @@ export const validateProfilePasswordForm = (form) => {
     return 'يرجى ملء جميع حقول كلمة المرور.';
   }
 
-  if (form.newPassword.length < 4) {
-    return 'كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل.';
+  if (!isStrongPassword(form.newPassword)) {
+    return PROFILE_PASSWORD_REQUIREMENTS_MESSAGE;
   }
 
   if (form.currentPassword === form.newPassword) {

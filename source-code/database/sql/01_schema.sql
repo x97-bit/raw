@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   `trans_price` DECIMAL(15,0) DEFAULT NULL COMMENT 'سعر النقل',
   `carrier_id` INT DEFAULT NULL COMMENT 'معرف الناقل',
   `company_name` VARCHAR(255) DEFAULT NULL COMMENT 'اسم الشركة',
+  `company_id` INT DEFAULT NULL COMMENT 'معرف الشركة',
   `gov_id` INT DEFAULT NULL COMMENT 'معرف المحافظة',
   `notes` TEXT DEFAULT NULL COMMENT 'ملاحظات',
   `trader_note` TEXT DEFAULT NULL COMMENT 'ملاحظة التاجر',
@@ -121,8 +122,11 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   KEY `idx_record_type` (`record_type`),
   KEY `idx_driver_id` (`driver_id`),
   KEY `idx_vehicle_id` (`vehicle_id`),
+  KEY `idx_good_type_id` (`good_type_id`),
   KEY `idx_carrier_id` (`carrier_id`),
-  KEY `idx_gov_id` (`gov_id`)
+  KEY `idx_company_id` (`company_id`),
+  KEY `idx_gov_id` (`gov_id`),
+  KEY `idx_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -173,7 +177,8 @@ CREATE TABLE IF NOT EXISTS `expenses` (
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_port_id` (`port_id`),
-  KEY `idx_expense_date` (`expense_date`)
+  KEY `idx_expense_date` (`expense_date`),
+  KEY `idx_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -237,6 +242,17 @@ CREATE TABLE IF NOT EXISTS `account_types` (
 -- 13. جدول مطابقة الدفعات
 -- PAYMENT MATCHING
 -- ============================================================
+CREATE TABLE IF NOT EXISTS `companies` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `notes` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_companies_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `payment_matching` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `invoiceId` INT NOT NULL COMMENT 'معرف الفاتورة',
@@ -363,7 +379,8 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   KEY `idx_entity_type` (`entity_type`),
   KEY `idx_entity_id` (`entity_id`),
   KEY `idx_action` (`action`),
-  KEY `idx_created_at` (`created_at`)
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -384,4 +401,40 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_openId` (`openId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `transactions`
+  ADD CONSTRAINT `fk_transactions_account_id`
+    FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_driver_id`
+    FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_vehicle_id`
+    FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_good_type_id`
+    FOREIGN KEY (`good_type_id`) REFERENCES `goods_types` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_gov_id`
+    FOREIGN KEY (`gov_id`) REFERENCES `governorates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_company_id`
+    FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_carrier_id`
+    FOREIGN KEY (`carrier_id`) REFERENCES `accounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_transactions_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `payment_matching`
+  ADD CONSTRAINT `fk_payment_matching_invoice`
+    FOREIGN KEY (`invoiceId`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_payment_matching_payment`
+    FOREIGN KEY (`paymentId`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `custom_field_values`
+  ADD CONSTRAINT `fk_custom_field_values_custom_field_id`
+    FOREIGN KEY (`custom_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `expenses`
+  ADD CONSTRAINT `fk_expenses_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `audit_logs`
+  ADD CONSTRAINT `fk_audit_logs_user_id`
+    FOREIGN KEY (`user_id`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 

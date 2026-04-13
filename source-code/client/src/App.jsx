@@ -1,8 +1,10 @@
 import { Suspense, lazy, useState } from 'react';
 import AppSidebar from './components/AppSidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import {
   ADMIN_ONLY_PAGES,
   createMainPageEntry,
@@ -29,11 +31,13 @@ const pageComponents = {
   'port-work': lazy(() => import('./pages/PortPage')),
 };
 
-function renderLazyPage(node) {
+function renderLazyPage(pageKey, node) {
   return (
-    <Suspense fallback={<LoadingSpinner fullScreen />}>
-      {node}
-    </Suspense>
+    <ErrorBoundary key={pageKey}>
+      <Suspense fallback={<LoadingSpinner fullScreen />}>
+        {node}
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -149,6 +153,7 @@ function AppContent() {
     const PortPage = pageComponents['port-work'];
 
     pageNode = renderLazyPage(
+      `port-work:${current.portId || ''}:${current.view || ''}:${current.formType || ''}`,
       <PortPage
         portId={current.portId}
         portName={current.portName}
@@ -167,7 +172,7 @@ function AppContent() {
     } else if (ADMIN_ONLY_PAGES.has(current.page) && !can.manageUsers) {
       pageNode = renderMainPage();
     } else {
-      pageNode = renderLazyPage(<PageComponent onBack={goBack} />);
+      pageNode = renderLazyPage(current.page, <PageComponent onBack={goBack} />);
     }
   }
 
@@ -176,8 +181,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

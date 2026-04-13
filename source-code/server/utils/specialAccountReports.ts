@@ -39,7 +39,7 @@ export function buildHaiderSpecialReport(rows: any[], filters: { from?: string; 
         CostIQD: costIQD,
         AmountIQD: amountIQD,
         DifferenceIQD: differenceIQD,
-        NetIQD: amountIQD - costIQD,
+        NetIQD: amountIQD - costIQD + differenceIQD,
         Destination: row.destination || row.govName || "",
         BatchName: row.batchName || row.name || "",
         TraderNote: row.notes || row.description || "",
@@ -79,6 +79,7 @@ export function buildPartnershipSpecialReport(rows: any[], filters: { from?: str
       CompanyName: row.companyName || "",
       Qty: Number(row.qty || 0),
       AmountUSD: Number(row.amountUSD || 0),
+      AmountIQD: Number(row.amountIQD || 0),
       AmountUSD_Partner: Number(row.amountUSDPartner || 0),
       DifferenceIQD: Number(row.differenceIQD || 0),
       CLR: Number(row.clr || 0),
@@ -91,16 +92,18 @@ export function buildPartnershipSpecialReport(rows: any[], filters: { from?: str
   const totals = {
     count: rowsResult.length,
     totalAmountUSD: rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD || 0), 0),
-    totalPartnerUSD: rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD_Partner || 0), 0),
+    totalAmountIQD: rowsResult.reduce((sum, row) => sum + Number(row.AmountIQD || 0), 0),
+    totalPartnerBaseUSD: rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD_Partner || 0), 0),
     totalDifferenceIQD: rowsResult.reduce((sum, row) => sum + Number(row.DifferenceIQD || 0), 0),
     totalCLR: rowsResult.reduce((sum, row) => sum + Number(row.CLR || 0), 0),
     totalTX: rowsResult.reduce((sum, row) => sum + Number(row.TX || 0), 0),
     totalTaxiWater: rowsResult.reduce((sum, row) => sum + Number(row.TaxiWater || 0), 0),
-    totalNetUSD: rowsResult.reduce(
-      (sum, row) => sum + (Number(row.AmountUSD_Partner || 0) - Number(row.AmountUSD || 0)),
-      0,
-    ),
   };
+  totals.totalTaxiAndOfficer = totals.totalTX + totals.totalTaxiWater;
+  totals.totalPartnerUSD = totals.totalPartnerBaseUSD;
+  totals.totalPartnerIQD = totals.totalDifferenceIQD + totals.totalCLR + totals.totalTaxiAndOfficer;
+  totals.totalNetUSD = totals.totalAmountUSD - totals.totalPartnerUSD;
+  totals.totalNetIQD = totals.totalAmountIQD - totals.totalPartnerIQD;
 
   return { rows: rowsResult, totals };
 }

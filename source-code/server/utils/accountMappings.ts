@@ -1,4 +1,8 @@
-export function mapAccount(account: any) {
+import { accounts } from "../../drizzle/schema";
+
+type AccountRow = typeof accounts.$inferSelect;
+
+export function mapAccount(account: AccountRow) {
   return {
     ...account,
     AccountID: account.id,

@@ -21,6 +21,8 @@ const createColumn = (key, dataKey, label, type = 'text', extra = {}) => ({ key,
 const createField = (key, label, type = 'text', extra = {}) => ({ key, label, type, ...extra });
 const createFormSection = (title, keys, subtitle = '') => ({ title, subtitle, keys });
 export const STATEMENT_CORE_COLUMN_KEYS = ['ref_no', 'direction', 'trans_date', 'currency', 'amount_usd', 'amount_iqd'];
+const STATEMENT_PREFIX_COLUMN_KEYS = ['ref_no', 'direction', 'trans_date', 'currency'];
+const STATEMENT_FINANCIAL_COLUMN_KEYS = ['cost_usd', 'amount_usd', 'cost_iqd', 'amount_iqd'];
 const createStatementCoreColumns = () => ([
   createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),
   createColumn('direction', 'TransTypeName', 'نوع الحركة', 'badge'),
@@ -30,11 +32,18 @@ const createStatementCoreColumns = () => ([
   createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
 ]);
 const withStatementCoreColumns = (columns) => {
-  const coreColumns = createStatementCoreColumns();
-  const coreKeys = new Set(coreColumns.map((column) => column.key));
+  const combinedColumns = [...createStatementCoreColumns(), ...(columns || [])]
+    .filter((column, index, list) => list.findIndex((entry) => entry.key === column.key) === index);
+  const reservedKeys = new Set([...STATEMENT_PREFIX_COLUMN_KEYS, ...STATEMENT_FINANCIAL_COLUMN_KEYS]);
+
   return [
-    ...coreColumns,
-    ...(columns || []).filter((column) => !coreKeys.has(column.key)),
+    ...STATEMENT_PREFIX_COLUMN_KEYS
+      .map((key) => combinedColumns.find((column) => column.key === key))
+      .filter(Boolean),
+    ...STATEMENT_FINANCIAL_COLUMN_KEYS
+      .map((key) => combinedColumns.find((column) => column.key === key))
+      .filter(Boolean),
+    ...combinedColumns.filter((column) => !reservedKeys.has(column.key)),
   ];
 };
 
@@ -161,10 +170,10 @@ const RAW_SECTION_SCREEN_SPECS = {
     },
     statement: {
       columns: withStatementCoreColumns([
+        createColumn('cost_usd', 'CostUSD', 'الكلفة دولار', 'money_usd'),
         createColumn('cost_iqd', 'CostIQD', 'الكلفة دينار', 'money_iqd'),
         createColumn('amount_iqd', 'AmountIQD', 'المبلغ دينار', 'money_iqd_bold'),
         createColumn('fee_usd', 'FeeUSD', 'النقل السعودي $', 'money_usd'),
-        createColumn('trans_price', 'TransPrice', 'نقل عراقي (دينار)', 'money_iqd'),
         createColumn('gov_name', 'Governorate', 'المحافظات'),
         createColumn('trader_note', 'TraderNote', 'ملاحظات', 'notes'),
         createColumn('notes', 'Notes', 'ملاحظات المالك', 'notes'),

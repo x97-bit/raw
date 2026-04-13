@@ -100,4 +100,7 @@ export async function ensureRuntimeSupportTables(connection: RuntimeSchemaConnec
   `);
 
   await ensureColumn(connection, "transactions", "company_id", "`company_id` INT NULL AFTER `company_name`");
+  await ensureColumn(connection, "expenses", "charge_target", "`charge_target` VARCHAR(20) NOT NULL DEFAULT 'port' AFTER `port_id`");
+  await ensureColumn(connection, "expenses", "account_id", "`account_id` INT NULL AFTER `charge_target`");
+  await ensureColumn(connection, "expenses", "account_name", "`account_name` VARCHAR(255) NULL AFTER `account_id`");
 }

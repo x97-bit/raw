@@ -18,6 +18,11 @@ function getAmountValue(transaction: TransactionLike, rawKey: string, mappedKey:
   return transaction[mappedKey];
 }
 
+function getRecordTypeValue(transaction: TransactionLike): string {
+  const rawValue = transaction.recordType ?? transaction.RecordType;
+  return String(rawValue ?? "").trim().toLowerCase();
+}
+
 export function calculateTransactionTotals(transactions: TransactionLike[]) {
   const totals = {
     count: transactions.length,
@@ -46,11 +51,14 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     const costIqd = getAbsoluteAmount(getAmountValue(transaction, "costIqd", "CostIQD"));
     const feeUsd = getAbsoluteAmount(getAmountValue(transaction, "feeUsd", "FeeUSD"));
     const weight = getAbsoluteAmount(getAmountValue(transaction, "weight", "Weight"));
+    const isExpenseCharge = getRecordTypeValue(transaction) === "expense-charge";
 
     if (isInvoiceDirection(direction)) {
       totals.invoiceCount += 1;
-      totals.shipmentCount += 1;
-      totals.totalWeight += weight;
+      if (!isExpenseCharge) {
+        totals.shipmentCount += 1;
+        totals.totalWeight += weight;
+      }
       totals.totalInvoicesUSD += amountUsd;
       totals.totalInvoicesIQD += amountIqd;
       totals.totalCostUSD += costUsd;

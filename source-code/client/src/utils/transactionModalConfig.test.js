@@ -39,6 +39,25 @@ describe('transactionModalConfig', () => {
     expect(items.at(-1)).toEqual({ label: 'حقل إضافي', value: 'قيمة' });
   });
 
+  it('shows only the IQD running liability for transport statements', () => {
+    const items = buildTransactionDetailItems({
+      transaction: {
+        TransTypeID: 2,
+        TransDate: '2026-04-08 00:00:00',
+        RefNo: 'PAY-10',
+        AccountName: 'أبو حسن',
+        AmountIQD: 120000,
+        runningUSD: 450,
+        runningIQD: 320000,
+      },
+      transactionLabel: 'سند دفع',
+      sectionKey: 'transport-1',
+    });
+
+    expect(items.some((item) => item.label === 'المتبقي علينا ($)')).toBe(false);
+    expect(items.some((item) => item.label === 'المتبقي علينا (د.ع)' && item.value === '320,000')).toBe(true);
+  });
+
   it('keeps core built-in field labels available for edit rendering', () => {
     expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.qty).toBe('العدد');
     expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.trader_note).toBe('ملاحظات التاجر');

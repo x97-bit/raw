@@ -1,33 +1,45 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { ENV } from "./env";
-import { getSessionSecret } from "./sessionSecret";
+import { getAppAccessTokenSecret, getAppRefreshTokenSecret, getSessionSecret } from "./sessionSecret";
 
-const originalSecret = ENV.cookieSecret;
+const originalSessionCookieSecret = ENV.sessionCookieSecret;
+const originalAppAccessTokenSecret = ENV.appAccessTokenSecret;
+const originalAppRefreshTokenSecret = ENV.appRefreshTokenSecret;
 
 afterEach(() => {
-  ENV.cookieSecret = originalSecret;
+  ENV.sessionCookieSecret = originalSessionCookieSecret;
+  ENV.appAccessTokenSecret = originalAppAccessTokenSecret;
+  ENV.appRefreshTokenSecret = originalAppRefreshTokenSecret;
 });
 
-describe("getSessionSecret", () => {
-  it("returns an encoded secret when JWT_SECRET is strong enough", () => {
-    ENV.cookieSecret = "a".repeat(64);
+describe("session secret helpers", () => {
+  it("returns an encoded secret when the configured secret is strong enough", () => {
+    ENV.sessionCookieSecret = "a".repeat(64);
+    ENV.appAccessTokenSecret = "b".repeat(64);
+    ENV.appRefreshTokenSecret = "c".repeat(64);
 
-    const secret = getSessionSecret();
-
-    expect(secret).toBeInstanceOf(Uint8Array);
-    expect(secret.length).toBeGreaterThanOrEqual(32);
+    expect(getSessionSecret()).toBeInstanceOf(Uint8Array);
+    expect(getAppAccessTokenSecret()).toBeInstanceOf(Uint8Array);
+    expect(getAppRefreshTokenSecret()).toBeInstanceOf(Uint8Array);
   });
 
-  it("throws when JWT_SECRET is missing", () => {
-    ENV.cookieSecret = "";
+  it("throws when required secrets are missing", () => {
+    ENV.sessionCookieSecret = "";
+    ENV.appAccessTokenSecret = "";
+    ENV.appRefreshTokenSecret = "";
 
-    expect(() => getSessionSecret()).toThrow("JWT_SECRET is required");
+    expect(() => getSessionSecret()).toThrow("SESSION_COOKIE_SECRET");
+    expect(() => getAppAccessTokenSecret()).toThrow("APP_ACCESS_TOKEN_SECRET");
+    expect(() => getAppRefreshTokenSecret()).toThrow("APP_REFRESH_TOKEN_SECRET");
   });
 
-  it("throws when JWT_SECRET is too short", () => {
-    ENV.cookieSecret = "short-secret";
+  it("throws when a configured secret is too short", () => {
+    ENV.sessionCookieSecret = "short-secret";
+    ENV.appAccessTokenSecret = "short-secret";
+    ENV.appRefreshTokenSecret = "short-secret";
 
-    expect(() => getSessionSecret()).toThrow("JWT_SECRET must be at least 32 characters long.");
+    expect(() => getSessionSecret()).toThrow("at least 32 characters");
+    expect(() => getAppAccessTokenSecret()).toThrow("at least 32 characters");
+    expect(() => getAppRefreshTokenSecret()).toThrow("at least 32 characters");
   });
 });
-

@@ -16,6 +16,16 @@ CREATE INDEX IF NOT EXISTS `idx_trans_account_port`
 CREATE INDEX IF NOT EXISTS `idx_trans_date_port` 
   ON `transactions` (`trans_date`, `port_id`);
 
+-- دعم فهارس الحقول المرجعية وفهرس التاريخ الأساسي
+CREATE INDEX IF NOT EXISTS `idx_trans_date`
+  ON `transactions` (`trans_date`);
+
+CREATE INDEX IF NOT EXISTS `idx_good_type_id`
+  ON `transactions` (`good_type_id`);
+
+CREATE INDEX IF NOT EXISTS `idx_company_id`
+  ON `transactions` (`company_id`);
+
 -- البحث عن معاملات بنوع الحساب والاتجاه
 CREATE INDEX IF NOT EXISTS `idx_trans_type_direction` 
   ON `transactions` (`account_type`, `direction`);

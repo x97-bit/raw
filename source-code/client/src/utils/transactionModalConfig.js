@@ -86,9 +86,9 @@ export const buildTransactionDetailItems = ({
           bold: true,
         }]
       : []),
-    ...(transaction.runningUSD !== undefined
+    ...(!isTransport && transaction.runningUSD !== undefined
       ? [{
-          label: isTransport ? 'المتبقي علينا ($)' : 'الرصيد التراكمي ($)',
+          label: 'الرصيد التراكمي ($)',
           value: `${formatTransactionModalNumber(transaction.runningUSD)}`,
           color: (transaction.runningUSD || 0) >= 0 ? positiveBalanceColor : 'text-red-600',
           bold: true,

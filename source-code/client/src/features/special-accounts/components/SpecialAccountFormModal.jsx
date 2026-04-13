@@ -1,6 +1,13 @@
 import { Save, X } from 'lucide-react';
 import ModalPortal from '../../../components/ModalPortal';
 import SpecialAccountFormField from './SpecialAccountFormField';
+import {
+  getAccountAccentLineStyle,
+  getAccountModalGlowStyle,
+  getAccountModalShellStyle,
+  getAccountPrimaryButtonStyle,
+  getAccountSecondaryButtonStyle,
+} from '../specialAccountsTheme';
 
 export default function SpecialAccountFormModal({
   account,
@@ -13,6 +20,12 @@ export default function SpecialAccountFormModal({
   onSave,
   onFormChange,
 }) {
+  const modalShellStyle = getAccountModalShellStyle(account);
+  const accentLineStyle = getAccountAccentLineStyle(account);
+  const modalGlowStyle = getAccountModalGlowStyle(account);
+  const primaryButtonStyle = getAccountPrimaryButtonStyle(account);
+  const secondaryButtonStyle = getAccountSecondaryButtonStyle(account);
+
   return (
     <ModalPortal>
       <div
@@ -22,15 +35,15 @@ export default function SpecialAccountFormModal({
         <div
           className="relative my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-[#11161d] text-[#edf2f7] shadow-[0_28px_80px_rgba(0,0,0,0.45)] sm:max-h-[calc(100vh-2rem)]"
           onMouseDown={(event) => event.stopPropagation()}
-          style={{ border: `1px solid ${account.accent}1c` }}
+          style={modalShellStyle}
         >
           <div
             className="pointer-events-none absolute inset-x-8 top-0 h-px"
-            style={{ background: `linear-gradient(90deg, transparent 0%, ${account.accent} 50%, transparent 100%)` }}
+            style={accentLineStyle}
           />
           <div
             className="pointer-events-none absolute -right-10 top-0 h-40 w-40 rounded-full blur-3xl"
-            style={{ background: `radial-gradient(circle, ${account.accentSoft} 0%, transparent 72%)` }}
+            style={modalGlowStyle}
           />
 
           <div className="relative flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
@@ -68,10 +81,7 @@ export default function SpecialAccountFormModal({
               <button
                 onClick={onClose}
                 className="w-full rounded-2xl px-5 py-3 text-sm font-semibold text-[#d9e2ea] transition-all duration-200 hover:-translate-y-0.5 hover:text-white sm:w-auto"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
+                style={secondaryButtonStyle}
               >
                 إلغاء
               </button>
@@ -79,11 +89,7 @@ export default function SpecialAccountFormModal({
                 onClick={onSave}
                 disabled={saving}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-[#eef3f7] transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 sm:w-auto"
-                style={{
-                  background: `linear-gradient(135deg, ${account.accent}26 0%, rgba(17,22,29,0.98) 100%)`,
-                  border: `1px solid ${account.accent}33`,
-                  boxShadow: '0 16px 30px rgba(0,0,0,0.24)',
-                }}
+                style={primaryButtonStyle}
               >
                 <Save size={16} />
                 {saving ? 'جارٍ الحفظ...' : editingRecord ? 'حفظ التعديلات' : 'حفظ السجل'}

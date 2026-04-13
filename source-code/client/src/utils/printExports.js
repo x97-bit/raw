@@ -74,19 +74,33 @@ function openPrintWindow(title, body, extraCss = '') {
         justify-content: center;
         gap: 12px;
         padding: 16px;
-        background: rgba(238,242,247,0.96);
-        backdrop-filter: blur(6px);
+        background: #f5f8f8;
+        border-bottom: 1px solid #d7e1e2;
+        box-shadow: 0 12px 28px rgba(53,78,89,0.08);
       }
       .print-controls button {
-        border: 0;
+        border: 1px solid transparent;
         border-radius: 999px;
         padding: 10px 18px;
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
+        transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+        box-shadow: 0 10px 20px rgba(53,78,89,0.08);
       }
-      .print-btn { background: #1d3f74; color: #fff; }
-      .close-btn { background: #e2e8f0; color: #0f172a; }
+      .print-controls button:hover { transform: translateY(-1px); }
+      .print-btn {
+        background: #2f6b63;
+        border-color: #2f6b63;
+        color: #fff;
+      }
+      .print-btn:hover { background: #295d56; border-color: #295d56; }
+      .close-btn {
+        background: #ffffff;
+        border-color: #d7e1e2;
+        color: #27343d;
+      }
+      .close-btn:hover { background: #eef4f3; }
       @media print {
         .print-controls { display: none !important; }
         html, body { background: #fff; }
@@ -115,10 +129,14 @@ function getGenericRowClass(row) {
   return '';
 }
 
+function getColumnCellClass(column) {
+  return column?.format === 'date' ? 'tay-date-cell' : '';
+}
+
 function buildRowsHtml(rows, columns, rowClassResolver = () => '') {
   return rows.map((row) => `
     <tr class="${rowClassResolver(row)}">
-      ${columns.map((column) => `<td>${escapeHtml(formatCellValue(resolveColumnValue(row, column), column.format))}</td>`).join('')}
+      ${columns.map((column) => `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(resolveColumnValue(row, column), column.format))}</td>`).join('')}
     </tr>
   `).join('');
 }
@@ -137,7 +155,7 @@ function buildTotalsHtml(columns, totalsRow) {
   const totalsCells = columns.map((column, index) => {
     if (index === 0) return '<td>المجموع</td>';
     if (totalsRow[column.key] !== undefined) {
-      return `<td>${escapeHtml(formatCellValue(totalsRow[column.key], column.format))}</td>`;
+      return `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(totalsRow[column.key], column.format))}</td>`;
     }
     return '<td></td>';
   }).join('');
@@ -233,7 +251,7 @@ function buildTabularSectionHtml(section) {
       <div class="tay-table-wrap">
         <table class="tay-table">
           <thead>
-            <tr>${section.columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr>
+            <tr>${section.columns.map((column) => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join('')}</tr>
           </thead>
           <tbody>${rowsHtml}</tbody>
           ${buildTotalsHtml(section.columns, section.totalsRow)}
@@ -441,6 +459,10 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       font-size: ${isPortrait ? '12px' : '11px'};
       line-height: 1.45;
       word-break: break-word;
+    }
+    .tay-table .tay-date-cell {
+      white-space: nowrap;
+      word-break: normal;
     }
     .tay-table th {
       background: ${TAY_ALRAWI_BRAND_COLORS.tableNavy};
@@ -656,7 +678,7 @@ export function printSaudiStatementTemplate({
     <div class="tay-table-wrap">
       <table class="tay-table">
         <thead>
-          <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr>
+          <tr>${columns.map((column) => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join('')}</tr>
         </thead>
         <tbody>${buildRowsHtml(rows, columns, getGenericRowClass)}</tbody>
       </table>

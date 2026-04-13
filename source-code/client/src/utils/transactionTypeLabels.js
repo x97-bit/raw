@@ -1,9 +1,9 @@
 const INVOICE_LABEL = 'فاتورة';
 const RECEIPT_VOUCHER_LABEL = 'سند قبض';
 const TRANSPORT_INVOICE_LABEL = 'استحقاق نقل';
-const TRANSPORT_PAYMENT_LABEL = 'دفعة نقل';
+const TRANSPORT_PAYMENT_LABEL = 'سند دفع';
 const TRANSPORT_INVOICE_REFERENCE_LABEL = 'رقم استحقاق النقل';
-const TRANSPORT_PAYMENT_REFERENCE_LABEL = 'رقم سند الصرف';
+const TRANSPORT_PAYMENT_REFERENCE_LABEL = 'رقم سند الدفع';
 const INVOICE_REFERENCE_LABEL = 'رقم الفاتورة';
 const PAYMENT_REFERENCE_LABEL = 'رقم سند القبض';
 
@@ -21,6 +21,7 @@ const RECEIPT_VOUCHER_ALIASES = [
   'عليه',
   'سند',
   'سند صرف',
+  'سند دفع',
   RECEIPT_VOUCHER_LABEL,
   TRANSPORT_PAYMENT_LABEL,
   'payment',

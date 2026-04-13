@@ -73,7 +73,7 @@ export function renderPortCell(column, row, options = {}) {
 
   switch (column.type) {
     case 'date':
-      return value?.split(' ')[0] || '-';
+      return <span className="whitespace-nowrap">{value?.split(' ')[0] || '-'}</span>;
     case 'badge':
       return (
         <span className={`rounded px-2 py-0.5 text-xs ${row.TransTypeID === 1 ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>

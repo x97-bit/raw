@@ -12,6 +12,7 @@ import {
   importBackupPayload,
   parseImportRequest,
   saveBackupPayload,
+  validateBackupImportPayload,
 } from "./shared";
 
 const backupWriteRateLimit = createRateLimitMiddleware({
@@ -19,6 +20,20 @@ const backupWriteRateLimit = createRateLimitMiddleware({
   windowMs: 10 * 60 * 1000,
   max: 12,
   message: "تم تجاوز عدد طلبات النسخ الاحتياطي. حاول مرة أخرى بعد قليل.",
+});
+
+const backupReadRateLimit = createRateLimitMiddleware({
+  keyPrefix: "backup-admin-read",
+  windowMs: 5 * 60 * 1000,
+  max: 90,
+  message: "تم تجاوز الحد المسموح لطلبات مراقبة النسخ الاحتياطي. حاول مرة أخرى بعد قليل.",
+});
+
+const backupDownloadRateLimit = createRateLimitMiddleware({
+  keyPrefix: "backup-admin-download",
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: "تم تجاوز الحد المسموح لطلبات تنزيل النسخ الاحتياطية. حاول مرة أخرى بعد قليل.",
 });
 
 function resolveActorLabel(req: AuthRequest) {
@@ -32,7 +47,7 @@ function sendJsonDownload(res: Response, payload: unknown, fileName: string) {
 }
 
 export function registerBackupRoutes(router: Router) {
-  router.get("/backups/status", authMiddleware, async (req: AuthRequest, res: Response) => {
+  router.get("/backups/status", authMiddleware, backupReadRateLimit, async (req: AuthRequest, res: Response) => {
     try {
       if (!requireAdmin(req, res)) return;
 
@@ -64,7 +79,7 @@ export function registerBackupRoutes(router: Router) {
     }
   });
 
-  router.get("/backups/export", authMiddleware, async (req: AuthRequest, res: Response) => {
+  router.get("/backups/export", authMiddleware, backupDownloadRateLimit, async (req: AuthRequest, res: Response) => {
     try {
       if (!requireAdmin(req, res)) return;
 
@@ -79,7 +94,7 @@ export function registerBackupRoutes(router: Router) {
     }
   });
 
-  router.get("/backups/template", authMiddleware, async (req: AuthRequest, res: Response) => {
+  router.get("/backups/template", authMiddleware, backupDownloadRateLimit, async (req: AuthRequest, res: Response) => {
     try {
       if (!requireAdmin(req, res)) return;
 
@@ -99,6 +114,7 @@ export function registerBackupRoutes(router: Router) {
       if (!requireAdmin(req, res)) return;
 
       const payload = parseImportRequest(req.body);
+      validateBackupImportPayload(payload.backup);
 
       if (payload.confirmPhrase !== BACKUP_IMPORT_CONFIRM_PHRASE) {
         return res.status(400).json({ error: "تأكيد الاستيراد مفقود أو غير صحيح." });

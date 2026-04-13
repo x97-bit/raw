@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   buildProfitsPrintSections,
   buildReportPrintMetaItems,
@@ -13,17 +13,30 @@ import {
 describe('reportsConfig', () => {
   it('exposes the supported report ports', () => {
     expect(REPORT_PORTS.map((port) => port.id)).toEqual(['port-1', 'port-2', 'port-3']);
+    expect(REPORT_PORTS.every((port) => Array.isArray(port.iconLines) && port.iconLines.length > 0)).toBe(true);
   });
 
   it('builds export columns and summary cards for reports', () => {
-    expect(EXPENSES_EXPORT_COLUMNS.some((column) => column.key === 'CostUSD')).toBe(true);
+    expect(EXPENSES_EXPORT_COLUMNS.some((column) => column.key === 'chargeTarget')).toBe(true);
+    expect(EXPENSES_EXPORT_COLUMNS.some((column) => column.key === 'accountName')).toBe(true);
     expect(PROFITS_EXPORT_COLUMNS.some((column) => column.key === 'ProfitUSD')).toBe(true);
     expect(PROFITS_BY_TRADER_EXPORT_COLUMNS.some((column) => column.key === 'totalProfitIQD')).toBe(true);
 
-    expect(buildExpensesSummaryCards({ rows: [{}, {}], totals: { totalCostUSD: 40, totalAmountUSD: 50 } })).toEqual([
-      { label: 'عدد الفواتير', value: 2 },
-      { label: 'إجمالي التكلفة', value: '$40' },
-      { label: 'إجمالي المبلغ', value: '$50' },
+    expect(buildExpensesSummaryCards({
+      rows: [{}, {}],
+      totals: {
+        count: 2,
+        directExpenseUSD: 40,
+        directExpenseIQD: 1000,
+        chargedToTraderUSD: 5,
+        chargedToTraderIQD: 250,
+      },
+    })).toEqual([
+      { label: 'عدد المصاريف', value: 2 },
+      { label: 'على المنفذ ($)', value: '$40' },
+      { label: 'على المنفذ (د.ع)', value: '1,000' },
+      { label: 'محمل على التاجر ($)', value: '$5' },
+      { label: 'محمل على التاجر (د.ع)', value: '250' },
     ]);
 
     expect(buildProfitSummaryCards({ shipmentCount: 3, totalCostUSD: 10, totalAmountUSD: 15, totalProfitUSD: 5 })).toEqual([

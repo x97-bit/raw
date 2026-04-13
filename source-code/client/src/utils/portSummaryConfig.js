@@ -29,14 +29,14 @@ export const EMPTY_PORT_SUMMARY = {
 export const PORT_SECTION_SUMMARY_META = {
   'transport-1': {
     list: [
-      { key: 'totalInvoicesUSD', label: 'إجمالي مستحقات النقل دولار', format: 'usd', accent: PORT_SUMMARY_TONES.payableUsd },
-      { key: 'totalInvoicesIQD', label: 'إجمالي مستحقات النقل دينار', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
-      { key: 'totalPaymentsUSD', label: 'إجمالي المدفوع دولار', format: 'usd', accent: PORT_SUMMARY_TONES.filteredUsd },
-      { key: 'totalPaymentsIQD', label: 'إجمالي المدفوع دينار', format: 'iqd', accent: PORT_SUMMARY_TONES.filteredIqd },
+      { key: 'totalInvoicesIQD', label: 'إجمالي استحقاق النقل', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
+      { key: 'totalPaymentsIQD', label: 'المسدد', format: 'iqd', accent: PORT_SUMMARY_TONES.filteredIqd },
+      { key: 'balanceIQD', label: 'المتبقي علينا', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
     ],
     statement: [
-      { key: 'balanceUSD', label: 'المتبقي علينا دولار', format: 'usd', accent: PORT_SUMMARY_TONES.payableUsd },
-      { key: 'balanceIQD', label: 'المتبقي علينا دينار', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
+      { key: 'totalInvoicesIQD', label: 'إجمالي استحقاق النقل', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
+      { key: 'totalPaymentsIQD', label: 'المسدد', format: 'iqd', accent: PORT_SUMMARY_TONES.filteredIqd },
+      { key: 'balanceIQD', label: 'المتبقي علينا', format: 'iqd', accent: PORT_SUMMARY_TONES.payableIqd },
     ],
   },
   'port-1': {

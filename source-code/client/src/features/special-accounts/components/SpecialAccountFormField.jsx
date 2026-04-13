@@ -1,9 +1,9 @@
+import { getAccountInputStyle } from '../specialAccountsTheme';
+
 export default function SpecialAccountFormField({ field, value, onChange, accent }) {
   const resolvedValue = value ?? '';
   const commonClass = 'input-field';
-  const inputStyle = {
-    borderColor: `${accent}18`,
-  };
+  const inputStyle = getAccountInputStyle({ accent });
 
   if (field.type === 'textarea') {
     return (

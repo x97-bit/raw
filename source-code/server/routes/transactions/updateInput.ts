@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
-import { companies } from "../../../drizzle/schema";
+import { z } from "zod";
 import { validateInput } from "../../_core/requestValidation";
+import type { AppDb } from "../../dbTypes";
 import {
   hasBodyKey,
   hasBodyValue,
@@ -10,10 +10,12 @@ import {
 } from "../../utils/bodyFields";
 import { transactionUpdateSchema } from "../../utils/financialValidation";
 import { TRANSACTION_UPDATE_VALIDATION_MESSAGE } from "./shared";
+import { resolveCompanySelection } from "./builderHelpers";
 
-type TransactionMutationBody = Record<string, any>;
+type TransactionMutationBody = Record<string, unknown>;
+type TransactionUpdatePayload = z.infer<typeof transactionUpdateSchema>;
 
-export async function buildTransactionUpdateInput(db: any, body: TransactionMutationBody) {
+export async function buildTransactionUpdateInput(db: AppDb, body: TransactionMutationBody): Promise<TransactionUpdatePayload> {
   const updates: Record<string, unknown> = {};
 
   if (hasBodyKey(body, "transDate", "TransDate", "trans_date", "date")) {
@@ -77,22 +79,14 @@ export async function buildTransactionUpdateInput(db: any, body: TransactionMuta
   const companyId = pickBodyField(body, "companyId", "CompanyID", "company_id");
   const companyName = pickBodyField(body, "companyName", "CompanyName", "company_name");
   if (companyId) {
-    updates.companyId = parseInt(String(companyId), 10);
-    const [company] = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, parseInt(String(companyId), 10)))
-      .limit(1);
-    if (company) updates.companyName = company.name;
+    const resolvedCompany = await resolveCompanySelection(db, companyId, companyName);
+    updates.companyId = resolvedCompany.companyId;
+    updates.companyName = resolvedCompany.companyName;
   } else if (hasBodyKey(body, "companyName", "CompanyName", "company_name")) {
     if (hasBodyValue(companyName)) {
-      updates.companyName = String(companyName);
-      const [existingCompany] = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.name, String(companyName)))
-        .limit(1);
-      updates.companyId = existingCompany?.id ?? null;
+      const resolvedCompany = await resolveCompanySelection(db, null, companyName);
+      updates.companyName = resolvedCompany.companyName;
+      updates.companyId = resolvedCompany.companyId;
     } else {
       updates.companyName = null;
       updates.companyId = null;
@@ -100,7 +94,7 @@ export async function buildTransactionUpdateInput(db: any, body: TransactionMuta
   }
 
   if (hasBodyKey(body, "accountId", "AccountID", "account_id")) {
-    updates.accountId = parseOptionalInt(pickBodyField(body, "accountId", "AccountID", "account_id")) ?? null;
+    updates.accountId = parseOptionalInt(pickBodyField(body, "accountId", "AccountID", "account_id"));
   }
 
   return validateInput(transactionUpdateSchema, updates, TRANSACTION_UPDATE_VALIDATION_MESSAGE);

@@ -95,7 +95,7 @@ export default function TransactionModal({
   });
   const scopedBuiltInFieldLabel = useCallback((fieldKey, fallbackLabel) => {
     if (sectionKey === 'transport-1' && fieldKey === 'ref_no') {
-      return formTarget === 'payment' ? 'رقم سند الصرف' : 'رقم استحقاق النقل';
+      return formTarget === 'payment' ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
     }
 
     return getBuiltInFieldLabel(fieldKey, fallbackLabel);

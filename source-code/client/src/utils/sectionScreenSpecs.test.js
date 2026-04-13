@@ -2,16 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { getSectionColumns, getSectionTargetFields } from './sectionScreenSpecs';
 
 const TRANSACTION_SECTIONS = ['transport-1', 'port-1', 'port-2', 'port-3', 'partnership-1'];
-const STATEMENT_CORE_KEYS = ['ref_no', 'direction', 'trans_date', 'currency', 'amount_usd', 'amount_iqd'];
+const STATEMENT_PREFIX_KEYS = ['ref_no', 'direction', 'trans_date', 'currency'];
+const STATEMENT_FINANCIAL_KEYS = ['cost_usd', 'amount_usd', 'cost_iqd', 'amount_iqd'];
 
 describe('sectionScreenSpecs', () => {
-  it('keeps statement core columns visible for every transaction section', () => {
+  it('keeps shared statement prefix columns at the front for every transaction section', () => {
     TRANSACTION_SECTIONS
       .filter((sectionKey) => sectionKey !== 'port-3')
       .forEach((sectionKey) => {
         const statementColumns = getSectionColumns(sectionKey, 'statement');
-        expect(statementColumns.slice(0, STATEMENT_CORE_KEYS.length).map((column) => column.key)).toEqual(STATEMENT_CORE_KEYS);
+        expect(statementColumns.slice(0, STATEMENT_PREFIX_KEYS.length).map((column) => column.key)).toEqual(STATEMENT_PREFIX_KEYS);
       });
+  });
+
+  it('orders financial statement fields as cost then amount in usd and iqd', () => {
+    TRANSACTION_SECTIONS.forEach((sectionKey) => {
+      const statementKeys = getSectionColumns(sectionKey, 'statement').map((column) => column.key);
+      const presentFinancialKeys = STATEMENT_FINANCIAL_KEYS.filter((key) => statementKeys.includes(key));
+
+      expect(statementKeys.filter((key) => presentFinancialKeys.includes(key))).toEqual(presentFinancialKeys);
+    });
   });
 
   it('uses the requested current statement order for Qaim', () => {
@@ -59,10 +69,13 @@ describe('sectionScreenSpecs', () => {
 
   it('uses the Iraqi transport label for Saudi transaction price fields', () => {
     const saudiListColumns = getSectionColumns('port-1', 'list');
+    const saudiStatementColumns = getSectionColumns('port-1', 'statement');
     const saudiInvoiceFields = getSectionTargetFields('port-1', 'invoice');
     const expectedLabel = 'نقل عراقي (دينار)';
 
+    expect(saudiStatementColumns.find((column) => column.key === 'cost_usd')?.label).toBe('الكلفة دولار');
     expect(saudiListColumns.find((column) => column.key === 'trans_price')?.label).toBe(expectedLabel);
+    expect(saudiStatementColumns.find((column) => column.key === 'trans_price')).toBeUndefined();
     expect(saudiInvoiceFields.find((field) => field.key === 'trans_price')?.label).toBe(expectedLabel);
   });
 

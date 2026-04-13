@@ -1,3 +1,5 @@
+type BodyRecord = Record<string, unknown>;
+
 export function hasBodyValue(value: unknown) {
   return value !== undefined && value !== null && value !== "";
 }
@@ -20,13 +22,13 @@ export function parseNullableNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function pickBodyField(body: Record<string, any>, ...keys: string[]) {
+export function pickBodyField(body: BodyRecord, ...keys: string[]) {
   for (const key of keys) {
     if (hasBodyValue(body?.[key])) return body[key];
   }
   return undefined;
 }
 
-export function hasBodyKey(body: Record<string, any>, ...keys: string[]) {
+export function hasBodyKey(body: BodyRecord, ...keys: string[]) {
   return keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
 }

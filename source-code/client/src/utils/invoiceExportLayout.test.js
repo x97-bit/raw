@@ -51,7 +51,7 @@ describe('invoiceExportLayout', () => {
 
   it('uses transport-specific reference labels when exporting transport documents', () => {
     expect(buildInvoiceHeaderMeta(SAMPLE_TRANSACTION, 'invoice', 'transport-1')[0].label).toBe('رقم استحقاق النقل');
-    expect(buildInvoiceHeaderMeta({ ...SAMPLE_TRANSACTION, TransTypeID: 2 }, 'payment', 'transport-1')[0].label).toBe('رقم سند الصرف');
+    expect(buildInvoiceHeaderMeta({ ...SAMPLE_TRANSACTION, TransTypeID: 2 }, 'payment', 'transport-1')[0].label).toBe('رقم سند الدفع');
   });
 
   it('uses the section invoice layout instead of the generic field list', () => {

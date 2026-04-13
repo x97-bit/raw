@@ -84,12 +84,16 @@ async function loadTransactionsHarness(fakeDb: ReturnType<typeof createTransacti
       req.appUser = { id: 77, role: "admin", username: "tester" };
       next();
     },
+    requireAppUser: (req: Record<string, unknown>) => req.appUser,
   }));
   vi.doMock("../../_core/financialRateLimits", () => ({
     financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) => next(),
   }));
   vi.doMock("../../utils/safeAuditLog", () => ({
     safeWriteAuditLog: vi.fn().mockResolvedValue(undefined),
+  }));
+  vi.doMock("../../utils/paymentMatchingAutoMatch", () => ({
+    rebuildPaymentMatchesForAccounts: vi.fn().mockResolvedValue({ matched: 0 }),
   }));
 
   const { registerTransactionRoutes } = await import("./index");
@@ -103,6 +107,7 @@ afterEach(() => {
   vi.unmock("../../_core/appAuth");
   vi.unmock("../../_core/financialRateLimits");
   vi.unmock("../../utils/safeAuditLog");
+  vi.unmock("../../utils/paymentMatchingAutoMatch");
 });
 
 describe("transaction routes integration", () => {

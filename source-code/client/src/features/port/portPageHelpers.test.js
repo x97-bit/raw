@@ -161,8 +161,8 @@ describe('portPageHelpers', () => {
       className: 'px-3 py-3',
     });
     expect(getPortStatementFooterCell({ key: 'AmountUSD' }, 1, { balanceUSD: 300 }, { sectionKey: 'transport-1' })).toEqual({
-      value: '$300',
-      className: 'px-3 py-3 text-rose-700',
+      value: '-',
+      className: 'px-3 py-3 text-[#91a0ad]',
     });
     expect(getPortStatementFooterCell({ key: 'ProfitUSD' }, 2, { totalProfitUSD: -50 })).toEqual({
       value: '$-50',
@@ -172,9 +172,9 @@ describe('portPageHelpers', () => {
 
   it('exposes transport-specific labels and relabels ref columns', () => {
     expect(getPortViewLabels({ sectionKey: 'transport-1', formType: 1 }).invoiceLabel).toBe('استحقاق نقل');
-    expect(getPortViewLabels({ sectionKey: 'transport-1', formType: 2 }).paymentLabel).toBe('دفعة نقل');
+    expect(getPortViewLabels({ sectionKey: 'transport-1', formType: 2 }).paymentLabel).toBe('سند دفع');
     expect(getPortBuiltInFieldLabel('transport-1', 'ref_no', 1, 'fallback')).toBe('رقم استحقاق النقل');
-    expect(getPortBuiltInFieldLabel('transport-1', 'ref_no', 2, 'fallback')).toBe('رقم سند الصرف');
+    expect(getPortBuiltInFieldLabel('transport-1', 'ref_no', 2, 'fallback')).toBe('رقم سند الدفع');
     expect(relabelPortColumnsForSection([{ key: 'ref_no', label: 'رقم الفاتورة' }], 'transport-1')).toEqual([
       { key: 'ref_no', label: 'رقم المستند' },
     ]);

@@ -2,8 +2,9 @@ import { eq } from "drizzle-orm";
 import type { InsertUser } from "../drizzle/schema";
 import { users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import type { AppDb } from "./dbTypes";
 
-type GetDbFn = () => Promise<any>;
+type GetDbFn = () => Promise<AppDb | null>;
 
 export async function upsertUserWithDb(getDb: GetDbFn, user: InsertUser): Promise<void> {
   if (!user.openId) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import BrandLogo from '../components/BrandLogo';
 import SidebarToggleButton from '../components/SidebarToggleButton';
+import ThemeToggleButton from '../components/ThemeToggleButton';
 import { formatBaghdadDate, formatBaghdadTime } from '../features/main-page/baghdadTime';
 
 export default function MainPage() {
@@ -25,27 +26,34 @@ export default function MainPage() {
 
   return (
     <div className="page-shell min-h-screen" style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.35s ease' }}>
-      <div className="pointer-events-none absolute left-3 top-3 z-30 sm:left-4 sm:top-4">
+      <div className="absolute left-3 top-3 z-30 flex items-center gap-2 sm:left-4 sm:top-4">
         <div className="pointer-events-auto">
           <SidebarToggleButton compact />
+        </div>
+        <div className="pointer-events-auto">
+          <ThemeToggleButton compact />
         </div>
       </div>
 
       <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6 py-12 sm:px-10">
-        <div className="pointer-events-none absolute inset-0 animate-ambient-drift bg-[radial-gradient(circle_at_center,rgba(100,142,169,0.08),transparent_40%)]" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-[28rem] bg-[radial-gradient(circle_at_right,rgba(100,142,169,0.1),transparent_72%)]" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-[24rem] bg-[radial-gradient(circle_at_left,rgba(255,255,255,0.04),transparent_72%)]" />
+        <div className="page-shell__center-glow pointer-events-none absolute inset-0 animate-ambient-drift" />
+        <div className="page-shell__right-glow pointer-events-none absolute inset-y-0 right-0 w-[28rem]" />
+        <div className="page-shell__left-glow pointer-events-none absolute inset-y-0 left-0 w-[24rem]" />
 
         <section className="relative flex min-h-screen w-full items-center justify-center">
           <div className="mx-auto flex w-full max-w-[32rem] -translate-y-10 flex-col items-center justify-center text-center sm:-translate-y-14">
             <div className="mb-4">
               <div
-                className="text-[3rem] font-black tracking-[0.18em] text-[#f4f8fb] tabular-nums sm:text-[4rem]"
+                className="text-[3rem] font-black tracking-[0.18em] tabular-nums sm:text-[4rem]"
                 dir="ltr"
+                style={{ color: 'var(--hero-title)' }}
               >
                 {timeStr}
               </div>
-              <div className="mt-3 text-[15px] font-semibold tracking-[0.18em] text-[#92a1af] sm:text-[17px]">
+              <div
+                className="mt-3 text-[15px] font-semibold tracking-[0.18em] sm:text-[17px]"
+                style={{ color: 'var(--hero-muted)' }}
+              >
                 {dateStr}
               </div>
             </div>

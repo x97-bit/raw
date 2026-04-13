@@ -19,6 +19,7 @@ const nullableTextSchema = z.string().nullable();
 const currencySchema = z.string().trim().transform((value) => value.toUpperCase()).pipe(z.enum(["USD", "IQD", "BOTH"]));
 const debtStatusSchema = z.enum(["pending", "partial", "paid"]);
 const specialTypeSchema = z.enum(["haider", "partnership", "yaser", "other"]);
+const expenseChargeTargetSchema = z.enum(["port", "trader"]);
 
 export const transactionCreateSchema = z.object({
   refNo: nonEmptyString(50, "رقم المرجع"),
@@ -111,7 +112,18 @@ export const expenseMutationSchema = z.object({
   amountIQD: decimalStringSchema,
   description: nullableTextSchema,
   portId: nonEmptyString(50, "قسم المصروف"),
+  chargeTarget: expenseChargeTargetSchema,
+  accountId: nullablePositiveIntSchema,
+  accountName: nullableString(255, "اسم التاجر"),
   createdBy: positiveIntSchema.nullable().optional(),
+}).superRefine((payload, ctx) => {
+  if (payload.chargeTarget === "trader" && !payload.accountId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "يجب تحديد التاجر عند تحميل المصروف عليه",
+      path: ["accountId"],
+    });
+  }
 });
 
 export const expenseUpdateSchema = z.object({
@@ -120,8 +132,19 @@ export const expenseUpdateSchema = z.object({
   amountIQD: decimalStringSchema.optional(),
   description: nullableTextSchema.optional(),
   portId: nonEmptyString(50, "قسم المصروف").optional(),
+  chargeTarget: expenseChargeTargetSchema.optional(),
+  accountId: nullablePositiveIntSchema.optional(),
+  accountName: nullableString(255, "اسم التاجر").optional(),
 }).refine((payload) => Object.keys(payload).length > 0, {
   message: "لا توجد حقول صالحة لتحديث المصروف",
+}).superRefine((payload, ctx) => {
+  if (payload.chargeTarget === "trader" && payload.accountId === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "عند تحويل المصروف إلى التاجر يجب تحديد التاجر",
+      path: ["accountId"],
+    });
+  }
 });
 
 export const specialAccountCreateSchema = z.object({

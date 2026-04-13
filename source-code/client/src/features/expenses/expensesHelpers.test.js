@@ -36,6 +36,9 @@ describe('expenses helpers', () => {
     expect(getExpensePortLabel('port-2')).toBe('مصاريف المنذرية');
     expect(createInitialExpenseForm()).toMatchObject({
       portId: 'general',
+      chargeTarget: 'port',
+      accountId: null,
+      accountName: '',
       amountUSD: '',
       amountIQD: '',
       description: '',
@@ -46,12 +49,18 @@ describe('expenses helpers', () => {
       amountIQD: '1000',
       description: 'نقل',
       portId: 'port-3',
+      chargeTarget: 'trader',
+      accountId: 14,
+      accountName: 'ياسر',
     })).toEqual({
       expenseDate: '2026-04-09',
       amountUSD: '5',
       amountIQD: '1000',
       description: 'نقل',
       portId: 'port-3',
+      chargeTarget: 'trader',
+      accountId: 14,
+      accountName: 'ياسر',
     });
   });
 
@@ -59,6 +68,8 @@ describe('expenses helpers', () => {
     expect(buildExpenseExportColumns(EXPENSE_COLUMNS)).toEqual([
       { key: 'expenseDate', label: 'التاريخ' },
       { key: 'description', label: 'الوصف' },
+      { key: 'chargeTarget', label: 'التحميل' },
+      { key: 'accountName', label: 'اسم التاجر' },
       { key: 'amountUSD', label: 'المبلغ ($)' },
       { key: 'amountIQD', label: 'المبلغ (د.ع)' },
       { key: 'portId', label: 'القسم' },

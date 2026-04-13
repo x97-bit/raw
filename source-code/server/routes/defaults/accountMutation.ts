@@ -2,6 +2,8 @@ import { Router, Response } from "express";
 import { and, eq } from "drizzle-orm";
 import { accountDefaults } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
+import { assertPositiveIntegerParam } from "../../_core/requestValidation";
 import { getDb } from "../../db";
 import { hasBodyValue, parseOptionalDecimal, parseOptionalInt } from "../../utils/bodyFields";
 import {
@@ -10,7 +12,10 @@ import {
   requireDefaultAdmin,
 } from "./shared";
 
-function resolveTextValue(input: unknown, existingValue: unknown, replaceMode: boolean) {
+type AccountDefaultRow = typeof accountDefaults.$inferSelect;
+type AccountDefaultInsert = typeof accountDefaults.$inferInsert;
+
+function resolveTextValue(input: unknown, existingValue: string | null | undefined, replaceMode: boolean): string | null {
   if (replaceMode) {
     return hasBodyValue(input) ? String(input) : null;
   }
@@ -18,20 +23,26 @@ function resolveTextValue(input: unknown, existingValue: unknown, replaceMode: b
   return hasBodyValue(input) ? String(input) : existingValue ?? null;
 }
 
-function resolveIntValue(input: unknown, existingValue: unknown, replaceMode: boolean) {
+function resolveIntValue(input: unknown, existingValue: number | null | undefined, replaceMode: boolean): number | null {
   const parsed = parseOptionalInt(input);
   return replaceMode ? parsed ?? null : parsed ?? existingValue ?? null;
 }
 
-function resolveDecimalValue(input: unknown, existingValue: unknown, replaceMode: boolean) {
+function resolveDecimalValue(input: unknown, existingValue: string | null | undefined, replaceMode: boolean): string | null {
   const parsed = parseOptionalDecimal(input);
   return replaceMode ? parsed ?? null : parsed ?? existingValue ?? null;
 }
 
-function buildAccountDefaultPayload(body: Record<string, unknown>, existing: any, replaceMode: boolean) {
+function buildAccountDefaultPayload(
+  body: Record<string, unknown>,
+  existing: AccountDefaultRow | undefined,
+  replaceMode: boolean,
+  accountId: number,
+  sectionKey: string,
+): AccountDefaultInsert {
   return {
-    accountId: parseOptionalInt(body.accountId),
-    sectionKey: String(body.sectionKey || "").trim(),
+    accountId,
+    sectionKey,
     defaultCurrency: resolveTextValue(body.defaultCurrency, existing?.defaultCurrency, replaceMode),
     defaultDriverId: resolveIntValue(body.defaultDriverId, existing?.defaultDriverId, replaceMode),
     defaultVehicleId: resolveIntValue(body.defaultVehicleId, existing?.defaultVehicleId, replaceMode),
@@ -68,7 +79,7 @@ export function registerAccountDefaultMutationRoutes(router: Router) {
         .where(and(eq(accountDefaults.accountId, accountId), eq(accountDefaults.sectionKey, sectionKey)))
         .limit(1);
 
-      const payload = buildAccountDefaultPayload(req.body, existing, replaceMode);
+      const payload = buildAccountDefaultPayload(req.body, existing, replaceMode, accountId, sectionKey);
 
       await db.insert(accountDefaults).values(payload).onDuplicateKeyUpdate({
         set: {
@@ -87,8 +98,8 @@ export function registerAccountDefaultMutationRoutes(router: Router) {
       });
 
       return res.json({ message: ACCOUNT_DEFAULTS_SAVED_MESSAGE });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -99,10 +110,11 @@ export function registerAccountDefaultMutationRoutes(router: Router) {
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      await db.delete(accountDefaults).where(eq(accountDefaults.id, parseInt(req.params.id, 10)));
+      const defaultId = assertPositiveIntegerParam(req.params.id, "account default id");
+      await db.delete(accountDefaults).where(eq(accountDefaults.id, defaultId));
       return res.json({ message: ACCOUNT_DEFAULTS_DELETED_MESSAGE });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

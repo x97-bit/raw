@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createInitialProfilePasswordForm, validateProfilePasswordForm } from './profilePageHelpers';
+import {
+  createInitialProfilePasswordForm,
+  PROFILE_PASSWORD_REQUIREMENTS_MESSAGE,
+  validateProfilePasswordForm,
+} from './profilePageHelpers';
 
 describe('profilePageHelpers', () => {
   it('creates the initial password form state', () => {
@@ -13,24 +17,24 @@ describe('profilePageHelpers', () => {
   it('validates password change requirements', () => {
     expect(validateProfilePasswordForm(createInitialProfilePasswordForm())).toBe('يرجى ملء جميع حقول كلمة المرور.');
     expect(validateProfilePasswordForm({
-      currentPassword: '1111',
-      newPassword: '1111',
-      confirmPassword: '1111',
+      currentPassword: 'StrongPass1',
+      newPassword: 'StrongPass1',
+      confirmPassword: 'StrongPass1',
     })).toBe('كلمة المرور الجديدة يجب أن تختلف عن الحالية.');
     expect(validateProfilePasswordForm({
-      currentPassword: '1111',
+      currentPassword: 'StrongPass1',
       newPassword: '22',
       confirmPassword: '22',
-    })).toBe('كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل.');
+    })).toBe(PROFILE_PASSWORD_REQUIREMENTS_MESSAGE);
     expect(validateProfilePasswordForm({
-      currentPassword: '1111',
-      newPassword: '2222',
-      confirmPassword: '3333',
+      currentPassword: 'StrongPass1',
+      newPassword: 'NewPass22',
+      confirmPassword: 'OtherPass33',
     })).toBe('تأكيد كلمة المرور غير مطابق.');
     expect(validateProfilePasswordForm({
-      currentPassword: '1111',
-      newPassword: '2222',
-      confirmPassword: '2222',
+      currentPassword: 'StrongPass1',
+      newPassword: 'NewPass22',
+      confirmPassword: 'NewPass22',
     })).toBe('');
   });
 });

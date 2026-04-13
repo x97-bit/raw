@@ -1,8 +1,10 @@
 import { X } from 'lucide-react';
+import AutocompleteInput from '../../../components/AutocompleteInput';
 import ModalPortal from '../../../components/ModalPortal';
-import { PORT_OPTIONS } from '../expensesConfig';
+import { EXPENSE_TARGET_OPTIONS, PORT_OPTIONS } from '../expensesConfig';
 
 export default function ExpenseFormModal({
+  accounts,
   form,
   editId,
   onClose,
@@ -56,6 +58,44 @@ export default function ExpenseFormModal({
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">نوع التحميل</label>
+                <select
+                  value={form.chargeTarget || 'port'}
+                  onChange={(event) => onChange('chargeTarget', event.target.value)}
+                  className="input-field"
+                >
+                  {EXPENSE_TARGET_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">اسم التاجر</label>
+                <AutocompleteInput
+                  value={form.accountName || ''}
+                  options={accounts}
+                  labelKey="AccountName"
+                  valueKey="AccountID"
+                  onChange={(text) => {
+                    onChange('accountName', text);
+                    onChange('accountId', null);
+                  }}
+                  onSelect={(account) => {
+                    onChange('accountName', account.AccountName);
+                    onChange('accountId', account.AccountID);
+                  }}
+                  className="input-field"
+                  placeholder="ابحث عن التاجر..."
+                  disabled={(form.chargeTarget || 'port') !== 'trader'}
+                />
               </div>
             </div>
 

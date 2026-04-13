@@ -8,6 +8,7 @@ const API_CACHE_HEADERS = {
   Pragma: "no-cache",
   Expires: "0",
 } as const;
+const INVALID_HOST_ERROR = "Invalid Host header.";
 
 const mutationRateLimitGuard = buildRateLimitGuard({
   keyPrefix: "api-mutation",
@@ -25,6 +26,64 @@ function normalizeOriginHeader(value?: string | string[]) {
   } catch {
     return null;
   }
+}
+
+function normalizeConfiguredOrigin(value?: string | null) {
+  if (!value) return null;
+
+  try {
+    return new URL(value).origin.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+export function normalizeHostHeader(value?: string | string[]) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (!rawValue) return null;
+
+  const normalized = rawValue.trim().toLowerCase();
+  if (!normalized) return null;
+
+  try {
+    const parsed = new URL(`http://${normalized}`);
+    const hasUnsafeParts = Boolean(parsed.username || parsed.password || parsed.search || parsed.hash);
+    const hasUnexpectedPath = parsed.pathname !== "/" && parsed.pathname !== "";
+
+    if (hasUnsafeParts || hasUnexpectedPath) {
+      return null;
+    }
+
+    return parsed.host.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function resolveConfiguredAllowedOrigins() {
+  const configuredOrigins = [
+    process.env.APP_BASE_URL,
+    process.env.PUBLIC_BASE_URL,
+    process.env.SITE_URL,
+    ...(process.env.ALLOWED_ORIGINS || "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean),
+  ];
+
+  return Array.from(
+    new Set(
+      configuredOrigins
+        .map((value) => normalizeConfiguredOrigin(value))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+}
+
+export function hasValidHostHeader(req: Request) {
+  const host = req.get("host");
+  if (!host) return true;
+  return Boolean(normalizeHostHeader(host));
 }
 
 export function isMutatingRequest(req: Pick<Request, "method">) {
@@ -61,25 +120,29 @@ export function isJsonContentType(value?: string | string[]) {
 }
 
 export function resolveRequestOrigin(req: Request) {
-  const host = req.get("host");
+  const host = normalizeHostHeader(req.get("host"));
   if (!host) return null;
   return `${req.protocol}://${host}`.toLowerCase();
 }
 
 export function isAllowedMutationOrigin(req: Request) {
-  const allowedOrigin = resolveRequestOrigin(req);
-  if (!allowedOrigin) {
+  const configuredAllowedOrigins = resolveConfiguredAllowedOrigins();
+  const allowedOrigins = configuredAllowedOrigins.length > 0
+    ? configuredAllowedOrigins
+    : [resolveRequestOrigin(req)].filter((value): value is string => Boolean(value));
+
+  if (allowedOrigins.length === 0) {
     return !req.get("origin") && !req.get("referer");
   }
 
   const origin = normalizeOriginHeader(req.get("origin"));
   if (origin) {
-    return origin === allowedOrigin;
+    return allowedOrigins.includes(origin);
   }
 
   const refererOrigin = normalizeOriginHeader(req.get("referer"));
   if (refererOrigin) {
-    return refererOrigin === allowedOrigin;
+    return allowedOrigins.includes(refererOrigin);
   }
 
   return req.get("sec-fetch-site")?.toLowerCase() !== "cross-site";
@@ -88,6 +151,10 @@ export function isAllowedMutationOrigin(req: Request) {
 export const apiSecurityMiddleware: RequestHandler = (req, res, next) => {
   for (const [header, value] of Object.entries(API_CACHE_HEADERS)) {
     res.setHeader(header, value);
+  }
+
+  if (!hasValidHostHeader(req)) {
+    return res.status(400).json({ error: INVALID_HOST_ERROR });
   }
 
   if (!isMutatingRequest(req)) {
@@ -118,3 +185,5 @@ export const apiBodyParserErrorMiddleware: ErrorRequestHandler = (error, _req, r
 
   return next(error);
 };
+
+export { INVALID_HOST_ERROR };

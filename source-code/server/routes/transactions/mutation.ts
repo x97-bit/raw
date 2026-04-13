@@ -1,11 +1,12 @@
 import { Router, Response } from "express";
 import { eq } from "drizzle-orm";
 import { transactions } from "../../../drizzle/schema";
-import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { AuthRequest, authMiddleware, requireAppUser } from "../../_core/appAuth";
 import { financialWriteRateLimit } from "../../_core/financialRateLimits";
 import { respondRouteError } from "../../_core/routeResponses";
 import { assertPositiveIntegerParam } from "../../_core/requestValidation";
 import { getDb } from "../../db";
+import { rebuildPaymentMatchesForAccounts } from "../../utils/paymentMatchingAutoMatch";
 import { safeWriteAuditLog } from "../../utils/safeAuditLog";
 import { buildTransactionCreateInput, buildTransactionUpdateInput } from "./builders";
 import {
@@ -22,12 +23,14 @@ import {
 export function registerTransactionMutationRoutes(router: Router) {
   router.post("/transactions", authMiddleware, financialWriteRateLimit, async (req: AuthRequest, res: Response) => {
     try {
+      const appUser = requireAppUser(req);
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const { data, refNo } = await buildTransactionCreateInput(db, req.body, req.appUser.id);
+      const { data, refNo } = await buildTransactionCreateInput(db, req.body, appUser.id);
       const result = await db.insert(transactions).values(data);
       const transactionId = Number(result[0].insertId);
+      await rebuildPaymentMatchesForAccounts(db, [data.accountId]);
 
       await safeWriteAuditLog(db, {
         entityType: "transaction",
@@ -35,12 +38,12 @@ export function registerTransactionMutationRoutes(router: Router) {
         action: "create",
         summary: `${TRANSACTION_CREATE_SUMMARY_PREFIX} ${refNo}`,
         after: { id: transactionId, ...data },
-        appUser: req.appUser,
+        appUser,
         metadata: { refNo, portId: data.portId, accountId: data.accountId },
       });
 
       return res.json({ id: transactionId, refNo, message: TRANSACTION_CREATED_MESSAGE });
-    } catch (error: any) {
+    } catch (error) {
       return respondRouteError(res, error);
     }
   });
@@ -56,6 +59,7 @@ export function registerTransactionMutationRoutes(router: Router) {
 
       const validatedUpdates = await buildTransactionUpdateInput(db, req.body);
       await db.update(transactions).set(validatedUpdates).where(eq(transactions.id, transactionId));
+      await rebuildPaymentMatchesForAccounts(db, [existingTransaction.accountId, validatedUpdates.accountId || existingTransaction.accountId]);
 
       await safeWriteAuditLog(db, {
         entityType: "transaction",
@@ -69,7 +73,7 @@ export function registerTransactionMutationRoutes(router: Router) {
       });
 
       return res.json({ message: TRANSACTION_UPDATED_MESSAGE });
-    } catch (error: any) {
+    } catch (error) {
       return respondRouteError(res, error);
     }
   });
@@ -88,6 +92,7 @@ export function registerTransactionMutationRoutes(router: Router) {
         if (!existingTransaction) return res.status(404).json({ error: TRANSACTION_NOT_FOUND_MESSAGE });
 
         await db.delete(transactions).where(eq(transactions.id, transactionId));
+        await rebuildPaymentMatchesForAccounts(db, [existingTransaction.accountId]);
         await safeWriteAuditLog(db, {
           entityType: "transaction",
           entityId: transactionId,
@@ -99,7 +104,7 @@ export function registerTransactionMutationRoutes(router: Router) {
         });
 
         return res.json({ message: TRANSACTION_DELETED_MESSAGE });
-      } catch (error: any) {
+      } catch (error) {
         return respondRouteError(res, error);
       }
     },

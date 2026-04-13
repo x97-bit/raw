@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Lock, User } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
+import ThemeToggleButton from '../components/ThemeToggleButton';
 import { useAuth } from '../contexts/AuthContext';
 import { formatBaghdadDate, formatBaghdadTime } from '../features/main-page/baghdadTime';
 
@@ -53,48 +54,66 @@ export default function LoginPage() {
         transition: 'opacity 0.35s ease',
       }}
     >
+      <div className="absolute left-3 top-3 z-30 pointer-events-auto sm:left-4 sm:top-4">
+        <ThemeToggleButton compact />
+      </div>
+
       <main className="relative flex h-[100dvh] w-full items-start justify-center overflow-hidden px-6 py-3 sm:px-10 sm:py-4">
-        <div className="pointer-events-none absolute inset-0 animate-ambient-drift bg-[radial-gradient(circle_at_center,rgba(100,142,169,0.08),transparent_40%)]" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-[28rem] bg-[radial-gradient(circle_at_right,rgba(100,142,169,0.1),transparent_72%)]" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-[24rem] bg-[radial-gradient(circle_at_left,rgba(255,255,255,0.04),transparent_72%)]" />
+        <div className="page-shell__center-glow pointer-events-none absolute inset-0 animate-ambient-drift" />
+        <div className="page-shell__right-glow pointer-events-none absolute inset-y-0 right-0 w-[28rem]" />
+        <div className="page-shell__left-glow pointer-events-none absolute inset-y-0 left-0 w-[24rem]" />
 
         <section className="relative flex w-full max-w-[32rem] -translate-y-2 flex-col items-center justify-start pt-2 text-center sm:-translate-y-4 sm:pt-3">
           <div className="mb-3">
             <div
-              className="text-[2rem] font-black tracking-[0.14em] text-[#f4f8fb] tabular-nums sm:text-[3rem]"
+              className="text-[2rem] font-black tracking-[0.14em] tabular-nums sm:text-[3rem]"
               dir="ltr"
+              style={{ color: 'var(--hero-title)' }}
             >
               {timeStr}
             </div>
-            <div className="mt-2 text-[13px] font-semibold tracking-[0.14em] text-[#92a1af] sm:text-[15px]">
+            <div
+              className="mt-2 text-[13px] font-semibold tracking-[0.14em] sm:text-[15px]"
+              style={{ color: 'var(--hero-muted)' }}
+            >
               {dateStr}
             </div>
           </div>
 
           <div className="mx-auto -mt-3 mb-3 flex h-28 w-28 items-center justify-center sm:h-36 sm:w-36">
-            <BrandLogo className="h-24 w-24 animate-logo-float drop-shadow-[0_18px_42px_rgba(0,0,0,0.24)] sm:h-30 sm:w-30" />
+            <BrandLogo className="h-24 w-24 animate-logo-float drop-shadow-[0_18px_42px_rgba(0,0,0,0.24)] sm:h-32 sm:w-32" />
           </div>
 
           <div className="mb-4 text-center">
-            <h1 className="text-[1.7rem] font-black tracking-tight text-[#f4f8fb] sm:text-[2rem]">
+            <h1
+              className="text-[1.7rem] font-black tracking-tight sm:text-[2rem]"
+              style={{ color: 'var(--hero-title)' }}
+            >
               تسجيل الدخول
             </h1>
           </div>
 
           <div className="surface-card w-full max-w-[26rem] p-4 sm:p-5">
             {error && (
-              <div className="mb-3 rounded-[20px] bg-[#b76169]/[0.12] px-4 py-3 text-sm font-medium text-[#f0c9ce] shadow-[inset_0_0_0_1px_rgba(183,97,105,0.18)]">
+              <div
+                className="mb-3 rounded-[20px] px-4 py-3 text-sm font-medium"
+                style={{
+                  background: 'var(--error-soft-bg)',
+                  color: 'var(--error-soft-text)',
+                  boxShadow: 'var(--error-soft-ring)',
+                }}
+              >
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3 text-right">
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide text-[#92a1af]">
+                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide" style={{ color: 'var(--hero-muted)' }}>
                   اسم المستخدم
                 </label>
                 <div className="relative">
-                  <User size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#92a1af]" />
+                  <User size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--hero-muted)' }} />
                   <input
                     type="text"
                     value={username}
@@ -108,11 +127,11 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide text-[#92a1af]">
+                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide" style={{ color: 'var(--hero-muted)' }}>
                   كلمة المرور
                 </label>
                 <div className="relative">
-                  <Lock size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#92a1af]" />
+                  <Lock size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--hero-muted)' }} />
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
@@ -124,7 +143,11 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPass((current) => !current)}
-                    className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/[0.06] text-[#c9d4de] transition-colors hover:bg-white/[0.1] hover:text-white"
+                    className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl transition-colors"
+                    style={{
+                      background: 'var(--ghost-button-bg)',
+                      color: 'var(--ghost-button-text)',
+                    }}
                     title={showPass ? 'إخفاء' : 'إظهار'}
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -151,7 +174,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-4 text-center text-[10.5px] tracking-[0.16em] text-[#6f7d8a]">
+            <p className="mt-4 text-center text-[10.5px] tracking-[0.16em]" style={{ color: 'var(--page-header-subtitle)' }}>
               نظام الراوي © {new Date().getFullYear()}
             </p>
           </div>

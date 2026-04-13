@@ -12,6 +12,7 @@ export async function ensureRuntimeSchemaConstraints(connection: RuntimeSchemaCo
   await ensureDateColumn(connection, "expenses", "expense_date", { nullable: false });
   await ensureDateColumn(connection, "special_accounts", "date", { nullable: true });
 
+  await ensureIndex(connection, "transactions", "idx_trans_date", "INDEX `idx_trans_date` (`trans_date`)");
   await ensureIndex(connection, "transactions", "idx_account_id", "INDEX `idx_account_id` (`account_id`)");
   await ensureIndex(connection, "transactions", "idx_driver_id", "INDEX `idx_driver_id` (`driver_id`)");
   await ensureIndex(connection, "transactions", "idx_vehicle_id", "INDEX `idx_vehicle_id` (`vehicle_id`)");
@@ -19,9 +20,13 @@ export async function ensureRuntimeSchemaConstraints(connection: RuntimeSchemaCo
   await ensureIndex(connection, "transactions", "idx_gov_id", "INDEX `idx_gov_id` (`gov_id`)");
   await ensureIndex(connection, "transactions", "idx_company_id", "INDEX `idx_company_id` (`company_id`)");
   await ensureIndex(connection, "transactions", "idx_carrier_id", "INDEX `idx_carrier_id` (`carrier_id`)");
+  await ensureIndex(connection, "transactions", "idx_created_by", "INDEX `idx_created_by` (`created_by`)");
   await ensureIndex(connection, "payment_matching", "idx_invoiceId", "INDEX `idx_invoiceId` (`invoiceId`)");
   await ensureIndex(connection, "payment_matching", "idx_paymentId", "INDEX `idx_paymentId` (`paymentId`)");
   await ensureIndex(connection, "custom_field_values", "idx_custom_field_id", "INDEX `idx_custom_field_id` (`custom_field_id`)");
+  await ensureIndex(connection, "expenses", "idx_created_by", "INDEX `idx_created_by` (`created_by`)");
+  await ensureIndex(connection, "expenses", "idx_account_id", "INDEX `idx_account_id` (`account_id`)");
+  await ensureIndex(connection, "audit_logs", "idx_user_id", "INDEX `idx_user_id` (`user_id`)");
   await ensureIndex(connection, "account_defaults", "idx_account_id", "INDEX `idx_account_id` (`account_id`)");
   await ensureIndex(
     connection,
@@ -115,6 +120,12 @@ export async function ensureRuntimeSchemaConstraints(connection: RuntimeSchemaCo
   );
   await ensureForeignKey(
     connection,
+    "transactions",
+    "fk_transactions_created_by",
+    "FOREIGN KEY (`created_by`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+  );
+  await ensureForeignKey(
+    connection,
     "payment_matching",
     "fk_payment_matching_invoice",
     "FOREIGN KEY (`invoiceId`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE",
@@ -130,6 +141,24 @@ export async function ensureRuntimeSchemaConstraints(connection: RuntimeSchemaCo
     "custom_field_values",
     "fk_custom_field_values_custom_field_id",
     "FOREIGN KEY (`custom_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE",
+  );
+  await ensureForeignKey(
+    connection,
+    "expenses",
+    "fk_expenses_created_by",
+    "FOREIGN KEY (`created_by`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+  );
+  await ensureForeignKey(
+    connection,
+    "expenses",
+    "fk_expenses_account_id",
+    "FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+  );
+  await ensureForeignKey(
+    connection,
+    "audit_logs",
+    "fk_audit_logs_user_id",
+    "FOREIGN KEY (`user_id`) REFERENCES `app_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
   );
   await ensureForeignKey(
     connection,

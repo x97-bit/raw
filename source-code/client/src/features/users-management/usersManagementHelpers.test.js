@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isStrongPassword } from '../../../../shared/passwordPolicy';
 import {
   buildCreateUserPayload,
   buildPermissionsPayload,
@@ -7,6 +8,7 @@ import {
   createInitialUserForm,
   generateTemporaryPassword,
   normalizePermissionList,
+  PASSWORD_REQUIREMENTS_MESSAGE,
   selectAllPermissions,
   togglePermissionSelection,
   validateNewUserForm,
@@ -23,21 +25,28 @@ describe('usersManagementHelpers', () => {
     });
   });
 
-  it('validates required create-user fields', () => {
+  it('validates required create-user fields and password strength', () => {
     expect(validateNewUserForm(createInitialUserForm()))
       .toBe('جميع الحقول مطلوبة');
+
     expect(validateNewUserForm({
       username: 'admin',
       password: '1234',
       fullName: 'Admin User',
       role: 'admin',
+    })).toBe(PASSWORD_REQUIREMENTS_MESSAGE);
+
+    expect(validateNewUserForm({
+      username: 'admin',
+      password: 'StrongPass1',
+      fullName: 'Admin User',
+      role: 'admin',
     })).toBe('');
   });
 
-  it('validates password reset length', () => {
-    expect(validateResetPassword('123'))
-      .toBe('كلمة المرور يجب أن تكون 4 أحرف على الأقل');
-    expect(validateResetPassword('1234')).toBe('');
+  it('validates password reset strength', () => {
+    expect(validateResetPassword('123')).toBe(PASSWORD_REQUIREMENTS_MESSAGE);
+    expect(validateResetPassword('StrongPass1')).toBe('');
   });
 
   it('generates a temporary password with a safe default length', () => {
@@ -45,6 +54,7 @@ describe('usersManagementHelpers', () => {
 
     expect(password).toHaveLength(12);
     expect(password).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%]+$/);
+    expect(isStrongPassword(password)).toBe(true);
   });
 
   it('toggles and normalizes permission selections', () => {
@@ -58,12 +68,12 @@ describe('usersManagementHelpers', () => {
   it('builds API payloads from editable state', () => {
     expect(buildCreateUserPayload({
       username: '  admin  ',
-      password: '1234',
+      password: 'StrongPass1',
       fullName: '  المدير  ',
       role: 'admin',
     })).toEqual({
       username: 'admin',
-      password: '1234',
+      password: 'StrongPass1',
       fullName: 'المدير',
       role: 'admin',
     });

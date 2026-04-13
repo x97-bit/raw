@@ -75,7 +75,8 @@ HOST=0.0.0.0
 PORT=3000
 TRUST_PROXY=1
 API_BODY_LIMIT=10mb
-JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+APP_ACCESS_TOKEN_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+APP_REFRESH_TOKEN_SECRET=replace-with-a-different-random-secret-at-least-32-characters-long
 DATABASE_URL=mysql://username:password@db-host:3306/database_name
 ```
 

@@ -22,8 +22,8 @@ describe('transactionTypeLabels', () => {
   it('switches transport labels and references when the section is transport', () => {
     expect(isTransportSectionKey('transport-1')).toBe(true);
     expect(getTransactionTypeLabel('', 1, { sectionKey: 'transport-1' })).toBe('استحقاق نقل');
-    expect(getTransactionTypeLabel('', 2, { sectionKey: 'transport-1' })).toBe('دفعة نقل');
+    expect(getTransactionTypeLabel('', 2, { sectionKey: 'transport-1' })).toBe('سند دفع');
     expect(getTransactionReferenceLabel(1, { sectionKey: 'transport-1' })).toBe('رقم استحقاق النقل');
-    expect(getTransactionReferenceLabel(2, { sectionKey: 'transport-1' })).toBe('رقم سند الصرف');
+    expect(getTransactionReferenceLabel(2, { sectionKey: 'transport-1' })).toBe('رقم سند الدفع');
   });
 });

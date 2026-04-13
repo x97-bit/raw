@@ -2,10 +2,20 @@ import { Router, Response } from "express";
 import { asc } from "drizzle-orm";
 import { accountTypes, companies, drivers, goodsTypes, governorates, ports, vehicles } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
+import type { AppDb } from "../../dbTypes";
 import { respondWithCachedLookup } from "./shared";
 
-async function getLookupDb(res: Response) {
+type DriverRow = typeof drivers.$inferSelect;
+type VehicleRow = typeof vehicles.$inferSelect;
+type CompanyRow = typeof companies.$inferSelect;
+type GoodTypeRow = typeof goodsTypes.$inferSelect;
+type GovernorateRow = typeof governorates.$inferSelect;
+type PortRow = typeof ports.$inferSelect;
+type AccountTypeRow = typeof accountTypes.$inferSelect;
+
+async function getLookupDb(res: Response): Promise<AppDb | null> {
   const db = await getDb();
   if (!db) {
     res.status(500).json({ error: "Database unavailable" });
@@ -23,10 +33,10 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/drivers", async () => {
         const result = await db.select().from(drivers);
-        return result.map((driver: any) => ({ ...driver, DriverID: driver.id, DriverName: driver.name }));
+        return result.map((driver: DriverRow) => ({ ...driver, DriverID: driver.id, DriverName: driver.name }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -37,10 +47,10 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/vehicles", async () => {
         const result = await db.select().from(vehicles);
-        return result.map((vehicle: any) => ({ ...vehicle, VehicleID: vehicle.id, PlateNumber: vehicle.plateNumber }));
+        return result.map((vehicle: VehicleRow) => ({ ...vehicle, VehicleID: vehicle.id, PlateNumber: vehicle.plateNumber }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -51,14 +61,14 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/companies", async () => {
         const result = await db.select().from(companies).orderBy(asc(companies.name));
-        return result.map((company: any) => ({
+        return result.map((company: CompanyRow) => ({
           ...company,
           CompanyID: company.id,
           CompanyName: company.name,
         }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -69,10 +79,10 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/goods-types", async () => {
         const result = await db.select().from(goodsTypes);
-        return result.map((goodType: any) => ({ ...goodType, GoodTypeID: goodType.id, TypeName: goodType.name }));
+        return result.map((goodType: GoodTypeRow) => ({ ...goodType, GoodTypeID: goodType.id, TypeName: goodType.name }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -83,7 +93,7 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/governorates", async () => {
         const result = await db.select().from(governorates);
-        return result.map((governorate: any) => ({
+        return result.map((governorate: GovernorateRow) => ({
           ...governorate,
           GovID: governorate.id,
           GovName: governorate.name,
@@ -91,8 +101,8 @@ export function registerReferenceLookupReadRoutes(router: Router) {
           GovernorateName: governorate.name,
         }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -103,10 +113,10 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/ports", async () => {
         const result = await db.select().from(ports);
-        return result.map((port: any) => ({ ...port, PortID: port.portId, PortName: port.name }));
+        return result.map((port: PortRow) => ({ ...port, PortID: port.portId, PortName: port.name }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 
@@ -117,14 +127,14 @@ export function registerReferenceLookupReadRoutes(router: Router) {
 
       return respondWithCachedLookup(req, res, "/lookups/account-types", async () => {
         const result = await db.select().from(accountTypes);
-        return result.map((accountType: any) => ({
+        return result.map((accountType: AccountTypeRow) => ({
           ...accountType,
           AccountTypeID: accountType.typeId,
           TypeName: accountType.name,
         }));
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

@@ -21,14 +21,14 @@ describe('portSummaryConfig', () => {
 
   it('uses payable wording for transport summaries', () => {
     expect(PORT_SECTION_SUMMARY_META['transport-1'].list.map((card) => card.key)).toEqual([
-      'totalInvoicesUSD',
       'totalInvoicesIQD',
-      'totalPaymentsUSD',
       'totalPaymentsIQD',
+      'balanceIQD',
     ]);
     expect(PORT_SECTION_SUMMARY_META['transport-1'].statement.map((card) => card.label)).toEqual([
-      'المتبقي علينا دولار',
-      'المتبقي علينا دينار',
+      'إجمالي استحقاق النقل',
+      'المسدد',
+      'المتبقي علينا',
     ]);
   });
 

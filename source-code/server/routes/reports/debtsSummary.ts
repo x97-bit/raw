@@ -1,8 +1,26 @@
 import { Router, Response } from "express";
 import { debts } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
 import { mapDebtRow } from "../../utils/debts";
+
+type DebtRow = typeof debts.$inferSelect;
+
+type DebtSummaryRow = {
+  AccountID: string;
+  AccountName: string;
+  totalUSD: number;
+  totalIQD: number;
+  paidUSD: number;
+  paidIQD: number;
+  count: number;
+};
+
+function parseStoredAmount(value: unknown): number {
+  const parsed = Number.parseFloat(String(value ?? "0"));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 export function registerReportDebtSummaryRoutes(router: Router) {
   router.get("/reports/debts-summary", authMiddleware, async (_req: AuthRequest, res: Response) => {
@@ -11,16 +29,17 @@ export function registerReportDebtSummaryRoutes(router: Router) {
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
       const allDebts = await db.select().from(debts);
-      const totalUSD = allDebts.reduce((sum: number, debt: any) => sum + parseFloat(debt.amountUSD || "0"), 0);
-      const totalIQD = allDebts.reduce((sum: number, debt: any) => sum + parseFloat(debt.amountIQD || "0"), 0);
-      const paidUSD = allDebts.reduce((sum: number, debt: any) => sum + parseFloat(debt.paidAmountUSD || "0"), 0);
-      const paidIQD = allDebts.reduce((sum: number, debt: any) => sum + parseFloat(debt.paidAmountIQD || "0"), 0);
+      const totalUSD = allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountUSD), 0);
+      const totalIQD = allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountIQD), 0);
+      const paidUSD = allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.paidAmountUSD), 0);
+      const paidIQD = allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.paidAmountIQD), 0);
 
-      const debtorMap: Record<string, any> = {};
+      const debtorMap = new Map<string, DebtSummaryRow>();
       for (const debt of allDebts) {
         const key = debt.debtorName;
-        if (!debtorMap[key]) {
-          debtorMap[key] = {
+        let summary = debtorMap.get(key);
+        if (!summary) {
+          summary = {
             AccountID: key,
             AccountName: key,
             totalUSD: 0,
@@ -29,17 +48,18 @@ export function registerReportDebtSummaryRoutes(router: Router) {
             paidIQD: 0,
             count: 0,
           };
+          debtorMap.set(key, summary);
         }
-        debtorMap[key].totalUSD += parseFloat(debt.amountUSD || "0");
-        debtorMap[key].totalIQD += parseFloat(debt.amountIQD || "0");
-        debtorMap[key].paidUSD += parseFloat(debt.paidAmountUSD || "0");
-        debtorMap[key].paidIQD += parseFloat(debt.paidAmountIQD || "0");
-        debtorMap[key].count += 1;
+        summary.totalUSD += parseStoredAmount(debt.amountUSD);
+        summary.totalIQD += parseStoredAmount(debt.amountIQD);
+        summary.paidUSD += parseStoredAmount(debt.paidAmountUSD);
+        summary.paidIQD += parseStoredAmount(debt.paidAmountIQD);
+        summary.count += 1;
       }
 
       return res.json({
         debts: allDebts.map(mapDebtRow),
-        summary: Object.values(debtorMap),
+        summary: Array.from(debtorMap.values()),
         totals: {
           totalUSD,
           totalIQD,
@@ -49,8 +69,8 @@ export function registerReportDebtSummaryRoutes(router: Router) {
           remainingIQD: totalIQD - paidIQD,
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

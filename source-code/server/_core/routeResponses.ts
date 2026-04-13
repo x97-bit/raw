@@ -8,5 +8,6 @@ export function respondRouteError(res: Response, error: unknown) {
     return res.status(400).json({ error: error.message, details: error.details });
   }
 
+  console.error("[RouteError]", error);
   return res.status(500).json({ error: UNEXPECTED_ROUTE_ERROR_MESSAGE });
 }

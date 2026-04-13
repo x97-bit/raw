@@ -1,4 +1,4 @@
-import fs from "node:fs/promises";
+﻿import fs from "node:fs/promises";
 import path from "node:path";
 import mysql from "mysql2/promise";
 import { z } from "zod";
@@ -7,6 +7,10 @@ import { RequestValidationError, validateInput } from "../../_core/requestValida
 
 export const BACKUP_FORMAT = "alrawi-backup-v1";
 export const BACKUP_IMPORT_CONFIRM_PHRASE = "IMPORT_BACKUP";
+const BACKUP_TABLE_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+const BACKUP_IMPORT_MAX_TABLES = Number.parseInt(process.env.BACKUP_IMPORT_MAX_TABLES || "80", 10) || 80;
+const BACKUP_IMPORT_MAX_ROWS_PER_TABLE = Number.parseInt(process.env.BACKUP_IMPORT_MAX_ROWS_PER_TABLE || "50000", 10) || 50_000;
+const BACKUP_IMPORT_MAX_TOTAL_ROWS = Number.parseInt(process.env.BACKUP_IMPORT_MAX_TOTAL_ROWS || "250000", 10) || 250_000;
 
 const HIDDEN_TABLES = new Set(["__drizzle_migrations"]);
 const SKIP_IMPORT_BY_DEFAULT = new Set(["__drizzle_migrations", "app_users"]);
@@ -56,20 +60,35 @@ const tablePriorityOrder = [
   "entity_aliases",
 ];
 
+const backupDataSchema = z.record(z.string(), z.array(z.record(z.string(), z.unknown())));
+const structuredBackupPayloadSchema = z.object({
+  meta: z.record(z.string(), z.unknown()).optional(),
+  schema: z.record(z.string(), z.unknown()).optional(),
+  counts: z.record(z.string(), z.unknown()).optional(),
+  data: backupDataSchema,
+});
+
 const backupImportRequestSchema = z.object({
-  backup: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))).or(
-    z.object({
-      meta: z.record(z.string(), z.unknown()).optional(),
-      schema: z.record(z.string(), z.unknown()).optional(),
-      counts: z.record(z.string(), z.unknown()).optional(),
-      data: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))),
-    }),
-  ),
+  backup: backupDataSchema.or(structuredBackupPayloadSchema),
   confirmPhrase: z.string().trim().optional(),
   includeUsers: z.boolean().optional(),
   sourceFileName: z.string().trim().max(255).optional(),
 });
 
+type BackupRow = Record<string, unknown>;
+type BackupData = Record<string, BackupRow[]>;
+type BackupMeta = Record<string, unknown> & {
+  format?: unknown;
+  templateOnly?: unknown;
+};
+type StructuredBackupPayload = z.infer<typeof structuredBackupPayloadSchema>;
+type BackupImportRequest = z.infer<typeof backupImportRequestSchema>;
+type NormalizedBackupPayload = {
+  meta: BackupMeta;
+  schema: Record<string, unknown>;
+  counts: Record<string, unknown>;
+  data: BackupData;
+};
 type BackupColumn = {
   name: string;
   type: string;
@@ -86,6 +105,22 @@ type BackupFileInfo = {
   sizeBytes: number;
   modifiedAt: string;
 };
+type BackupImportReport = {
+  meta: {
+    action: "backup-import";
+    createdAt: string;
+    generatedBy: string | null;
+    sourceFileName: string | null;
+    includeUsers: boolean;
+    format: string;
+    preImportBackupPath: string;
+  };
+  importedTables: string[];
+  skippedTables: string[];
+  counts: Record<string, number>;
+};
+
+const structuredBackupPayloadKeys = new Set(["meta", "schema", "counts", "data"]);
 
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -116,23 +151,122 @@ function maskDatabaseUrl(databaseUrl: string) {
   return databaseUrl.replace(/:\/\/([^:/?#]+):([^@]+)@/, "://$1:***@");
 }
 
-function ensureBackupObjectShape(payload: unknown) {
-  if (payload && typeof payload === "object" && "data" in payload) {
-    return payload as {
-      meta?: Record<string, unknown>;
-      schema?: Record<string, unknown>;
-      counts?: Record<string, unknown>;
-      data: Record<string, Array<Record<string, unknown>>>;
+function sanitizeSourceFileName(fileName?: string) {
+  if (!fileName) return undefined;
+
+  const trimmed = path.basename(fileName).trim();
+  return trimmed ? trimmed.slice(0, 255) : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeBackupSection(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? { ...value } : {};
+}
+
+function isStructuredBackupPayload(payload: unknown): payload is StructuredBackupPayload {
+  if (!isRecord(payload) || !Object.prototype.hasOwnProperty.call(payload, "data")) {
+    return false;
+  }
+
+  return Object.keys(payload).every((key) => structuredBackupPayloadKeys.has(key));
+}
+
+function validateBackupDataShape(data: BackupData) {
+  const tableNames = Object.keys(data || {});
+
+  if (tableNames.length === 0) {
+    throw new RequestValidationError("ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظ„ط§ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯.");
+  }
+
+  if (tableNames.length > BACKUP_IMPORT_MAX_TABLES) {
+    throw new RequestValidationError(`ط¹ط¯ط¯ ط§ظ„ط¬ط¯ط§ظˆظ„ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TABLES}).`);
+  }
+
+  let totalRows = 0;
+
+  for (const tableName of tableNames) {
+    if (!BACKUP_TABLE_NAME_PATTERN.test(tableName)) {
+      throw new RequestValidationError(`ط§ط³ظ… ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ ط¯ط§ط®ظ„ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط©.`);
+    }
+
+    const rows = data[tableName];
+    if (!Array.isArray(rows)) {
+      throw new RequestValidationError(`ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ط©.`);
+    }
+
+    if (rows.length > BACKUP_IMPORT_MAX_ROWS_PER_TABLE) {
+      throw new RequestValidationError(`ط¹ط¯ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_ROWS_PER_TABLE}).`);
+    }
+
+    totalRows += rows.length;
+    if (totalRows > BACKUP_IMPORT_MAX_TOTAL_ROWS) {
+      throw new RequestValidationError(`ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TOTAL_ROWS}).`);
+    }
+
+    for (const row of rows) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) {
+        throw new RequestValidationError(`ط£ط­ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ط¯ط§ط®ظ„ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­.`);
+      }
+    }
+  }
+}
+
+export function validateBackupImportPayload(backup: unknown) {
+  return normalizeBackupPayload(backup);
+}
+
+function resolveBackupFormat(meta: BackupMeta) {
+  return typeof meta.format === "string" ? meta.format : undefined;
+}
+
+function isTemplateOnlyBackup(meta: BackupMeta) {
+  return meta.templateOnly === true;
+}
+
+export function normalizeBackupPayload(payload: unknown): NormalizedBackupPayload {
+  if (isStructuredBackupPayload(payload)) {
+    if (!isRecord(payload.data)) {
+      throw new RequestValidationError("ملف النسخة الاحتياطية غير صالح.");
+    }
+
+    const data = payload.data as BackupData;
+    validateBackupDataShape(data);
+
+    return {
+      meta: normalizeBackupSection(payload.meta) as BackupMeta,
+      schema: normalizeBackupSection(payload.schema),
+      counts: normalizeBackupSection(payload.counts),
+      data,
     };
   }
 
-  if (payload && typeof payload === "object") {
+  if (isRecord(payload)) {
+    const data = payload as BackupData;
+    validateBackupDataShape(data);
+
     return {
-      data: payload as Record<string, Array<Record<string, unknown>>>,
+      meta: {},
+      schema: {},
+      counts: {},
+      data,
     };
   }
 
   throw new RequestValidationError("ملف النسخة الاحتياطية غير صالح.");
+}
+
+export function assertImportableBackupPayload(backup: NormalizedBackupPayload) {
+  if (isTemplateOnlyBackup(backup.meta)) {
+    throw new RequestValidationError("لا يمكن استيراد قالب القاعدة. استخدم نسخة احتياطية فعلية فقط.");
+  }
+
+  const backupFormat = resolveBackupFormat(backup.meta);
+  if (backupFormat && backupFormat !== BACKUP_FORMAT) {
+    throw new RequestValidationError("صيغة ملف النسخة الاحتياطية غير مدعومة.");
+  }
 }
 
 async function openBackupConnection() {
@@ -278,7 +412,7 @@ function normalizeValueForInsert(tableName: string, column: BackupColumn, value:
 
   if (value === "" && DATE_LIKE_TYPES.has(column.dataType)) {
     if (!column.nullable) {
-      throw new RequestValidationError(`الحقل ${column.name} في الجدول ${tableName} يحتوي تاريخاً فارغاً غير صالح.`);
+      throw new RequestValidationError(`ط§ظ„ط­ظ‚ظ„ ${column.name} ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹط­طھظˆظٹ طھط§ط±ظٹط®ط§ظ‹ ظپط§ط±ط؛ط§ظ‹ ط؛ظٹط± طµط§ظ„ط­.`);
     }
 
     return null;
@@ -363,12 +497,12 @@ export async function buildBackupPayload({
         databaseUrlMasked: maskDatabaseUrl(databaseUrl),
         notes: templateOnly
           ? [
-            "هذا قالب قاعدة بيانات بدون بيانات تشغيلية.",
-            "الاستيراد من القالب غير مسموح حفاظاً على سلامة البيانات.",
+            "ظ‡ط°ط§ ظ‚ط§ظ„ط¨ ظ‚ط§ط¹ط¯ط© ط¨ظٹط§ظ†ط§طھ ط¨ط¯ظˆظ† ط¨ظٹط§ظ†ط§طھ طھط´ط؛ظٹظ„ظٹط©.",
+            "ط§ظ„ط§ط³طھظٹط±ط§ط¯ ظ…ظ† ط§ظ„ظ‚ط§ظ„ط¨ ط؛ظٹط± ظ…ط³ظ…ظˆط­ ط­ظپط§ط¸ط§ظ‹ ط¹ظ„ظ‰ ط³ظ„ط§ظ…ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ.",
           ]
           : [
-            "هذه نسخة احتياطية كاملة بصيغة JSON.",
-            "استيراد النسخة يحفظ مستخدمي النظام الحاليين بشكل افتراضي.",
+            "ظ‡ط°ظ‡ ظ†ط³ط®ط© ط§ط­طھظٹط§ط·ظٹط© ظƒط§ظ…ظ„ط© ط¨طµظٹط؛ط© JSON.",
+            "ط§ط³طھظٹط±ط§ط¯ ط§ظ„ظ†ط³ط®ط© ظٹط­ظپط¸ ظ…ط³طھط®ط¯ظ…ظٹ ط§ظ„ظ†ط¸ط§ظ… ط§ظ„ط­ط§ظ„ظٹظٹظ† ط¨ط´ظƒظ„ ط§ظپطھط±ط§ط¶ظٹ.",
           ],
       },
       schema,
@@ -431,11 +565,8 @@ export async function getBackupStatus() {
       format: BACKUP_FORMAT,
       generatedAt: new Date().toISOString(),
       database: {
-        host: databaseInfo.host,
-        port: databaseInfo.port,
         name: databaseInfo.database,
-        user: databaseInfo.user,
-        urlMasked: maskDatabaseUrl(databaseUrl),
+        port: databaseInfo.port,
       },
       directories: {
         appJson: APP_BACKUP_DIR,
@@ -466,8 +597,8 @@ export function buildDownloadFileName(prefix: string, extension = "json") {
   return `${prefix}-${sanitizeTimestampForFile()}.${extension}`;
 }
 
-export function parseImportRequest(payload: unknown) {
-  return validateInput(backupImportRequestSchema, payload, "طلب الاستيراد غير صالح.");
+export function parseImportRequest(payload: unknown): BackupImportRequest {
+  return validateInput(backupImportRequestSchema, payload, "ط·ظ„ط¨ ط§ظ„ط§ط³طھظٹط±ط§ط¯ ط؛ظٹط± طµط§ظ„ط­.");
 }
 
 export async function importBackupPayload({
@@ -481,16 +612,11 @@ export async function importBackupPayload({
   sourceFileName?: string;
   generatedBy?: string | null;
 }) {
-  const normalizedBackup = ensureBackupObjectShape(backup);
-  const backupMeta = normalizedBackup.meta || {};
+  const normalizedBackup = normalizeBackupPayload(backup);
+  const backupMeta = normalizedBackup.meta;
+  const safeSourceFileName = sanitizeSourceFileName(sourceFileName);
 
-  if (backupMeta.templateOnly) {
-    throw new RequestValidationError("لا يمكن استيراد قالب القاعدة. استخدم نسخة احتياطية فعلية فقط.");
-  }
-
-  if (backupMeta.format && backupMeta.format !== BACKUP_FORMAT) {
-    throw new RequestValidationError("صيغة ملف النسخة الاحتياطية غير مدعومة.");
-  }
+  assertImportableBackupPayload(normalizedBackup);
 
   const liveSnapshot = await buildBackupPayload({
     templateOnly: false,
@@ -503,7 +629,7 @@ export async function importBackupPayload({
   try {
     const databaseInfo = parseDatabaseInfo(getDatabaseUrl());
     const availableTables = new Set(await listExportableTables(connection));
-    const requestedTables = Object.keys(normalizedBackup.data || {});
+    const requestedTables = Object.keys(normalizedBackup.data);
     const skippedTables: string[] = [];
 
     const importableTables = sortTablesByPriority(
@@ -523,7 +649,7 @@ export async function importBackupPayload({
     );
 
     if (importableTables.length === 0) {
-      throw new RequestValidationError("لا توجد جداول قابلة للاستيراد داخل الملف.");
+      throw new RequestValidationError("ظ„ط§ طھظˆط¬ط¯ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯ ط¯ط§ط®ظ„ ط§ظ„ظ…ظ„ظپ.");
     }
 
     const liveSchema = await getTableSchemas(connection, databaseInfo.database, importableTables);
@@ -553,14 +679,14 @@ export async function importBackupPayload({
       throw error;
     }
 
-    const report = {
+    const report: BackupImportReport = {
       meta: {
         action: "backup-import",
         createdAt: new Date().toISOString(),
         generatedBy: generatedBy || null,
-        sourceFileName: sourceFileName || null,
+        sourceFileName: safeSourceFileName || null,
         includeUsers,
-        format: backupMeta.format || BACKUP_FORMAT,
+        format: resolveBackupFormat(backupMeta) || BACKUP_FORMAT,
         preImportBackupPath: preImportBackup.filePath,
       },
       importedTables: importableTables,
@@ -571,7 +697,7 @@ export async function importBackupPayload({
     const reportFile = await saveImportReport(report);
 
     return {
-      message: "تم استيراد النسخة الاحتياطية بنجاح.",
+      message: "طھظ… ط§ط³طھظٹط±ط§ط¯ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ط¨ظ†ط¬ط§ط­.",
       preImportBackup,
       reportFile,
       importedTables: importableTables,
@@ -582,3 +708,5 @@ export async function importBackupPayload({
     await connection.end();
   }
 }
+
+

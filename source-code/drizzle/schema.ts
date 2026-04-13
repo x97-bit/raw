@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json, date, uniqueIndex } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json, date, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 // ==================== AUTH USERS (Template/Manus OAuth - NOT used by the app) ====================
 export const users = mysqlTable("users", {
@@ -95,6 +95,15 @@ export const transactions = mysqlTable("transactions", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   refNoUnique: uniqueIndex("uk_transactions_ref_no").on(table.refNo),
+  transDateIndex: index("idx_trans_date").on(table.transDate),
+  accountIdIndex: index("idx_account_id").on(table.accountId),
+  driverIdIndex: index("idx_driver_id").on(table.driverId),
+  vehicleIdIndex: index("idx_vehicle_id").on(table.vehicleId),
+  goodTypeIdIndex: index("idx_good_type_id").on(table.goodTypeId),
+  govIdIndex: index("idx_gov_id").on(table.govId),
+  companyIdIndex: index("idx_company_id").on(table.companyId),
+  carrierIdIndex: index("idx_carrier_id").on(table.carrierId),
+  createdByIndex: index("idx_created_by").on(table.createdBy),
 }));
 
 // ==================== DEBTS (unified) ====================
@@ -131,10 +140,17 @@ export const expenses = mysqlTable("expenses", {
   amountIQD: decimal("amount_iqd", { precision: 15, scale: 0 }).default("0"),
   description: text("description"),
   portId: varchar("port_id", { length: 50 }).notNull(),
+  chargeTarget: varchar("charge_target", { length: 20 }).default("port").notNull(),
+  accountId: int("account_id"),
+  accountName: varchar("account_name", { length: 255 }),
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  expenseDateIndex: index("idx_expense_date").on(table.expenseDate),
+  accountIdIndex: index("idx_account_id").on(table.accountId),
+  createdByIndex: index("idx_created_by").on(table.createdBy),
+}));
 
 // ==================== CASH STATE ====================
 export const cashState = mysqlTable("cash_state", {
@@ -205,6 +221,13 @@ export const accountDefaults = mysqlTable("account_defaults", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   accountSectionUnique: uniqueIndex("uk_account_defaults").on(table.accountId, table.sectionKey),
+  accountIdIndex: index("idx_account_id").on(table.accountId),
+  defaultDriverIdIndex: index("idx_default_driver_id").on(table.defaultDriverId),
+  defaultVehicleIdIndex: index("idx_default_vehicle_id").on(table.defaultVehicleId),
+  defaultGoodTypeIdIndex: index("idx_default_good_type_id").on(table.defaultGoodTypeId),
+  defaultGovIdIndex: index("idx_default_gov_id").on(table.defaultGovId),
+  defaultCompanyIdIndex: index("idx_default_company_id").on(table.defaultCompanyId),
+  defaultCarrierIdIndex: index("idx_default_carrier_id").on(table.defaultCarrierId),
 }));
 
 export const routeDefaults = mysqlTable("route_defaults", {
@@ -224,6 +247,7 @@ export const routeDefaults = mysqlTable("route_defaults", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   routeCurrencyUnique: uniqueIndex("uk_route_defaults").on(table.sectionKey, table.govId, table.currency),
+  govIdIndex: index("idx_gov_id").on(table.govId),
 }));
 
 // ==================== PAYMENT MATCHING ====================
@@ -237,6 +261,8 @@ export const paymentMatching = mysqlTable("payment_matching", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   invoicePaymentUnique: uniqueIndex("uk_payment_matching_invoice_payment").on(table.invoiceId, table.paymentId),
+  invoiceIdIndex: index("idx_invoiceId").on(table.invoiceId),
+  paymentIdIndex: index("idx_paymentId").on(table.paymentId),
 }));
 
 // ==================== FIELD CONFIGURATION ====================
@@ -273,7 +299,9 @@ export const customFieldValues = mysqlTable("custom_field_values", {
   entityId: int("entity_id").notNull(),
   value: text("value"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  customFieldIdIndex: index("idx_custom_field_id").on(table.customFieldId),
+}));
 
 // ==================== SPECIAL ACCOUNTS ====================
 export const specialAccounts = mysqlTable("special_accounts", {
@@ -321,4 +349,10 @@ export const auditLogs = mysqlTable("audit_logs", {
   userId: int("user_id"),
   username: varchar("username", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  entityTypeIndex: index("idx_entity_type").on(table.entityType),
+  entityIdIndex: index("idx_entity_id").on(table.entityId),
+  actionIndex: index("idx_action").on(table.action),
+  createdAtIndex: index("idx_created_at").on(table.createdAt),
+  userIdIndex: index("idx_user_id").on(table.userId),
+}));

@@ -91,7 +91,7 @@ export default function PortBuiltInField({
             value={form.RefNo || ''}
             placeholder={
               isTransportSectionScope({ portId, accountType })
-                ? (type === 1 ? 'سيولد رقم استحقاق النقل تلقائيًا' : 'سيولد رقم سند الصرف تلقائيًا')
+                ? (type === 1 ? 'سيولد رقم استحقاق النقل تلقائيًا' : 'سيولد رقم سند الدفع تلقائيًا')
                 : (type === 1 ? 'سيولد رقم الفاتورة تلقائيًا' : 'سيولد رقم سند القبض تلقائيًا')
             }
             className={`${INPUT_CLASS} bg-white/[0.03] text-[#91a0ad] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]`}

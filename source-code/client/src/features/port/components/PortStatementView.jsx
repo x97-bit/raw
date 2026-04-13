@@ -105,7 +105,7 @@ export default function PortStatementView({
                     className={`cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${transaction.TransTypeID === 2 ? 'bg-[#8eb8ad]/[0.05]' : ''}`}
                   >
                     {activeStatementColumns.map((column) => (
-                      <td key={column.key} className="px-3 py-2 align-top">{renderPortCell(column, transaction)}</td>
+                      <td key={column.key} className={`px-3 py-2 align-top ${column.type === 'date' ? 'whitespace-nowrap' : ''}`}>{renderPortCell(column, transaction)}</td>
                     ))}
                   </tr>
                 ))}

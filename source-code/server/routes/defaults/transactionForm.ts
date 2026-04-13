@@ -2,11 +2,14 @@ import { Router, Response } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { accounts, accountDefaults, routeDefaults, transactions } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
+import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
 import { parseNullableNumber } from "../../utils/bodyFields";
 import { getDirectionAliases } from "../../utils/direction";
 import { buildTransactionFormDefaults } from "../../utils/formDefaults";
-import { enrichTransactions, getLookupNameById } from "../../utils/transactionEnrichment";
+import { enrichTransactions, getLookupNameById, type EnrichedTransactionRecord } from "../../utils/transactionEnrichment";
+
+type RouteDefaultRow = typeof routeDefaults.$inferSelect;
 
 export function registerTransactionFormDefaultRoutes(router: Router) {
   router.get("/defaults/transaction-form", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -32,7 +35,7 @@ export function registerTransactionFormDefaultRoutes(router: Router) {
         .where(and(eq(accountDefaults.accountId, accountId), eq(accountDefaults.sectionKey, sectionKey)))
         .limit(1);
 
-      let routeRow = null;
+      let routeRow: RouteDefaultRow | null = null;
       if (govId) {
         const matchingRouteRows = await db
           .select()
@@ -40,13 +43,13 @@ export function registerTransactionFormDefaultRoutes(router: Router) {
           .where(and(eq(routeDefaults.sectionKey, sectionKey), eq(routeDefaults.govId, govId)));
 
         routeRow =
-          matchingRouteRows.find((row: any) => requestedCurrency && row.currency === requestedCurrency) ||
-          matchingRouteRows.find((row: any) => row.active === 1) ||
+          matchingRouteRows.find((row) => requestedCurrency && row.currency === requestedCurrency) ||
+          matchingRouteRows.find((row) => row.active === 1) ||
           matchingRouteRows[0] ||
           null;
       }
 
-      let recentTransaction = null;
+      let recentTransaction: EnrichedTransactionRecord | null = null;
       const recentRows = await db
         .select()
         .from(transactions)
@@ -114,8 +117,8 @@ export function registerTransactionFormDefaultRoutes(router: Router) {
       });
 
       return res.json(defaults);
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+    } catch (error) {
+      return respondRouteError(res, error);
     }
   });
 }

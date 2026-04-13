@@ -1,5 +1,13 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { isSpecialHaiderSettlementRow } from '../../../utils/specialHaiderMath';
+import {
+  getAccountAccentLineStyle,
+  getAccountCardOutlineStyle,
+  getAccountEditButtonStyle,
+  getAccountSettlementRowStyle,
+  getAccountTableFooterStyle,
+  getAccountTableHeaderStyle,
+} from '../specialAccountsTheme';
 
 export default function SpecialAccountsTable({
   account,
@@ -13,34 +21,28 @@ export default function SpecialAccountsTable({
   onEdit,
   onDelete,
 }) {
-  const headerStyle = {
-    background: `linear-gradient(135deg, rgba(16,20,26,0.98) 0%, rgba(24,32,42,0.98) 58%, ${account.accent}26 100%)`,
-  };
-
-  const editButtonStyle = {
-    color: account.accent,
-    background: `${account.accent}10`,
-  };
-
-  const footerStyle = {
-    background: `linear-gradient(180deg, ${account.accentSoft} 0%, rgba(255,255,255,0.03) 100%)`,
-  };
+  const surfaceStyle = getAccountCardOutlineStyle(account, '12');
+  const accentLineStyle = getAccountAccentLineStyle(account);
+  const headerStyle = getAccountTableHeaderStyle(account);
+  const editButtonStyle = getAccountEditButtonStyle(account);
+  const footerStyle = getAccountTableFooterStyle(account);
+  const isDateColumn = (column) => column?.format === 'date' || column?.key === 'trans_date' || column?.dataKey === 'TransDate';
 
   return (
     <div
       className="surface-card relative overflow-hidden p-0"
-      style={{ boxShadow: `0 18px 34px rgba(0,0,0,0.22), inset 0 0 0 1px ${account.accent}12` }}
+      style={surfaceStyle}
     >
       <div
         className="pointer-events-none absolute inset-x-6 top-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent 0%, ${account.accent} 50%, transparent 100%)` }}
+        style={accentLineStyle}
       />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-right" style={headerStyle}>
+              <tr className="text-right" style={headerStyle}>
               {visibleColumns.map((column) => (
-                <th key={column.key} className="px-4 py-3 font-semibold">
+                <th key={column.key} className={`px-4 py-3 font-semibold ${isDateColumn(column) ? 'whitespace-nowrap' : ''}`}>
                   {column.label}
                 </th>
               ))}
@@ -60,11 +62,7 @@ export default function SpecialAccountsTable({
             ) : (
               rows.map((row, index) => {
                 const isSettlement = accountId === 'haider' && isSpecialHaiderSettlementRow(row);
-                const settlementStyle = isSettlement
-                  ? {
-                      background: `linear-gradient(90deg, ${account.accentSoft} 0%, rgba(255,255,255,0.03) 100%)`,
-                    }
-                  : undefined;
+                const settlementStyle = isSettlement ? getAccountSettlementRowStyle(account) : undefined;
 
                 return (
                   <tr
@@ -75,7 +73,7 @@ export default function SpecialAccountsTable({
                     {visibleColumns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? 'font-bold text-[#f4f8fb]' : ''} ${column.isMedium ? 'font-semibold' : ''} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ''} ${column.isNotes ? 'max-w-[220px] truncate text-xs text-[#91a0ad]' : ''}`}
+                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? 'font-bold text-[#f4f8fb]' : ''} ${column.isMedium ? 'font-semibold' : ''} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ''} ${column.isNotes ? 'max-w-[220px] truncate text-xs text-[#91a0ad]' : ''} ${isDateColumn(column) ? 'whitespace-nowrap' : ''}`}
                       >
                         {column.render(row[column.dataKey])}
                       </td>

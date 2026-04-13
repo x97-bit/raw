@@ -1,19 +1,22 @@
+import type { AppDb } from "../../dbTypes";
 import { eq } from "drizzle-orm";
-import { companies } from "../../../drizzle/schema";
+import { companies, drivers, goodsTypes, vehicles } from "../../../drizzle/schema";
+
+type LookupInsertTable = typeof drivers | typeof vehicles | typeof goodsTypes;
 
 export function getTrimmedText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-export async function resolveNewLookupId(
-  db: any,
+export async function resolveNewLookupId<TTable extends LookupInsertTable>(
+  db: AppDb,
   existingIdValue: unknown,
-  table: unknown,
-  insertValues: Record<string, unknown>,
+  table: TTable,
+  insertValues: TTable["$inferInsert"],
   newValue: unknown,
-) {
+): Promise<number | string | null> {
   if (existingIdValue) {
-    return existingIdValue;
+    return typeof existingIdValue === "string" || typeof existingIdValue === "number" ? existingIdValue : null;
   }
 
   const normalizedValue = getTrimmedText(newValue);
@@ -25,18 +28,23 @@ export async function resolveNewLookupId(
   return Number(result[0].insertId);
 }
 
-export async function resolveCompanySelection(db: any, companyIdValue: unknown, companyNameValue: unknown) {
-  let companyId = companyIdValue ?? null;
-  let companyName = companyNameValue ?? null;
+export async function resolveCompanySelection(db: AppDb, companyIdValue: unknown, companyNameValue: unknown) {
+  let companyId: number | null = null;
+  let companyName: string | null = getTrimmedText(companyNameValue);
+
+  if (companyIdValue !== undefined && companyIdValue !== null && companyIdValue !== "") {
+    companyId = Number.parseInt(String(companyIdValue), 10);
+  }
 
   if (companyId) {
     const [company] = await db
       .select()
       .from(companies)
-      .where(eq(companies.id, parseInt(String(companyId), 10)))
+      .where(eq(companies.id, companyId))
       .limit(1);
 
     if (company) {
+      companyId = company.id;
       companyName = company.name;
     }
   } else {

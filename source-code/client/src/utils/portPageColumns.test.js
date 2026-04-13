@@ -23,7 +23,7 @@ describe('portPageColumns helpers', () => {
     }, { sectionKey: 'transport-1' });
 
     expect(exportColumn.getValue({ TransTypeID: 1 })).toBe('استحقاق نقل');
-    expect(exportColumn.getValue({ TransTypeID: 2 })).toBe('دفعة نقل');
+    expect(exportColumn.getValue({ TransTypeID: 2 })).toBe('سند دفع');
   });
 
   it('maps export columns back to preview columns', () => {

@@ -68,7 +68,7 @@ export default function PaymentMatchingAccountDetailView({
                     onClick={() => onOpenShipment(row.shipment_id)}
                     className={`cursor-pointer border-b border-gray-50 transition-colors hover:bg-primary-50/50 ${row.payment_status === 'paid' ? 'opacity-50' : ''}`}
                   >
-                    <td className="px-3 py-2.5">{row.trans_date?.split(' ')[0]}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5">{row.trans_date?.split(' ')[0]}</td>
                     <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{row.ref_no}</td>
                     <td className="px-3 py-2.5">{row.amount_usd ? `$${formatPaymentMatchingNumber(row.amount_usd)}` : '-'}</td>
                     <td className="px-3 py-2.5">{row.amount_iqd ? formatPaymentMatchingNumber(row.amount_iqd) : '-'}</td>

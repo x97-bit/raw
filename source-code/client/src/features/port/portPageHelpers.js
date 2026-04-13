@@ -55,18 +55,18 @@ export const getPortViewLabels = ({ sectionKey, formType = 1 } = {}) => {
 
   return {
     invoiceLabel: 'استحقاق نقل',
-    paymentLabel: 'دفعة نقل',
+    paymentLabel: 'سند دفع',
     invoiceIntro: 'تسجيل استحقاق نقل جديد',
-    paymentIntro: 'تسجيل دفعة نقل جديدة',
+    paymentIntro: 'تسجيل سند دفع جديد',
     invoiceHint: 'أدخل تفاصيل الاستحقاق الذي يترتب لصالح الناقل.',
-    paymentHint: 'أدخل تفاصيل الدفعة المسددة للناقل بشكل واضح ومتناسق.',
+    paymentHint: 'أدخل تفاصيل سند الدفع المسدد للناقل بشكل واضح ومتناسق.',
     statementTitlePrefix: 'كشف ذمة النقل',
     statementButtonLabel: 'كشف ذمة النقل',
     statementOpenLabel: 'عرض كشف ذمة النقل',
     statementRefreshLabel: 'تحديث كشف ذمة النقل',
     statementBalanceLabel: 'المتبقي علينا',
     listTitleSuffix: 'ذمم النقل',
-    activeFormLabel: isInvoice ? 'استحقاق نقل' : 'دفعة نقل',
+    activeFormLabel: isInvoice ? 'استحقاق نقل' : 'سند دفع',
   };
 };
 
@@ -93,7 +93,7 @@ export const getPortBuiltInFieldLabel = (sectionKey, fieldKey, formType, fallbac
     return fallbackLabel;
   }
 
-  return formType === 2 ? 'رقم سند الصرف' : 'رقم استحقاق النقل';
+  return formType === 2 ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
 };
 
 export const isAllowedTransportTraderName = (name) => {
@@ -476,8 +476,8 @@ export const getPortStatementFooterCell = (column, index, totals = {}, options =
 
   if (isTransport && (metricKey === 'amount_usd' || metricKey === 'amountusd')) {
     return {
-      value: `$${formatPortNumber(totals.balanceUSD || 0)}`,
-      className: 'px-3 py-3 text-rose-700',
+      value: '-',
+      className: 'px-3 py-3 text-[#91a0ad]',
     };
   }
 

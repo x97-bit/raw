@@ -1,7 +1,13 @@
 import { Response } from "express";
 import { z } from "zod";
+import { isStrongPassword, PASSWORD_MIN_LENGTH } from "../../../shared/passwordPolicy";
 import { AuthRequest, isAdminUser } from "../../_core/appAuth";
 import { createRateLimitMiddleware, resolveRateLimitClientIp } from "../../_core/rateLimit";
+import type { AppUserRecord } from "../../dbTypes";
+
+type LegacyUserShapeInput =
+  Pick<AppUserRecord, "id" | "username" | "name" | "role" | "active" | "createdAt">
+  & Partial<Pick<AppUserRecord, "profileImage" | "permissions" | "updatedAt">>;
 
 export const authRateLimit = createRateLimitMiddleware({
   keyPrefix: "auth-login",
@@ -26,12 +32,20 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+const strongPasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH)
+  .max(128)
+  .refine(isStrongPassword, {
+    message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters long and include uppercase, lowercase, and numeric characters.`,
+  });
+
 export const userRoleSchema = z.enum(["admin", "user"]);
 export const permissionListSchema = z.array(z.string().trim().min(1).max(64)).max(100);
 
 export const createUserSchema = z.object({
   username: z.string().trim().min(1).max(64),
-  password: z.string().min(4).max(128),
+  password: strongPasswordSchema,
   name: z.string().trim().min(1).max(120).optional(),
   fullName: z.string().trim().min(1).max(120).optional(),
   role: userRoleSchema.optional(),
@@ -52,7 +66,7 @@ export const updateUserSchema = z
     ]).optional(),
     active: z.union([z.boolean(), z.number().int().min(0).max(1)]).optional(),
     IsActive: z.union([z.boolean(), z.number().int().min(0).max(1)]).optional(),
-    password: z.string().min(4).max(128).optional(),
+    password: strongPasswordSchema.optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "No user updates were provided.",
@@ -61,7 +75,7 @@ export const updateUserSchema = z
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1).max(128),
-    newPassword: z.string().min(4).max(128),
+    newPassword: strongPasswordSchema,
   })
   .refine((payload) => payload.currentPassword !== payload.newPassword, {
     message: "The new password must be different from the current password.",
@@ -69,8 +83,8 @@ export const changePasswordSchema = z
 
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(4).max(128).optional(),
-    newPassword: z.string().min(4).max(128).optional(),
+    password: strongPasswordSchema.optional(),
+    newPassword: strongPasswordSchema.optional(),
   })
   .refine((payload) => Boolean(payload.password || payload.newPassword), {
     message: "A new password is required.",
@@ -103,7 +117,7 @@ export const PERMISSIONS_VALIDATION_MESSAGE = "Permissions payload is invalid.";
 export const USER_ID_LABEL = "User id";
 export const FORBIDDEN_ERROR = "غير مصرح";
 
-export function toLegacyUserShape(user: any) {
+export function toLegacyUserShape(user: LegacyUserShapeInput) {
   return {
     ...user,
     UserID: user.id,

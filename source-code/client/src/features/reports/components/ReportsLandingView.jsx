@@ -1,5 +1,6 @@
 import { Receipt, TrendingUp, Users } from 'lucide-react';
 import PageHeader from '../../../components/PageHeader';
+import PortIconBadge from '../../../components/PortIconBadge';
 import { REPORT_PORTS } from '../../../utils/reportsConfig';
 
 const REPORT_ACTIONS = [
@@ -40,9 +41,13 @@ export default function ReportsLandingView({ onBack, onOpenAction }) {
           {REPORT_PORTS.map((port) => (
             <div key={port.id} className="surface-card overflow-hidden p-0">
               <div className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.04] px-5 py-4">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                  {port.icon}
-                </span>
+                <PortIconBadge
+                  lines={port.iconLines}
+                  background="rgba(255,255,255,0.06)"
+                  textColor="#eef3f7"
+                  borderColor="rgba(255,255,255,0.08)"
+                  className="h-10 min-w-[5.5rem] px-3 text-[9px]"
+                />
                 <div>
                   <h3 className="text-lg font-extrabold tracking-tight text-[#eef3f7]">{port.name}</h3>
                   <p className="mt-1 text-xs font-medium text-[#91a0ad]">إجراءات التقارير الخاصة بالمنفذ</p>
