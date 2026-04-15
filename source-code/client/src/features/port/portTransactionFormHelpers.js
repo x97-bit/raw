@@ -30,5 +30,7 @@ export function getPortTransactionTarget(transactionOrType) {
   const typeId = typeof transactionOrType === 'object'
     ? transactionOrType?.TransTypeID
     : transactionOrType;
-  return typeId === 1 ? 'invoice' : 'payment';
+  if (typeId === 2) return 'payment';
+  if (typeId === 3) return 'debit-note';
+  return 'invoice';
 }

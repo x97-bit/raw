@@ -44,6 +44,18 @@ describe("Profit Calculation Logic", () => {
 
     expect(totals.totalProfitUSD).toBe(-300);
   });
+
+  it("keeps debit-note adjustments out of shipment profit while preserving balance", () => {
+    const totals = calculateTransactionTotals([
+      { direction: "IN", amountUsd: "500", costUsd: "300" },
+      { direction: "IN", amountUsd: "250", recordType: "debit-note" },
+    ]);
+
+    expect(totals.totalInvoicesUSD).toBe(750);
+    expect(totals.totalProfitUSD).toBe(200);
+    expect(totals.shipmentCount).toBe(1);
+    expect(totals.balanceUSD).toBe(750);
+  });
 });
 
 describe("Running Balance Logic", () => {

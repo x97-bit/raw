@@ -34,6 +34,8 @@ describe('portTransactionFormHelpers', () => {
   it('resolves transaction targets consistently', () => {
     expect(getPortTransactionTarget(1)).toBe('invoice');
     expect(getPortTransactionTarget(2)).toBe('payment');
+    expect(getPortTransactionTarget(3)).toBe('debit-note');
     expect(getPortTransactionTarget({ TransTypeID: 1 })).toBe('invoice');
+    expect(getPortTransactionTarget({ TransTypeID: 3 })).toBe('debit-note');
   });
 });

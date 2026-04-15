@@ -23,10 +23,17 @@ export default function PortFormView({
 }) {
   const isTransport = sectionKey === 'transport-1';
   const isInvoice = formType === 1;
+  const isDebitNote = formType === 3;
   const labels = portViewLabels || {};
-  const title = isInvoice ? (labels.invoiceLabel || 'فاتورة') : (labels.paymentLabel || 'سند قبض');
-  const intro = isInvoice ? (labels.invoiceIntro || 'تسجيل فاتورة جديدة') : (labels.paymentIntro || 'تسجيل سند قبض جديد');
-  const hint = isInvoice ? (labels.invoiceHint || 'أدخل تفاصيل الفاتورة بنفس الثيم الموحد للنظام.') : (labels.paymentHint || 'أدخل بيانات سند القبض بشكل واضح ومتناسق.');
+  const title = isDebitNote
+    ? (labels.debitLabel || 'سند إضافة')
+    : (isInvoice ? (labels.invoiceLabel || 'فاتورة') : (labels.paymentLabel || 'سند قبض'));
+  const intro = isDebitNote
+    ? (labels.debitIntro || 'تسجيل سند إضافة جديد')
+    : (isInvoice ? (labels.invoiceIntro || 'تسجيل فاتورة جديدة') : (labels.paymentIntro || 'تسجيل سند قبض جديد'));
+  const hint = isDebitNote
+    ? (labels.debitHint || 'أدخل بيانات سند الإضافة لتحميل مبلغ جديد على ذمة التاجر.')
+    : (isInvoice ? (labels.invoiceHint || 'أدخل تفاصيل الفاتورة بنفس الثيم الموحد للنظام.') : (labels.paymentHint || 'أدخل بيانات سند القبض بشكل واضح ومتناسق.'));
 
   return (
     <div className="page-shell">
@@ -50,6 +57,8 @@ export default function PortFormView({
                 className={`inline-flex self-start rounded-full px-3 py-1 text-xs font-bold ring-1 ${
                   isTransport
                     ? 'bg-[#c697a1]/[0.16] text-[#f4dde2] ring-[#c697a1]/[0.24]'
+                    : isDebitNote
+                      ? 'bg-[#d6b36b]/[0.18] text-[#f6e7c2] ring-[#d6b36b]/[0.24]'
                     : isInvoice
                       ? 'bg-[#9ab6ca]/[0.16] text-[#dce8f2] ring-[#9ab6ca]/[0.24]'
                       : 'bg-[#8eb8ad]/[0.16] text-[#d8ece6] ring-[#8eb8ad]/[0.24]'

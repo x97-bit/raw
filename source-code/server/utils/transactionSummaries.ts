@@ -2,11 +2,15 @@ import { getAbsoluteAmount, getSignedDirectionAmount, isInvoiceDirection, isPaym
 
 type TransactionLike = Record<string, unknown>;
 
+const NON_SHIPMENT_DEBIT_RECORD_TYPES = new Set(["expense-charge", "debit-note"]);
+
 function getTransactionDirectionValue(transaction: TransactionLike): unknown {
   if (transaction.direction !== undefined && transaction.direction !== null && transaction.direction !== "") {
     return transaction.direction;
   }
-  if (transaction.TransTypeID === 1 || transaction.TransTypeID === "1") return "IN";
+  if (transaction.TransTypeID === 1 || transaction.TransTypeID === "1" || transaction.TransTypeID === 3 || transaction.TransTypeID === "3") {
+    return "IN";
+  }
   if (transaction.TransTypeID === 2 || transaction.TransTypeID === "2") return "OUT";
   return transaction.TransTypeName;
 }
@@ -21,6 +25,10 @@ function getAmountValue(transaction: TransactionLike, rawKey: string, mappedKey:
 function getRecordTypeValue(transaction: TransactionLike): string {
   const rawValue = transaction.recordType ?? transaction.RecordType;
   return String(rawValue ?? "").trim().toLowerCase();
+}
+
+function isShipmentLikeDebitRecord(transaction: TransactionLike): boolean {
+  return !NON_SHIPMENT_DEBIT_RECORD_TYPES.has(getRecordTypeValue(transaction));
 }
 
 export function calculateTransactionTotals(transactions: TransactionLike[]) {
@@ -51,19 +59,21 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     const costIqd = getAbsoluteAmount(getAmountValue(transaction, "costIqd", "CostIQD"));
     const feeUsd = getAbsoluteAmount(getAmountValue(transaction, "feeUsd", "FeeUSD"));
     const weight = getAbsoluteAmount(getAmountValue(transaction, "weight", "Weight"));
-    const isExpenseCharge = getRecordTypeValue(transaction) === "expense-charge";
 
     if (isInvoiceDirection(direction)) {
       totals.invoiceCount += 1;
-      if (!isExpenseCharge) {
-        totals.shipmentCount += 1;
-        totals.totalWeight += weight;
-      }
       totals.totalInvoicesUSD += amountUsd;
       totals.totalInvoicesIQD += amountIqd;
-      totals.totalCostUSD += costUsd;
-      totals.totalCostIQD += costIqd;
-      totals.totalFeeUSD += feeUsd;
+
+      if (isShipmentLikeDebitRecord(transaction)) {
+        totals.shipmentCount += 1;
+        totals.totalWeight += weight;
+        totals.totalCostUSD += costUsd;
+        totals.totalCostIQD += costIqd;
+        totals.totalFeeUSD += feeUsd;
+        totals.totalProfitUSD += amountUsd - costUsd;
+        totals.totalProfitIQD += amountIqd - costIqd;
+      }
     } else if (isPaymentDirection(direction)) {
       totals.paymentCount += 1;
       totals.totalPaymentsUSD += amountUsd;
@@ -71,8 +81,6 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     }
   }
 
-  totals.totalProfitUSD = totals.totalInvoicesUSD - totals.totalCostUSD;
-  totals.totalProfitIQD = totals.totalInvoicesIQD - totals.totalCostIQD;
   totals.balanceUSD = totals.totalInvoicesUSD - totals.totalPaymentsUSD;
   totals.balanceIQD = totals.totalInvoicesIQD - totals.totalPaymentsIQD;
 

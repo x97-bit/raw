@@ -58,7 +58,7 @@ export const buildTransactionDetailItems = ({
     { label: 'نوع الحركة', value: transactionLabel, badge: true, type: transaction.TransTypeID },
     { label: 'اسم التاجر', value: transaction.AccountName || transaction.TraderName || '-', bold: true },
     {
-      label: getTransactionReferenceLabel(transaction.TransTypeID, { sectionKey }),
+      label: getTransactionReferenceLabel(transaction.TransTypeID, { sectionKey, recordType: transaction.RecordType }),
       value: transaction.RefNo || '-',
     },
     {

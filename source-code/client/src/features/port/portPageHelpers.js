@@ -34,14 +34,18 @@ export const isTransportSectionScope = ({ sectionKey, portId, accountType } = {}
 export const getPortViewLabels = ({ sectionKey, formType = 1 } = {}) => {
   const isTransport = sectionKey === 'transport-1';
   const isInvoice = formType === 1;
+  const isDebitNote = formType === 3;
 
   if (!isTransport) {
     return {
       invoiceLabel: 'فاتورة',
+      debitLabel: 'سند إضافة',
       paymentLabel: 'سند قبض',
       invoiceIntro: 'تسجيل فاتورة جديدة',
+      debitIntro: 'تسجيل سند إضافة جديد',
       paymentIntro: 'تسجيل سند قبض جديد',
       invoiceHint: 'أدخل تفاصيل الفاتورة بنفس الثيم الموحد للنظام.',
+      debitHint: 'أدخل بيانات سند الإضافة لتحميل مبلغ جديد على ذمة التاجر.',
       paymentHint: 'أدخل بيانات سند القبض بشكل واضح ومتناسق.',
       statementTitlePrefix: 'كشف حساب',
       statementButtonLabel: 'كشف الحساب',
@@ -49,7 +53,7 @@ export const getPortViewLabels = ({ sectionKey, formType = 1 } = {}) => {
       statementRefreshLabel: 'تحديث كشف الحساب',
       statementBalanceLabel: 'المجموع',
       listTitleSuffix: 'قائمة الحركات',
-      activeFormLabel: isInvoice ? 'فاتورة' : 'سند قبض',
+      activeFormLabel: isDebitNote ? 'سند إضافة' : (isInvoice ? 'فاتورة' : 'سند قبض'),
     };
   }
 
@@ -89,6 +93,10 @@ export const relabelPortColumnsForSection = (columns = [], sectionKey) => {
 };
 
 export const getPortBuiltInFieldLabel = (sectionKey, fieldKey, formType, fallbackLabel) => {
+  if (sectionKey !== 'transport-1' && fieldKey === 'ref_no' && formType === 3) {
+    return 'رقم سند الإضافة';
+  }
+
   if (sectionKey !== 'transport-1' || fieldKey !== 'ref_no') {
     return fallbackLabel;
   }
@@ -162,7 +170,11 @@ export const formatPortNumber = (value) => (
   value ? Number(value).toLocaleString('en-US') : '0'
 );
 
-export const getPortFormTarget = (type = 1) => (type === 1 ? 'invoice' : 'payment');
+export const getPortFormTarget = (type = 1) => {
+  if (type === 2) return 'payment';
+  if (type === 3) return 'debit-note';
+  return 'invoice';
+};
 
 export const createPortFilters = (accountId = '') => ({
   accountId: accountId ? String(accountId) : '',
@@ -332,6 +344,7 @@ export const buildInitialPortForm = ({
   ...customFieldValues,
   TransDate: today.toISOString().split('T')[0],
   TransTypeID: formType,
+  ...(formType === 3 ? { RecordType: 'debit-note' } : {}),
   Currency: 'USD',
   PortID: portId || null,
 });

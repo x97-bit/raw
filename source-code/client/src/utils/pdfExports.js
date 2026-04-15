@@ -1102,7 +1102,10 @@ const INVOICE_CARD_GAP = 12;
 const INVOICE_FIELD_CARD_HEIGHT = 96;
 
 function inferInvoiceTargetKey(transaction = {}) {
-  return Number(transaction?.TransTypeID) === 2 ? 'payment' : 'invoice';
+  const typeId = Number(transaction?.TransTypeID);
+  if (typeId === 2) return 'payment';
+  if (typeId === 3) return 'debit-note';
+  return 'invoice';
 }
 
 function isInvoiceNotesSection(section = {}) {
@@ -1420,7 +1423,10 @@ async function exportInvoiceAsCanvasPdfV2({
 }) {
   await ensurePdfFontsReady();
   const targetKey = inferInvoiceTargetKey(transaction);
-  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey });
+  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    sectionKey,
+    recordType: transaction?.RecordType,
+  });
   const documentTitle = title || transactionTypeLabel;
   const metaItems = buildInvoiceHeaderMeta(transaction, targetKey, sectionKey);
   const sections = buildInvoiceExportSections(transaction, sectionKey, targetKey);
@@ -1500,7 +1506,10 @@ async function exportInvoiceAsCanvasPdf({ transaction, title, companyName, brand
   const { canvas, ctx, spec } = createCanvasPage('portrait');
   const assets = await loadBrandAssets();
   const { headerHeight, footerHeight } = drawPageBackdrop(ctx, spec, branded, assets);
-  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey });
+  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    sectionKey,
+    recordType: transaction?.RecordType,
+  });
   const xRight = spec.width - 52;
 
   drawText(ctx, title || transactionTypeLabel, xRight, headerHeight + 34, {

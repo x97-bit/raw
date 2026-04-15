@@ -17,15 +17,18 @@ const SPECIAL_CARD_TONES = {
 
 const HAIDER_COLUMNS = [
   { key: 'trans_date', dataKey: 'TransDate', label: 'التاريخ', format: 'date', render: (value) => value?.split(' ')[0] || '-' },
+  { key: 'destination', dataKey: 'Destination', label: 'الوجهة', render: (value) => value || '-' },
   { key: 'driver_name', dataKey: 'DriverName', label: 'اسم السائق', render: (value) => value || '-' },
   { key: 'vehicle_plate', dataKey: 'PlateNumber', label: 'رقم السيارة', render: (value) => value || '-' },
   { key: 'good_type', dataKey: 'GoodType', label: 'نوع البضاعة', render: (value) => value || '-' },
   { key: 'weight', dataKey: 'Weight', label: 'الوزن', format: 'number', render: (value) => (value ? formatNum(value) : '-') },
+  { key: 'meters', dataKey: 'Meters', label: 'الأمتار', format: 'number', render: (value) => (value ? formatNum(value) : '-') },
   { key: 'cost_usd', dataKey: 'CostUSD', label: 'الكلفة دولار', format: 'money', render: (value) => (value ? `$${formatNum(value)}` : '0') },
   { key: 'amount_usd', dataKey: 'AmountUSD', label: 'المبلغ دولار', format: 'money', render: (value) => (value ? `$${formatNum(value)}` : '0') },
   { key: 'cost_iqd', dataKey: 'CostIQD', label: 'الكلفة دينار', format: 'money_iqd', render: (value) => (value ? formatNum(value) : '0') },
   { key: 'amount_iqd', dataKey: 'AmountIQD', label: 'المبلغ دينار', format: 'money_iqd', render: (value) => (value ? formatNum(value) : '0') },
   { key: 'difference_iqd', dataKey: 'DifferenceIQD', label: 'الفرق دينار', format: 'money_iqd', render: (value) => (value ? formatNum(value) : '0') },
+  { key: 'batch_name', dataKey: 'BatchName', label: 'الوجبة', render: (value) => value || '-' },
   { key: 'notes', dataKey: 'TraderNote', label: 'ملاحظات', render: (value) => value || '-', isNotes: true },
 ];
 
@@ -83,6 +86,7 @@ export const SPECIAL_ACCOUNT_DEFS = {
     }),
     getFooterValue: (columnKey, totals) => ({
       weight: formatNum(totals.totalWeight),
+      meters: formatNum(totals.totalMeters),
       cost_usd: `$${formatNum(totals.totalCostUSD)}`,
       amount_usd: `$${formatNum(totals.totalAmountUSD)}`,
       cost_iqd: formatNum(totals.totalCostIQD),
@@ -137,15 +141,18 @@ export const SPECIAL_ACCOUNT_DEFS = {
 export const SPECIAL_FORM_FIELDS = {
   haider: [
     { key: 'date', label: 'التاريخ', type: 'date' },
+    { key: 'destination', label: 'الوجهة', type: 'text' },
     { key: 'driverName', label: 'اسم السائق', type: 'text' },
     { key: 'vehiclePlate', label: 'رقم السيارة', type: 'text' },
     { key: 'goodType', label: 'نوع البضاعة', type: 'text' },
     { key: 'weight', label: 'الوزن', type: 'number', step: '0.01' },
+    { key: 'meters', label: 'الأمتار', type: 'number', step: '0.01' },
     { key: 'costUSD', label: 'الكلفة دولار', type: 'number', step: '0.01' },
     { key: 'amountUSD', label: 'المبلغ دولار', type: 'number', step: '0.01' },
     { key: 'costIQD', label: 'الكلفة دينار', type: 'number', step: '1' },
     { key: 'amountIQD', label: 'المبلغ دينار', type: 'number', step: '1' },
     { key: 'differenceIQD', label: 'الفرق دينار', type: 'number', step: '1' },
+    { key: 'batchName', label: 'الوجبة', type: 'text' },
     { key: 'notes', label: 'ملاحظات', type: 'textarea', className: 'md:col-span-2 xl:col-span-3' },
   ],
   'partnership-yaser': [
@@ -183,12 +190,19 @@ export function buildVisibleSpecialColumns(columns, visibleKeys, configMap) {
     .filter(Boolean);
 }
 
-export function filterSpecialAccountRows(rows, search, columns, searchKeys = []) {
-  const normalized = String(search || '').trim().toLowerCase();
-  if (!normalized) return rows;
-
+export function filterSpecialAccountRows(rows, search, columns, searchKeys = [], options = {}) {
+  const normalizedSearch = String(search || '').trim().toLowerCase();
+  const normalizedBatchName = String(options.batchName || '').trim().toLowerCase();
   const keys = [...new Set([...columns.map((column) => column.dataKey), ...searchKeys])];
-  return rows.filter((row) => keys.some((key) => String(row?.[key] ?? '').toLowerCase().includes(normalized)));
+
+  return rows.filter((row) => {
+    const matchesSearch = !normalizedSearch
+      || keys.some((key) => String(row?.[key] ?? '').toLowerCase().includes(normalizedSearch));
+    if (!matchesSearch) return false;
+
+    if (!normalizedBatchName) return true;
+    return String(row?.BatchName ?? '').trim().toLowerCase() === normalizedBatchName;
+  });
 }
 
 export function getInitialSpecialForm(accountId, accountLabel, record = null) {

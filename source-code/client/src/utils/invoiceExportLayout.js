@@ -15,6 +15,11 @@ const FALLBACK_LAYOUTS = {
     { title: 'القيم المالية', keys: ['amount_usd', 'amount_iqd'] },
     { title: 'الملاحظات', keys: ['trader_note', 'notes'] },
   ],
+  'debit-note': [
+    { title: 'المعلومات الأساسية', keys: ['ref_no', 'trans_date', 'account_name', 'currency'] },
+    { title: 'القيم المالية', keys: ['amount_usd', 'amount_iqd'] },
+    { title: 'الملاحظات', keys: ['notes'] },
+  ],
 };
 
 function formatDateValue(value) {
@@ -34,7 +39,9 @@ function formatMoneyValue(value, currency = 'USD') {
 export function resolveInvoiceFieldValue(
   transaction = {},
   fieldKey,
-  transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID),
+  transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    recordType: transaction?.RecordType,
+  }),
 ) {
   switch (fieldKey) {
     case 'ref_no':
@@ -93,8 +100,15 @@ export function resolveInvoiceFieldValue(
 }
 
 export function buildInvoiceHeaderMeta(transaction = {}, targetKey = 'invoice', sectionKey) {
-  const referenceLabel = getTransactionReferenceLabel(targetKey === 'payment' ? 2 : 1, { sectionKey });
-  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey });
+  const fallbackTypeId = targetKey === 'payment' ? 2 : (targetKey === 'debit-note' ? 3 : 1);
+  const referenceLabel = getTransactionReferenceLabel(
+    transaction?.TransTypeID ?? fallbackTypeId,
+    { sectionKey, recordType: transaction?.RecordType },
+  );
+  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    sectionKey,
+    recordType: transaction?.RecordType,
+  });
 
   return [
     { label: referenceLabel, value: transaction.RefNo || '-' },
@@ -105,7 +119,10 @@ export function buildInvoiceHeaderMeta(transaction = {}, targetKey = 'invoice', 
 }
 
 export function buildInvoiceExportSections(transaction = {}, sectionKey, targetKey = 'invoice') {
-  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey });
+  const transactionTypeLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    sectionKey,
+    recordType: transaction?.RecordType,
+  });
   const fieldDefs = getSectionTargetFields(sectionKey, targetKey);
   const layout = getSectionFormLayout(sectionKey, targetKey);
   const activeLayout = layout.length ? layout : (FALLBACK_LAYOUTS[targetKey] || FALLBACK_LAYOUTS.invoice);
@@ -121,7 +138,7 @@ export function buildInvoiceExportSections(transaction = {}, sectionKey, targetK
         return {
           key: fieldKey,
           label: fieldKey === 'ref_no'
-            ? getTransactionReferenceLabel(transaction?.TransTypeID, { sectionKey })
+            ? getTransactionReferenceLabel(transaction?.TransTypeID, { sectionKey, recordType: transaction?.RecordType })
             : field.label,
           type: field.type || 'text',
           value: resolveInvoiceFieldValue(transaction, fieldKey, transactionTypeLabel),

@@ -102,7 +102,13 @@ export default function PortStatementView({
                   <tr
                     key={index}
                     onClick={() => onSelectTransaction(transaction)}
-                    className={`cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${transaction.TransTypeID === 2 ? 'bg-[#8eb8ad]/[0.05]' : ''}`}
+                    className={`cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${
+                      transaction.TransTypeID === 2
+                        ? 'bg-[#8eb8ad]/[0.05]'
+                        : transaction.TransTypeID === 3
+                          ? 'bg-[#d6b36b]/[0.07]'
+                          : ''
+                    }`}
                   >
                     {activeStatementColumns.map((column) => (
                       <td key={column.key} className={`px-3 py-2 align-top ${column.type === 'date' ? 'whitespace-nowrap' : ''}`}>{renderPortCell(column, transaction)}</td>

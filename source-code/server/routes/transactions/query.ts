@@ -254,14 +254,46 @@ export function registerTransactionQueryRoutes(router: Router) {
           SELECT
             filtered.*,
             COUNT(*) OVER() AS totalCount,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN 1 ELSE 0 END) OVER() AS shipmentCount,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.weight AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalWeight,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN 1
+              ELSE 0
+            END) OVER() AS shipmentCount,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.weight AS DECIMAL(15,2)), 0))
+              ELSE 0
+            END) OVER() AS totalWeight,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalInvoicesUSD,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalInvoicesIQD,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalPaymentsUSD,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalPaymentsIQD,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.costUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalCostUSD,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.costIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalCostIQD
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0))
+              ELSE 0
+            END) OVER() AS profitSourceInvoicesUSD,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0))
+              ELSE 0
+            END) OVER() AS profitSourceInvoicesIQD,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.costUsd AS DECIMAL(15,2)), 0))
+              ELSE 0
+            END) OVER() AS totalCostUSD,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.costIqd AS DECIMAL(15,0)), 0))
+              ELSE 0
+            END) OVER() AS totalCostIQD
           FROM filtered
         ),
         summary AS (
@@ -273,6 +305,8 @@ export function registerTransactionQueryRoutes(router: Router) {
             COALESCE(MAX(totalInvoicesIQD), 0) AS totalInvoicesIQD,
             COALESCE(MAX(totalPaymentsUSD), 0) AS totalPaymentsUSD,
             COALESCE(MAX(totalPaymentsIQD), 0) AS totalPaymentsIQD,
+            COALESCE(MAX(profitSourceInvoicesUSD), 0) AS profitSourceInvoicesUSD,
+            COALESCE(MAX(profitSourceInvoicesIQD), 0) AS profitSourceInvoicesIQD,
             COALESCE(MAX(totalCostUSD), 0) AS totalCostUSD,
             COALESCE(MAX(totalCostIQD), 0) AS totalCostIQD
           FROM windowed
@@ -294,8 +328,8 @@ export function registerTransactionQueryRoutes(router: Router) {
           summary.totalPaymentsIQD,
           summary.totalCostUSD,
           summary.totalCostIQD,
-          (summary.totalInvoicesUSD - summary.totalCostUSD) AS totalProfitUSD,
-          (summary.totalInvoicesIQD - summary.totalCostIQD) AS totalProfitIQD,
+          (summary.profitSourceInvoicesUSD - summary.totalCostUSD) AS totalProfitUSD,
+          (summary.profitSourceInvoicesIQD - summary.totalCostIQD) AS totalProfitIQD,
           (summary.totalInvoicesUSD - summary.totalPaymentsUSD) AS balanceUSD,
           (summary.totalInvoicesIQD - summary.totalPaymentsIQD) AS balanceIQD
         FROM summary

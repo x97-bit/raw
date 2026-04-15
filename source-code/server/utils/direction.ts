@@ -1,4 +1,4 @@
-const INVOICE_ALIASES = new Set(['IN', 'DR', '1']);
+const INVOICE_ALIASES = new Set(['IN', 'DR', '1', '3']);
 const PAYMENT_ALIASES = new Set(['OUT', 'CR', '2']);
 
 function parseAmount(value: unknown): number {

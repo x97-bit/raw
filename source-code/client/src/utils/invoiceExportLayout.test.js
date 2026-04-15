@@ -54,6 +54,14 @@ describe('invoiceExportLayout', () => {
     expect(buildInvoiceHeaderMeta({ ...SAMPLE_TRANSACTION, TransTypeID: 2 }, 'payment', 'transport-1')[0].label).toBe('رقم سند الدفع');
   });
 
+  it('uses debit-note references when exporting added-charge vouchers', () => {
+    expect(buildInvoiceHeaderMeta({
+      ...SAMPLE_TRANSACTION,
+      TransTypeID: 3,
+      RecordType: 'debit-note',
+    }, 'invoice', 'port-1')[0].label).toBe('رقم سند الإضافة');
+  });
+
   it('uses the section invoice layout instead of the generic field list', () => {
     const sections = buildInvoiceExportSections(SAMPLE_TRANSACTION, 'port-1', 'invoice');
     const flattenedKeys = sections.flatMap((section) => section.items.map((item) => item.key));

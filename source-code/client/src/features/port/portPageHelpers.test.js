@@ -84,6 +84,7 @@ describe('portPageHelpers', () => {
   it('builds initial port forms from form type and custom values', () => {
     expect(getPortFormTarget(1)).toBe('invoice');
     expect(getPortFormTarget(2)).toBe('payment');
+    expect(getPortFormTarget(3)).toBe('debit-note');
 
     expect(buildInitialPortForm({
       formType: 2,
@@ -96,6 +97,18 @@ describe('portPageHelpers', () => {
       TransTypeID: 2,
       Currency: 'USD',
       PortID: 7,
+    });
+
+    expect(buildInitialPortForm({
+      formType: 3,
+      portId: 'port-1',
+      today: new Date('2026-04-09T10:30:00.000Z'),
+    })).toEqual({
+      TransDate: '2026-04-09',
+      TransTypeID: 3,
+      RecordType: 'debit-note',
+      Currency: 'USD',
+      PortID: 'port-1',
     });
   });
 
@@ -171,8 +184,10 @@ describe('portPageHelpers', () => {
   });
 
   it('exposes transport-specific labels and relabels ref columns', () => {
+    expect(getPortViewLabels({ sectionKey: 'port-1', formType: 3 }).debitLabel).toBe('سند إضافة');
     expect(getPortViewLabels({ sectionKey: 'transport-1', formType: 1 }).invoiceLabel).toBe('استحقاق نقل');
     expect(getPortViewLabels({ sectionKey: 'transport-1', formType: 2 }).paymentLabel).toBe('سند دفع');
+    expect(getPortBuiltInFieldLabel('port-1', 'ref_no', 3, 'fallback')).toBe('رقم سند الإضافة');
     expect(getPortBuiltInFieldLabel('transport-1', 'ref_no', 1, 'fallback')).toBe('رقم استحقاق النقل');
     expect(getPortBuiltInFieldLabel('transport-1', 'ref_no', 2, 'fallback')).toBe('رقم سند الدفع');
     expect(relabelPortColumnsForSection([{ key: 'ref_no', label: 'رقم الفاتورة' }], 'transport-1')).toEqual([

@@ -18,6 +18,7 @@ export async function buildTransactionCreateInput(
   createdBy: number,
 ): Promise<{ data: TransactionCreatePayload; refNo: string }> {
   const accountId = pickBodyField(body, "accountId", "AccountID", "account_id");
+  const recordType = String(pickBodyField(body, "recordType", "RecordType", "record_type") ?? "shipment");
   const direction = getStoredDirectionValue(pickBodyField(body, "type", "TransTypeID", "direction"));
 
   const [lastTransaction] = await db
@@ -28,7 +29,12 @@ export async function buildTransactionCreateInput(
   const nextNumber = (lastTransaction?.id || 0) + 1;
   const rawPortId = String(pickBodyField(body, "portId", "PortID", "port_id") ?? "GEN");
   const prefix = rawPortId.toUpperCase().replace(/[^A-Z]/g, "").substring(0, 5) || "GEN";
-  const refNo = `${prefix}-${isInvoiceDirection(direction) ? "INV" : "PAY"}${String(nextNumber).padStart(6, "0")}`;
+  const referenceCode = recordType.trim().toLowerCase() === "debit-note"
+    ? "DBN"
+    : isInvoiceDirection(direction)
+      ? "INV"
+      : "PAY";
+  const refNo = `${prefix}-${referenceCode}${String(nextNumber).padStart(6, "0")}`;
 
   const inputDriverId = pickBodyField(body, "driverId", "DriverID", "driver_id") ?? null;
   const inputVehicleId = pickBodyField(body, "vehicleId", "VehicleID", "vehicle_id") ?? null;
@@ -96,7 +102,7 @@ export async function buildTransactionCreateInput(
       govId: parseOptionalInt(pickBodyField(body, "govId", "GovID", "gov_id")) ?? null,
       notes: pickBodyField(body, "notes", "Notes") ?? null,
       traderNote: pickBodyField(body, "traderNote", "TraderNote", "trader_note") ?? null,
-      recordType: String(pickBodyField(body, "recordType", "RecordType", "record_type") ?? "shipment"),
+      recordType,
       portId: String(pickBodyField(body, "portId", "PortID", "port_id") ?? ""),
       accountType: String(pickBodyField(body, "accountType", "AccountTypeID", "account_type") ?? ""),
       createdBy,

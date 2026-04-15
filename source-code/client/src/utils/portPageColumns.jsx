@@ -42,7 +42,10 @@ export function toExportColumn(column, options = {}) {
   if (typeof column.getValue === 'function') {
     exportColumn.getValue = column.getValue;
   } else if (column.key === 'direction') {
-    exportColumn.getValue = (row) => getTransactionTypeLabel(row?.TransTypeName, row?.TransTypeID, options);
+    exportColumn.getValue = (row) => getTransactionTypeLabel(row?.TransTypeName, row?.TransTypeID, {
+      ...options,
+      recordType: row?.RecordType,
+    });
   }
 
   return exportColumn;
@@ -76,8 +79,14 @@ export function renderPortCell(column, row, options = {}) {
       return <span className="whitespace-nowrap">{value?.split(' ')[0] || '-'}</span>;
     case 'badge':
       return (
-        <span className={`rounded px-2 py-0.5 text-xs ${row.TransTypeID === 1 ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-          {getTransactionTypeLabel(value, row.TransTypeID, options)}
+        <span className={`rounded px-2 py-0.5 text-xs ${
+          row.TransTypeID === 2
+            ? 'bg-orange-100 text-orange-700'
+            : row.TransTypeID === 3
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-blue-100 text-blue-700'
+        }`}>
+          {getTransactionTypeLabel(value, row.TransTypeID, { ...options, recordType: row?.RecordType })}
         </span>
       );
     case 'currency':

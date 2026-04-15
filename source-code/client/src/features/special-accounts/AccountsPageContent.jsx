@@ -44,6 +44,7 @@ export default function AccountsPage({ onBack }) {
     saving,
     showForm,
     summaryCards,
+    batchOptions,
     view,
     visibleColumns,
   } = useSpecialAccountsPageState({ api });
@@ -103,6 +104,7 @@ export default function AccountsPage({ onBack }) {
 
         <SpecialAccountsFiltersBar
           account={activeDef}
+          batchOptions={batchOptions}
           filters={filters}
           onFieldChange={handleFilterChange}
           onApply={() => openAccount(activeDef.id)}

@@ -26,6 +26,17 @@ describe('portPageColumns helpers', () => {
     expect(exportColumn.getValue({ TransTypeID: 2 })).toBe('سند دفع');
   });
 
+  it('preserves custom debit-note labels in export resolvers', () => {
+    const exportColumn = toExportColumn({
+      key: 'direction',
+      dataKey: 'TransTypeName',
+      label: 'نوع الحركة',
+      type: 'badge',
+    }, { sectionKey: 'port-1' });
+
+    expect(exportColumn.getValue({ TransTypeID: 3, RecordType: 'debit-note' })).toBe('سند إضافة');
+  });
+
   it('maps export columns back to preview columns', () => {
     const getValue = (row) => row.AmountUSD;
     expect(toPreviewColumn({

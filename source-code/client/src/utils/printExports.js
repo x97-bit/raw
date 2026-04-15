@@ -125,7 +125,7 @@ function getGenericRowClass(row) {
   const direction = String(row?.Direction || row?.direction || '').toUpperCase();
 
   if (transTypeId === 2 || direction === 'OUT' || direction === 'CR') return 'payment-row';
-  if (transTypeId === 1 || direction === 'IN' || direction === 'DR') return 'receipt-row';
+  if (transTypeId === 1 || transTypeId === 3 || direction === 'IN' || direction === 'DR') return 'receipt-row';
   return '';
 }
 

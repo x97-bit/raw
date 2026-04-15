@@ -9,6 +9,7 @@ import {
 
 export default function SpecialAccountsFiltersBar({
   account,
+  batchOptions = [],
   filters,
   onFieldChange,
   onApply,
@@ -19,9 +20,13 @@ export default function SpecialAccountsFiltersBar({
   const primaryButtonStyle = getAccountPrimaryButtonStyle(account);
   const secondaryButtonStyle = getAccountSecondaryButtonStyle(account);
   const inputStyle = getAccountInputStyle(account);
+  const hasBatchFilter = account?.id === 'haider';
+  const gridClassName = hasBatchFilter
+    ? 'surface-card relative grid gap-4 overflow-hidden p-4 lg:grid-cols-[180px_180px_180px_minmax(0,1fr)_auto_auto]'
+    : 'surface-card relative grid gap-4 overflow-hidden p-4 lg:grid-cols-[180px_180px_minmax(0,1fr)_auto_auto]';
 
   return (
-    <div className="surface-card relative grid gap-4 overflow-hidden p-4 lg:grid-cols-[180px_180px_minmax(0,1fr)_auto_auto]" style={panelStyle}>
+    <div className={gridClassName} style={panelStyle}>
       <div
         className="pointer-events-none absolute inset-x-5 top-0 h-px"
         style={accentLineStyle}
@@ -37,6 +42,7 @@ export default function SpecialAccountsFiltersBar({
           style={inputStyle}
         />
       </div>
+
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-[#c5d1db]">إلى تاريخ</label>
         <input
@@ -47,10 +53,32 @@ export default function SpecialAccountsFiltersBar({
           style={inputStyle}
         />
       </div>
+
+      {hasBatchFilter && (
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-[#c5d1db]">الوجبة</label>
+          <select
+            value={filters.batchName}
+            onChange={(event) => onFieldChange('batchName', event.target.value)}
+            className="input-field"
+            style={inputStyle}
+          >
+            <option value="">كل الوجبات</option>
+            {batchOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-[#c5d1db]">بحث داخل النتائج</label>
         <div className="relative">
-          <Search size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: account.accent }} />
+          <Search
+            size={15}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+            style={{ color: account.accent }}
+          />
           <input
             value={filters.search}
             onChange={(event) => onFieldChange('search', event.target.value)}
@@ -60,6 +88,7 @@ export default function SpecialAccountsFiltersBar({
           />
         </div>
       </div>
+
       <button
         onClick={onApply}
         className="h-[48px] self-end rounded-2xl px-5 text-sm font-semibold text-[#eef3f7] transition-all duration-200 hover:-translate-y-0.5"
@@ -67,6 +96,7 @@ export default function SpecialAccountsFiltersBar({
       >
         عرض
       </button>
+
       <button
         onClick={onReset}
         className="h-[48px] self-end rounded-2xl px-5 text-sm font-semibold text-[#d9e2ea] transition-all duration-200 hover:-translate-y-0.5 hover:text-white"

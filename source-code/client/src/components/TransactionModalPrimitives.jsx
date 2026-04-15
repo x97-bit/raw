@@ -17,7 +17,13 @@ export function DetailTile({ label, value, badge = false, type, bold = false, co
     <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/85 p-3.5 transition-all duration-200 hover:border-slate-300 hover:bg-white">
       <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-400">{label}</span>
       {badge ? (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${type === 1 ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+          type === 2
+            ? 'bg-emerald-100 text-emerald-700'
+            : type === 3
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-blue-100 text-blue-700'
+        }`}>
           {value}
         </span>
       ) : (

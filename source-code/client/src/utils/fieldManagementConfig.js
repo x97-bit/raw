@@ -14,13 +14,16 @@ export const DEBT_FIELDS = [
 
 export const SPECIAL_HAIDER_FIELDS = [
   { key: 'trans_date', label: 'التاريخ', type: 'date' },
+  { key: 'destination', label: 'الوجهة', type: 'text' },
   { key: 'driver_name', label: 'السائق', type: 'text' },
   { key: 'vehicle_plate', label: 'السيارة', type: 'text' },
   { key: 'good_type', label: 'البضاعة', type: 'text' },
   { key: 'weight', label: 'الوزن', type: 'number' },
+  { key: 'meters', label: 'الأمتار', type: 'number' },
   { key: 'amount_usd', label: 'المبلغ دولار', type: 'money' },
   { key: 'amount_iqd', label: 'المبلغ دينار', type: 'number' },
   { key: 'difference_iqd', label: 'الفرق دينار', type: 'number' },
+  { key: 'batch_name', label: 'الوجبة', type: 'text' },
   { key: 'notes', label: 'ملاحظات', type: 'text' },
 ];
 

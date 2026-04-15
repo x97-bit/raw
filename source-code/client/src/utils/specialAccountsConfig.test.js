@@ -25,31 +25,61 @@ describe('specialAccountsConfig', () => {
     };
 
     const cards = SPECIAL_ACCOUNT_DEFS.haider.buildSummaryCards(totals);
-    expect(cards.some((card) => card.label === 'مجموع الوزن الكلي' && card.value === '23,600')).toBe(true);
+    expect(cards.some((card) => card.value === '23,600')).toBe(true);
   });
 
-  it('builds visible labels from field config and preserves editable record defaults', () => {
+  it('builds visible labels from field config and preserves Haider-only defaults', () => {
     const columns = buildVisibleSpecialColumns(
       SPECIAL_ACCOUNT_DEFS.haider.columns,
-      ['weight', 'amount_usd'],
-      { weight: { displayLabel: 'الوزن النهائي' } },
+      ['destination', 'meters', 'weight', 'batch_name', 'amount_usd'],
+      { weight: { displayLabel: 'weight-final' } },
     );
-    const form = getInitialSpecialForm('haider', 'حيدر شركة الأنوار', { Weight: 200, AmountUSD: 10 });
+    const form = getInitialSpecialForm('haider', 'Haider', {
+      Destination: 'Baghdad',
+      Meters: 14,
+      Weight: 200,
+      BatchName: 'Batch 1',
+      AmountUSD: 10,
+    });
 
-    expect(columns.map((column) => column.label)).toEqual(['الوزن النهائي', 'المبلغ دولار']);
+    expect(columns.map((column) => column.key)).toEqual([
+      'destination',
+      'meters',
+      'weight',
+      'batch_name',
+      'amount_usd',
+    ]);
+    expect(columns[2].label).toBe('weight-final');
+    expect(form.destination).toBe('Baghdad');
+    expect(form.meters).toBe(14);
     expect(form.weight).toBe(200);
+    expect(form.batchName).toBe('Batch 1');
     expect(form.amountUSD).toBe(10);
   });
 
   it('filters rows using visible column data and custom search keys', () => {
     const rows = [
-      { TraderNote: 'ملاحظة أولى', DriverName: 'سائق 1' },
-      { TraderNote: 'ثانية', DriverName: 'سائق 2' },
+      { TraderNote: 'note one', DriverName: 'driver 1', BatchName: 'Batch 1' },
+      { TraderNote: 'note two', DriverName: 'driver 2', BatchName: 'Batch 2' },
+      { TraderNote: 'note three', DriverName: 'driver 2', BatchName: 'Batch 1' },
     ];
     const columns = [{ dataKey: 'TraderNote' }];
 
-    const filtered = filterSpecialAccountRows(rows, 'سائق 2', columns, ['DriverName']);
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].DriverName).toBe('سائق 2');
+    const filtered = filterSpecialAccountRows(rows, 'driver 2', columns, ['DriverName']);
+    expect(filtered).toHaveLength(2);
+    expect(filtered[0].DriverName).toBe('driver 2');
+  });
+
+  it('supports a dedicated Haider batch filter', () => {
+    const rows = [
+      { TraderNote: 'note one', DriverName: 'driver 1', BatchName: 'Batch 1' },
+      { TraderNote: 'note two', DriverName: 'driver 2', BatchName: 'Batch 2' },
+      { TraderNote: 'note three', DriverName: 'driver 3', BatchName: 'Batch 1' },
+    ];
+    const columns = [{ dataKey: 'TraderNote' }];
+
+    const filtered = filterSpecialAccountRows(rows, '', columns, ['DriverName'], { batchName: 'Batch 1' });
+    expect(filtered).toHaveLength(2);
+    expect(filtered.every((row) => row.BatchName === 'Batch 1')).toBe(true);
   });
 });

@@ -5,12 +5,20 @@ function resolveFieldConfigEntry(configRows, fallbackEntry) {
     return fallbackEntry;
   }
 
+  const configuredKeys = new Set(configRows.map((field) => field.fieldKey));
+  const fallbackVisibleKeys = Array.isArray(fallbackEntry?.visibleKeys)
+    ? fallbackEntry.visibleKeys.filter((key) => !configuredKeys.has(key))
+    : [];
+
   return {
     configMap: buildFieldConfigMap(configRows),
-    visibleKeys: configRows
+    visibleKeys: [
+      ...configRows
       .filter((field) => field.visible)
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
       .map((field) => field.fieldKey),
+      ...fallbackVisibleKeys,
+    ],
   };
 }
 
@@ -30,5 +38,5 @@ export function buildSpecialAccountQuery(filters = {}) {
 }
 
 export function createSpecialAccountFilters() {
-  return { from: '', to: '', search: '' };
+  return { from: '', to: '', search: '', batchName: '' };
 }

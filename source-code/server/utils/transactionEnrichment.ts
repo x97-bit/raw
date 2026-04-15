@@ -92,6 +92,19 @@ function parseAmountOrZero(value: DecimalLike): number {
   return Number.parseFloat(String(value));
 }
 
+function normalizeRecordType(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isDebitNoteRecordType(value: unknown): boolean {
+  const normalized = normalizeRecordType(value);
+  return normalized === "debit-note" || String(value ?? "").trim() === "سند إضافة";
+}
+
+function isExpenseChargeRecordType(value: unknown): boolean {
+  return normalizeRecordType(value) === "expense-charge";
+}
+
 function getNameById(map: Map<number, string>, id?: number | null): string {
   if (id === null || id === undefined) {
     return "";
@@ -109,12 +122,24 @@ export function mapTransaction(
   customFieldData: Record<string, unknown> = {},
 ) {
   const invoiceDirection = isInvoiceDirection(transaction.direction);
+  const isDebitNote = isDebitNoteRecordType(transaction.recordType);
+  const isExpenseCharge = isExpenseChargeRecordType(transaction.recordType);
+  const showAsAdjustment = isDebitNote || isExpenseCharge;
+  const transactionTypeId = showAsAdjustment ? 3 : (invoiceDirection ? 1 : 2);
+  const transactionTypeName = isDebitNote
+    ? "سند إضافة"
+    : isExpenseCharge
+      ? "مصروف محمل على التاجر"
+      : invoiceDirection
+        ? "فاتورة"
+        : "سند قبض";
+  const includeProfit = invoiceDirection && !showAsAdjustment;
 
   return {
     TransID: transaction.id,
     RefNo: transaction.refNo || `REF-${transaction.id}`,
-    TransTypeID: invoiceDirection ? 1 : 2,
-    TransTypeName: invoiceDirection ? "فاتورة" : "سند قبض",
+    TransTypeID: transactionTypeId,
+    TransTypeName: transactionTypeName,
     TransDate: transaction.transDate,
     AccountID: transaction.accountId,
     AccountName: transaction._accountName || "",
@@ -149,10 +174,10 @@ export function mapTransaction(
     PortID: transaction.portId,
     AccountType: transaction.accountType,
     CreatedBy: transaction.createdBy,
-    ProfitUSD: invoiceDirection
+    ProfitUSD: includeProfit
       ? parseAmountOrZero(transaction.amountUsd) - parseAmountOrZero(transaction.costUsd)
       : 0,
-    ProfitIQD: invoiceDirection
+    ProfitIQD: includeProfit
       ? parseAmountOrZero(transaction.amountIqd) - parseAmountOrZero(transaction.costIqd)
       : 0,
     direction: transaction.direction,

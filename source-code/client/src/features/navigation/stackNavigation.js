@@ -63,6 +63,18 @@ export function resolveSectionActionNavigation(sectionId, action) {
     };
   }
 
+  if (action === 'debit') {
+    return {
+      page: 'port-work',
+      sectionId,
+      portId: config.portId,
+      portName: config.title,
+      accountType: config.accountType,
+      formType: 3,
+      view: 'form',
+    };
+  }
+
   if (action === 'statement') {
     return {
       page: 'port-work',

@@ -27,6 +27,7 @@ export default function PortListView({
   onResetFilters,
   onOpenStatement,
   onOpenInvoiceForm,
+  onOpenDebitForm,
   onOpenPaymentForm,
   onPreviousPage,
   onNextPage,
@@ -82,6 +83,17 @@ export default function PortListView({
         >
           <Plus size={16} />
           {labels.invoiceLabel || 'فاتورة'}
+        </button>,
+      );
+
+      actionButtons.push(
+        <button
+          key="debit"
+          onClick={onOpenDebitForm}
+          className="flex items-center gap-1.5 rounded-xl bg-[#d6b36b]/[0.16] px-3.5 py-2 text-sm font-medium text-[#f6e7c2] ring-1 ring-[#d6b36b]/[0.22] transition-all hover:bg-[#d6b36b]/[0.24]"
+        >
+          <Plus size={16} />
+          {labels.debitLabel || 'سند إضافة'}
         </button>,
       );
     }

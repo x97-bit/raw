@@ -21,9 +21,9 @@ import {
 } from 'lucide-react';
 
 export const sectionConfig = {
-  'port-1': { title: 'منفذ السعودية', portId: 'port-1', type: 'port', accent: '#648ea9', actions: ['invoice', 'payment', 'statement'] },
-  'port-2': { title: 'منفذ المنذرية', portId: 'port-2', type: 'port', accent: '#5f8d95', actions: ['invoice', 'payment', 'statement'] },
-  'port-3': { title: 'منفذ القائم', portId: 'port-3', type: 'port', accent: '#7087a6', actions: ['invoice', 'payment', 'statement'] },
+  'port-1': { title: 'منفذ السعودية', portId: 'port-1', type: 'port', accent: '#648ea9', actions: ['invoice', 'debit', 'payment', 'statement'] },
+  'port-2': { title: 'منفذ المنذرية', portId: 'port-2', type: 'port', accent: '#5f8d95', actions: ['invoice', 'debit', 'payment', 'statement'] },
+  'port-3': { title: 'منفذ القائم', portId: 'port-3', type: 'port', accent: '#7087a6', actions: ['invoice', 'debit', 'payment', 'statement'] },
   transport: {
     title: 'النقل',
     portId: 'transport-1',
@@ -57,6 +57,13 @@ export const sectionActionConfig = {
     icon: FileText,
     accent: '#648ea9',
     bg: 'rgba(100,142,169,0.16)',
+  },
+  debit: {
+    label: 'سند إضافة',
+    desc: 'تحميل مبلغ جديد على ذمة التاجر',
+    icon: Receipt,
+    accent: '#d6b36b',
+    bg: 'rgba(214,179,107,0.16)',
   },
   payment: {
     label: 'سند قبض',

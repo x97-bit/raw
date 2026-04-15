@@ -195,6 +195,13 @@ export default function usePortTransactionForm({
 
       draft = await createMissingLookups(draft);
       const payload = sanitizePortTransactionPayload(draft);
+      const selectedAccount = (accounts || []).find(
+        (account) => String(account.AccountID) === String(draft.AccountID),
+      );
+      const resolvedAccountType = accountType
+        ?? selectedAccount?.AccountTypeID
+        ?? '1';
+      payload.accountType = String(resolvedAccountType);
       const result = await api('/transactions', {
         method: 'POST',
         body: JSON.stringify(payload),

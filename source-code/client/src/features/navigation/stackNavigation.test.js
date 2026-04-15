@@ -36,6 +36,16 @@ describe('stackNavigation', () => {
       view: 'form',
     });
 
+    expect(resolveSectionActionNavigation('port-1', 'debit')).toEqual({
+      page: 'port-work',
+      sectionId: 'port-1',
+      portId: 'port-1',
+      portName: 'منفذ السعودية',
+      accountType: undefined,
+      formType: 3,
+      view: 'form',
+    });
+
     expect(resolveSectionActionNavigation('transport', 'traders')).toEqual({
       page: 'port-work',
       sectionId: 'transport',

@@ -16,6 +16,8 @@
     "db:generate-import-templates": "node scripts/imports/generate-system-import-templates.mjs",
     "db:reset-safe-production:dry-run": "node scripts/database/reset-safe-production-data.mjs",
     "db:reset-safe-production:apply": "node scripts/database/reset-safe-production-data.mjs --apply",
+    "db:wipe-keep-schema:dry-run": "node scripts/database/wipe-production-keep-schema.mjs",
+    "db:wipe-keep-schema:apply": "node scripts/database/wipe-production-keep-schema.mjs --apply",
     "db:migrate-old-trade-db:dry-run": "node scripts/imports/migrate-old-trade-db.mjs",
     "db:migrate-old-trade-db:apply": "node scripts/imports/migrate-old-trade-db.mjs --apply",
     "db:bootstrap-old-trade-import-db": "node scripts/imports/bootstrap-old-trade-import-db.mjs",

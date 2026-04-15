@@ -63,7 +63,7 @@ const normalizeFields = (fields = [], targetKey, sectionKey) => fields.map((fiel
   label: shouldKeepSectionFallbackLabel(sectionKey, field.key)
     ? field.label
     : getFieldDisplayLabel(field.key, {
-      variant: targetKey === 'payment' ? 'payment-ref' : 'screen',
+      variant: (targetKey === 'payment' || targetKey === 'debit-note') ? 'payment-ref' : 'screen',
       fallback: field.label,
     }),
 }));
@@ -77,9 +77,27 @@ const normalizeSectionScreenSpecs = (specs) => Object.fromEntries(
       ...(spec.statement ? { statement: { ...spec.statement, columns: normalizeColumns(spec.statement.columns, sectionKey) } } : {}),
       ...(spec.invoice ? { invoice: { ...spec.invoice, fields: normalizeFields(spec.invoice.fields, 'invoice', sectionKey) } } : {}),
       ...(spec.payment ? { payment: { ...spec.payment, fields: normalizeFields(spec.payment.fields, 'payment', sectionKey) } } : {}),
+      ...(spec['debit-note'] ? { 'debit-note': { ...spec['debit-note'], fields: normalizeFields(spec['debit-note'].fields, 'debit-note', sectionKey) } } : {}),
     },
   ])),
 );
+
+const createDebitNoteSpec = () => ({
+  fields: [
+    createField('ref_no', 'رقم سند الإضافة', 'text', { readOnly: true }),
+    createField('trans_date', 'التاريخ', 'date'),
+    createField('account_name', 'اسم التاجر', 'text'),
+    createField('currency', 'العملة', 'text'),
+    createField('amount_usd', 'المبلغ دولار', 'money'),
+    createField('amount_iqd', 'المبلغ دينار', 'money'),
+    createField('notes', 'الملاحظات', 'text'),
+  ],
+  layout: [
+    createFormSection('المعلومات الأساسية', ['ref_no', 'trans_date', 'account_name', 'currency']),
+    createFormSection('القيم المالية', ['amount_usd', 'amount_iqd']),
+    createFormSection('الملاحظات', ['notes']),
+  ],
+});
 
 const RAW_SECTION_SCREEN_SPECS = {
   'transport-1': {
@@ -146,7 +164,8 @@ const RAW_SECTION_SCREEN_SPECS = {
     },
   },
   'port-1': {
-    targets: ['list', 'statement', 'invoice', 'payment'],
+    targets: ['list', 'statement', 'invoice', 'payment', 'debit-note'],
+    'debit-note': createDebitNoteSpec(),
     list: {
       columns: [
         createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),
@@ -227,7 +246,8 @@ const RAW_SECTION_SCREEN_SPECS = {
     },
   },
   'port-2': {
-    targets: ['list', 'statement', 'invoice', 'payment'],
+    targets: ['list', 'statement', 'invoice', 'payment', 'debit-note'],
+    'debit-note': createDebitNoteSpec(),
     list: {
       columns: [
         createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),
@@ -308,7 +328,8 @@ const RAW_SECTION_SCREEN_SPECS = {
     },
   },
   'port-3': {
-    targets: ['list', 'statement', 'invoice', 'payment'],
+    targets: ['list', 'statement', 'invoice', 'payment', 'debit-note'],
+    'debit-note': createDebitNoteSpec(),
     list: {
       columns: [
         createColumn('ref_no', 'RefNo', 'رقم الفاتورة'),

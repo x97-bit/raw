@@ -10,6 +10,7 @@ export function buildSpecialHaiderTotals(rows) {
   const totals = rows.reduce((acc, row) => {
     acc.count += 1;
     acc.totalWeight += toNumber(row?.Weight);
+    acc.totalMeters += toNumber(row?.Meters);
     acc.totalCostUSD += toNumber(row?.CostUSD);
     acc.totalAmountUSD += toNumber(row?.AmountUSD);
     acc.totalCostIQD += toNumber(row?.CostIQD);
@@ -19,6 +20,7 @@ export function buildSpecialHaiderTotals(rows) {
   }, {
     count: 0,
     totalWeight: 0,
+    totalMeters: 0,
     totalCostUSD: 0,
     totalAmountUSD: 0,
     totalCostIQD: 0,

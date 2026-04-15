@@ -11,6 +11,7 @@ describe('specialAccountsPageHelpers', () => {
       from: '',
       to: '',
       search: '',
+      batchName: '',
     });
   });
 
@@ -20,15 +21,15 @@ describe('specialAccountsPageHelpers', () => {
     expect(buildSpecialAccountQuery({})).toBe('');
   });
 
-  it('merges fetched field configs into the current special account field state', () => {
+  it('keeps fallback visible keys when older field configs do not know about new Haider fields', () => {
     const current = {
-      'special-haider': { visibleKeys: ['a'], configMap: { a: { displayLabel: 'A' } } },
+      'special-haider': { visibleKeys: ['weight', 'meters'], configMap: { weight: { displayLabel: 'old-weight' } } },
       'special-partner': { visibleKeys: ['b'], configMap: { b: { displayLabel: 'B' } } },
     };
 
     expect(applyLoadedSpecialFieldConfigs(
       current,
-      [{ fieldKey: 'weight', visible: 1, sortOrder: 2, displayLabel: 'الوزن النهائي' }],
+      [{ fieldKey: 'weight', visible: 1, sortOrder: 2, displayLabel: 'weight-final' }],
       [],
     )).toEqual({
       'special-haider': {
@@ -36,10 +37,10 @@ describe('specialAccountsPageHelpers', () => {
           weight: {
             visible: true,
             sortOrder: 2,
-            displayLabel: 'الوزن النهائي',
+            displayLabel: 'weight-final',
           },
         },
-        visibleKeys: ['weight'],
+        visibleKeys: ['weight', 'meters'],
       },
       'special-partner': current['special-partner'],
     });

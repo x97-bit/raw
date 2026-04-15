@@ -269,9 +269,11 @@ export default function PortPage({
 
   const getTransactionCustomFields = useCallback((transaction) => {
     if (!transaction) return [];
-    return getPortTransactionTarget(transaction) === 'invoice'
-      ? [...getVisibleCustomFieldsForTarget('invoice'), ...getVisibleFormulaFieldsForTarget('invoice')]
-      : [...getVisibleCustomFieldsForTarget('payment'), ...getVisibleFormulaFieldsForTarget('payment')];
+    const target = getPortTransactionTarget(transaction);
+    return [
+      ...getVisibleCustomFieldsForTarget(target),
+      ...getVisibleFormulaFieldsForTarget(target),
+    ];
   }, [getVisibleCustomFieldsForTarget, getVisibleFormulaFieldsForTarget]);
 
   const selectedTransactionTarget = selectedTx ? getPortTransactionTarget(selectedTx) : 'payment';
@@ -438,6 +440,7 @@ export default function PortPage({
         onResetFilters={handleListResetFilters}
         onOpenStatement={handleOpenStatementFromFilters}
         onOpenInvoiceForm={() => transactionFormState.openForm(1)}
+        onOpenDebitForm={() => transactionFormState.openForm(3)}
         onOpenPaymentForm={() => transactionFormState.openForm(2)}
         onPreviousPage={() => setPage((current) => Math.max(0, current - 1))}
         onNextPage={() => setPage((current) => current + 1)}

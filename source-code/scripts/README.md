@@ -25,6 +25,7 @@ This folder keeps operational scripts out of the source root.
 ## Active Database
 - `database/rebuild-local-db.mjs`
 - `database/reset-safe-production-data.mjs`
+- `database/wipe-production-keep-schema.mjs`
 
 ## Active Imports
 - `imports/bootstrap-old-trade-import-db.mjs`

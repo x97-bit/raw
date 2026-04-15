@@ -61,6 +61,31 @@ describe("apiRouteHelpers", () => {
     });
   });
 
+  it("maps debit-note transactions as a separate display type without profit", () => {
+    expect(mapTransaction({
+      id: 12,
+      refNo: "DBN-12",
+      direction: "IN",
+      transDate: "2026-01-02",
+      accountId: 5,
+      currency: "USD",
+      amountUsd: "150",
+      costUsd: "0",
+      amountIqd: "0",
+      costIqd: "0",
+      feeUsd: "0",
+      syrCus: "0",
+      portId: "SA",
+      accountType: "4",
+      createdBy: 1,
+      recordType: "debit-note",
+    })).toMatchObject({
+      TransTypeID: 3,
+      TransTypeName: "سند إضافة",
+      ProfitUSD: 0,
+    });
+  });
+
   it("parses numeric body helpers safely", () => {
     expect(hasBodyValue("")).toBe(false);
     expect(hasBodyValue("0")).toBe(true);

@@ -86,8 +86,20 @@ export default function useSpecialAccountsPageState({ api }) {
 
   const filteredRows = useMemo(() => {
     if (!activeDef) return [];
-    return filterSpecialAccountRows(activeRows, filters.search, visibleColumns, activeDef.searchKeys);
-  }, [activeDef, activeRows, filters.search, visibleColumns]);
+    return filterSpecialAccountRows(activeRows, filters.search, visibleColumns, activeDef.searchKeys, {
+      batchName: activeDef.id === 'haider' ? filters.batchName : '',
+    });
+  }, [activeDef, activeRows, filters.batchName, filters.search, visibleColumns]);
+
+  const batchOptions = useMemo(() => {
+    if (activeDef?.id !== 'haider') return [];
+
+    return [...new Set(
+      activeRows
+        .map((row) => String(row?.BatchName || '').trim())
+        .filter(Boolean),
+    )].sort((left, right) => left.localeCompare(right, 'ar'));
+  }, [activeDef, activeRows]);
 
   const derivedTotals = useMemo(
     () => (activeDef ? activeDef.buildTotals(filteredRows) : null),
@@ -203,6 +215,7 @@ export default function useSpecialAccountsPageState({ api }) {
     setMessage,
     showForm,
     summaryCards,
+    batchOptions,
     view,
     visibleColumns,
   };

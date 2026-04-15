@@ -14,7 +14,7 @@ export default function usePortFieldConfig({
 }) {
   const [viewColumns, setViewColumns] = useState({ list: [], statement: [] });
   const [customFields, setCustomFields] = useState([]);
-  const [viewConfigMaps, setViewConfigMaps] = useState({ list: {}, statement: {}, invoice: {}, payment: {} });
+  const [viewConfigMaps, setViewConfigMaps] = useState({ list: {}, statement: {}, invoice: {}, payment: {}, 'debit-note': {} });
 
   const activeFormTarget = useMemo(() => getPortFormTarget(formType), [formType]);
   const getFieldConfigMap = useCallback((target) => viewConfigMaps[target] || {}, [viewConfigMaps]);
@@ -63,13 +63,15 @@ export default function usePortFieldConfig({
         ...getScopedFieldSectionKeys(sectionKey, 'statement'),
         ...getScopedFieldSectionKeys(sectionKey, 'invoice'),
         ...getScopedFieldSectionKeys(sectionKey, 'payment'),
+        ...getScopedFieldSectionKeys(sectionKey, 'debit-note'),
       ]));
 
-      const [listConfigs, statementConfigs, invoiceConfigs, paymentConfigs, ...customFieldGroups] = await Promise.all([
+      const [listConfigs, statementConfigs, invoiceConfigs, paymentConfigs, debitNoteConfigs, ...customFieldGroups] = await Promise.all([
         fetchTargetConfigs('list'),
         fetchTargetConfigs('statement'),
         fetchTargetConfigs('invoice'),
         fetchTargetConfigs('payment'),
+        fetchTargetConfigs('debit-note'),
         ...customFieldSectionKeys.map((scopeKey) => api(`/custom-fields?sectionKey=${encodeURIComponent(scopeKey)}`)),
       ]);
 
@@ -78,6 +80,7 @@ export default function usePortFieldConfig({
       const statementConfigMap = buildFieldConfigMap(statementConfigs);
       const invoiceConfigMap = buildFieldConfigMap(invoiceConfigs);
       const paymentConfigMap = buildFieldConfigMap(paymentConfigs);
+      const debitNoteConfigMap = buildFieldConfigMap(debitNoteConfigs);
 
       setCustomFields(dedupedCustomFields);
       setViewConfigMaps({
@@ -85,6 +88,7 @@ export default function usePortFieldConfig({
         statement: statementConfigMap,
         invoice: invoiceConfigMap,
         payment: paymentConfigMap,
+        'debit-note': debitNoteConfigMap,
       });
       setViewColumns({
         list: buildPortColumnsForTarget({

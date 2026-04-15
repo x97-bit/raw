@@ -71,14 +71,25 @@ export default function TransactionModal({
     setTraderText('');
   }, [transaction?.TransID]);
 
-  const formTarget = transaction?.TransTypeID === 1 ? 'invoice' : 'payment';
-  const transactionLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey });
+  const isPaymentTransaction = transaction?.TransTypeID === 2;
+  const isAdjustmentTransaction = transaction?.TransTypeID === 3;
+  const formTarget = isPaymentTransaction
+    ? 'payment'
+    : isAdjustmentTransaction
+      ? 'debit-note'
+      : 'invoice';
+  const transactionLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+    sectionKey,
+    recordType: transaction?.RecordType,
+  });
   const amountUsd = transaction?.AmountUSD ? `$${formatTransactionModalNumber(transaction.AmountUSD)}` : '-';
   const amountIqd = transaction?.AmountIQD ? formatTransactionModalNumber(transaction.AmountIQD) : '-';
   const costUsd = transaction?.CostUSD ? `$${formatTransactionModalNumber(transaction.CostUSD)}` : '-';
-  const accentTone = transaction?.TransTypeID === 1
-    ? 'from-blue-50 via-white to-sky-50 border-blue-100/80 text-blue-800'
-    : 'from-emerald-50 via-white to-teal-50 border-emerald-100/80 text-emerald-800';
+  const accentTone = isPaymentTransaction
+    ? 'from-emerald-50 via-white to-teal-50 border-emerald-100/80 text-emerald-800'
+    : isAdjustmentTransaction
+      ? 'from-amber-50 via-white to-yellow-50 border-amber-100/80 text-amber-800'
+      : 'from-blue-50 via-white to-sky-50 border-blue-100/80 text-blue-800';
   const {
     editableCustomFields,
     formulaCustomFields,
@@ -98,8 +109,12 @@ export default function TransactionModal({
       return formTarget === 'payment' ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
     }
 
+    if (fieldKey === 'ref_no' && transaction?.TransTypeID === 3) {
+      return 'رقم سند الإضافة';
+    }
+
     return getBuiltInFieldLabel(fieldKey, fallbackLabel);
-  }, [formTarget, getBuiltInFieldLabel, sectionKey]);
+  }, [formTarget, getBuiltInFieldLabel, sectionKey, transaction?.TransTypeID]);
 
   const extraReferenceFields = useMemo(() => {
     const fieldOrder = ['currency', 'driver_name', 'vehicle_plate', 'good_type', 'gov_name', 'company_name', 'carrier_name'];
@@ -321,7 +336,10 @@ export default function TransactionModal({
   const handleExportPDF = async () => {
     await runExportInvoicePDF({
       transaction,
-      title: getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, { sectionKey }),
+      title: getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
+        sectionKey,
+        recordType: transaction?.RecordType,
+      }),
       sectionKey,
       portId,
     });
@@ -375,7 +393,13 @@ export default function TransactionModal({
             <div className={`border-b border-white/50 bg-gradient-to-r ${accentTone} px-5 py-5 md:px-6`}>
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <div className={`mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${transaction.TransTypeID === 1 ? 'border-blue-200 bg-white/80 text-blue-700' : 'border-emerald-200 bg-white/80 text-emerald-700'}`}>
+                  <div className={`mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
+                    isPaymentTransaction
+                      ? 'border-emerald-200 bg-white/80 text-emerald-700'
+                      : isAdjustmentTransaction
+                        ? 'border-amber-200 bg-white/80 text-amber-700'
+                        : 'border-blue-200 bg-white/80 text-blue-700'
+                  }`}>
                     {transactionLabel}
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 md:text-xl">
@@ -452,4 +476,4 @@ export default function TransactionModal({
     </ModalPortal>
   );
 }
-
+

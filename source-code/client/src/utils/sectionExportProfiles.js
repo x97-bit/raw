@@ -417,7 +417,10 @@ function resolveExportColumns(sectionKey, columnKeys, labelOverrides = {}) {
         format: EXPORT_COLUMN_FORMATS[column.type],
         ...(columnKey === 'direction'
           ? {
-              getValue: (row) => getTransactionTypeLabel(row?.TransTypeName, row?.TransTypeID, { sectionKey }),
+              getValue: (row) => getTransactionTypeLabel(row?.TransTypeName, row?.TransTypeID, {
+                sectionKey,
+                recordType: row?.RecordType,
+              }),
             }
           : {}),
       };

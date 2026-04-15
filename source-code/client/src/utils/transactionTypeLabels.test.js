@@ -11,6 +11,11 @@ describe('transactionTypeLabels', () => {
     expect(getTransactionTypeLabel('', 2)).toBe('سند قبض');
   });
 
+  it('supports custom debit-note labels and references', () => {
+    expect(getTransactionTypeLabel('', 3, { recordType: 'debit-note' })).toBe('سند إضافة');
+    expect(getTransactionReferenceLabel(3, { recordType: 'debit-note' })).toBe('رقم سند الإضافة');
+  });
+
   it('normalizes legacy labels safely', () => {
     expect(getTransactionTypeLabel('له')).toBe('فاتورة');
     expect(getTransactionTypeLabel('عليه')).toBe('سند قبض');
