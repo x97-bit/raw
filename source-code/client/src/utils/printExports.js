@@ -370,13 +370,13 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? '19px' : '18px'};
+      font-size: ${isPortrait ? '32px' : '30px'};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
-      font-size: 12px;
+      font-size: 18px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
       font-weight: 700;
     }
@@ -398,12 +398,12 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       display: block;
       margin-bottom: 4px;
       color: #5c6482;
-      font-size: 12px;
+      font-size: 19px;
       font-weight: 700;
     }
     .tay-summary-card strong {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 18px;
+      font-size: 32px;
     }
     .tay-sections {
       position: relative;
@@ -427,13 +427,13 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-section-title {
       margin: 0;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 15px;
+      font-size: 28px;
       font-weight: 800;
     }
     .tay-section-subtitle {
       margin-top: 3px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
-      font-size: 11px;
+      font-size: 17px;
       font-weight: 700;
     }
     .tay-table-wrap {
@@ -452,12 +452,12 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table th,
     .tay-table td {
       border: 1px solid #d7dbe4;
-      padding: ${isPortrait ? '8px 9px' : '7px 8px'};
+      padding: ${isPortrait ? '22px 20px' : '20px 18px'};
       text-align: center;
       vertical-align: middle;
       color: #1f2937;
-      font-size: ${isPortrait ? '12px' : '11px'};
-      line-height: 1.45;
+      font-size: ${isPortrait ? '32px' : '30px'};
+      line-height: 1.5;
       word-break: break-word;
     }
     .tay-table .tay-date-cell {

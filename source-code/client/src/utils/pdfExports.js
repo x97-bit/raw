@@ -633,23 +633,23 @@ function getAdaptiveTableMetrics(orientation, columnCount) {
 
   return {
     headerFontSize: orientation === 'portrait'
-      ? (dense ? 18 : compact ? 20 : 22)
-      : (dense ? 16 : compact ? 18 : 20),
+      ? (dense ? 32 : compact ? 36 : 40)
+      : (dense ? 28 : compact ? 32 : 36),
     cellFontSize: orientation === 'portrait'
-      ? (dense ? 18 : compact ? 20 : 22)
-      : (dense ? 15 : compact ? 17 : 19),
-    headerLineHeight: orientation === 'portrait' ? 22 : 20,
-    cellLineHeight: orientation === 'portrait' ? 22 : 19,
+      ? (dense ? 32 : compact ? 36 : 40)
+      : (dense ? 26 : compact ? 30 : 34),
+    headerLineHeight: orientation === 'portrait' ? 40 : 36,
+    cellLineHeight: orientation === 'portrait' ? 40 : 34,
     maxHeaderLines: dense ? 3 : 2,
     maxCellLines: dense ? 3 : 2,
-    paddingX: dense ? 10 : 14,
-    paddingY: dense ? 10 : 12,
-    minHeaderHeight: orientation === 'portrait' ? 70 : 58,
-    minRowHeight: orientation === 'portrait' ? 64 : 50,
-    summaryLabelSize: orientation === 'portrait' ? 18 : 20,
-    summaryValueSize: orientation === 'portrait' ? 26 : 28,
-    summaryLabelLineHeight: orientation === 'portrait' ? 20 : 21,
-    summaryValueLineHeight: orientation === 'portrait' ? 28 : 30,
+    paddingX: dense ? 16 : 20,
+    paddingY: dense ? 16 : 18,
+    minHeaderHeight: orientation === 'portrait' ? 116 : 100,
+    minRowHeight: orientation === 'portrait' ? 108 : 88,
+    summaryLabelSize: orientation === 'portrait' ? 30 : 32,
+    summaryValueSize: orientation === 'portrait' ? 44 : 46,
+    summaryLabelLineHeight: orientation === 'portrait' ? 32 : 34,
+    summaryValueLineHeight: orientation === 'portrait' ? 46 : 48,
   };
 }
 
@@ -1149,14 +1149,14 @@ function getInvoiceSectionTone(section = {}) {
 }
 
 function measureInvoiceNoteCardHeight(ctx, value, width) {
-  setFont(ctx, '500', 24);
+  setFont(ctx, '500', 72);
   const lineCount = wrapTextLines(ctx, value, width).slice(0, 5).length;
-  return Math.max(92, 54 + (lineCount * 26));
+  return Math.max(240, 150 + (lineCount * 82));
 }
 
 function measureInvoiceSectionHeight(ctx, section, width) {
   const contentWidth = width - INVOICE_SHELL_PADDING * 2;
-  let contentHeight = 56;
+  let contentHeight = 82;
 
   if (section.subtitle) {
     setFont(ctx, '500', 18);
@@ -1177,8 +1177,8 @@ function measureInvoiceSectionHeight(ctx, section, width) {
   if (!rows) return contentHeight + INVOICE_SHELL_PADDING;
 
   return contentHeight
-    + (rows * 84)
-    + ((rows - 1) * 8)
+    + (rows * 305)
+    + ((rows - 1) * 18)
     + INVOICE_SHELL_PADDING;
 }
 
@@ -1319,14 +1319,14 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
 
   drawRoundedRect(ctx, shellX, startY, width, sectionHeight, 16, '#ffffff', tone.stroke, 1.8);
   drawRoundedRect(ctx, shellX, startY, width, 46, 16, tone.fill);
-  drawText(ctx, section.title || '-', shellX + width - 22, startY + 28, {
-    size: 24,
+  drawText(ctx, section.title || '-', shellX + width - 22, startY + 42, {
+    size: 42,
     weight: '800',
     color: tone.accent,
     maxWidth: width - 44,
   });
 
-  let contentY = startY + 58;
+  let contentY = startY + 86;
   if (section.subtitle) {
     const subtitleHeight = drawWrappedText(ctx, section.subtitle, shellX + width - 22, contentY, {
       maxWidth: width - 44,
@@ -1343,17 +1343,17 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
     (section.items || []).forEach((item) => {
       const noteHeight = measureInvoiceNoteCardHeight(ctx, item.value, contentWidth - 28);
       drawRoundedRect(ctx, shellX + INVOICE_SHELL_PADDING, contentY, contentWidth, noteHeight, 12, '#ffffff', '#d7ddea', 1);
-      drawText(ctx, item.label, shellX + width - 36, contentY + 20, {
-        size: 18,
+      drawText(ctx, item.label, shellX + width - 36, contentY + 52, {
+        size: 52,
         weight: '700',
         color: tone.accent,
         maxWidth: contentWidth - 32,
       });
-      drawWrappedText(ctx, item.value, shellX + width - 36, contentY + 48, {
+      drawWrappedText(ctx, item.value, shellX + width - 36, contentY + 128, {
         maxWidth: contentWidth - 32,
-        lineHeight: 24,
+        lineHeight: 82,
         maxLines: 5,
-        size: 24,
+        size: 72,
         weight: '500',
         color: '#1f2937',
       });
@@ -1363,8 +1363,8 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
     return sectionHeight;
   }
 
-  const rowHeight = 84;
-  const rowGap = 8;
+  const rowHeight = 305;
+  const rowGap = 18;
   const rowWidth = contentWidth;
   const cellWidth = rowWidth / 2;
   const groupedItems = [];
@@ -1394,17 +1394,17 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
         : (itemIndex === 0 ? rowX + cellWidth : rowX);
       const currentWidth = rowItems.length === 1 ? rowWidth : cellWidth;
 
-      drawText(ctx, item.label, cellX + currentWidth - 16, rowY + 20, {
-        size: 16,
+      drawText(ctx, item.label, cellX + currentWidth - 16, rowY + 56, {
+        size: 46,
         weight: '700',
         color: '#64748b',
         maxWidth: currentWidth - 32,
       });
-      drawWrappedText(ctx, item.value, cellX + currentWidth - 16, rowY + 46, {
+      drawWrappedText(ctx, item.value, cellX + currentWidth - 16, rowY + 152, {
         maxWidth: currentWidth - 32,
-        lineHeight: 21,
+        lineHeight: 76,
         maxLines: 2,
-        size: 22,
+        size: 72,
         weight: '700',
         color: tone.value,
       });

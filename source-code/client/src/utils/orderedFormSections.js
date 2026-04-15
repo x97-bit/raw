@@ -90,3 +90,18 @@ export function buildOrderedFormSections({
     }))
     .filter((section) => section.items.length > 0);
 }
+
+export function filterSectionsByCurrency(sections, currency) {
+  const normalized = String(currency || 'USD').toUpperCase();
+  if (normalized === 'BOTH') return sections || [];
+  const hideSuffix = normalized === 'USD' ? '_iqd' : '_usd';
+  return (sections || [])
+    .map((section) => ({
+      ...section,
+      items: (section.items || []).filter((item) => {
+        const key = String(item?.key || '').toLowerCase();
+        return !key.endsWith(hideSuffix);
+      }),
+    }))
+    .filter((section) => (section.items || []).length > 0);
+}

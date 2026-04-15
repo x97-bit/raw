@@ -13,6 +13,7 @@ import {
   formatCustomFieldDisplayValue,
   getInitialCustomFieldValues,
 } from '../utils/customFields';
+import { filterSectionsByCurrency } from '../utils/orderedFormSections';
 import { getTransactionTypeLabel } from '../utils/transactionTypeLabels';
 import {
   applyDefaultsToTransactionDraft,
@@ -104,6 +105,13 @@ export default function TransactionModal({
     fallbackTitle: 'تفاصيل الحركة',
     fallbackSubtitle: 'يعرض الحقول حسب ترتيب إدارة الحقول',
   });
+  const filteredEditSections = useMemo(
+    () => filterSectionsByCurrency(
+      orderedEditSections,
+      editForm?.Currency || transaction?.Currency,
+    ),
+    [orderedEditSections, editForm?.Currency, transaction?.Currency],
+  );
   const scopedBuiltInFieldLabel = useCallback((fieldKey, fallbackLabel) => {
     if (sectionKey === 'transport-1' && fieldKey === 'ref_no') {
       return formTarget === 'payment' ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
@@ -454,7 +462,7 @@ export default function TransactionModal({
 
           {editMode ? (
             <TransactionEditSections
-              orderedEditSections={orderedEditSections}
+              orderedEditSections={filteredEditSections}
               renderOrderedEditItem={renderOrderedEditItem}
               saving={saving}
               onCancel={() => setEditMode(false)}

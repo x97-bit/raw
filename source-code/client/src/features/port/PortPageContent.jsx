@@ -22,6 +22,7 @@ import usePortData from './usePortData';
 import usePortFieldConfig from './usePortFieldConfig';
 import usePortTransactionForm from './usePortTransactionForm';
 import useTransactionFormLayout from '../transactions/useTransactionFormLayout';
+import { filterSectionsByCurrency } from '../../utils/orderedFormSections';
 import { buildListExportTemplates, buildStatementExportTemplates } from '../../utils/portExportTemplates';
 import { renderPortCell, toExportColumn, toPreviewColumn } from '../../utils/portPageColumns';
 import {
@@ -155,6 +156,11 @@ export default function PortPage({
     getBuiltInFormFieldLabel: getScopedBuiltInFormFieldLabel,
     getVisibleCustomFieldsForTarget,
   });
+
+  const filteredFormSections = useMemo(
+    () => filterSectionsByCurrency(orderedFormSections, transactionFormState.form?.Currency),
+    [orderedFormSections, transactionFormState.form?.Currency],
+  );
 
   const listSummaryCards = useMemo(() => {
     const summaryMeta = PORT_SECTION_SUMMARY_META[sectionKey]?.list || [];
@@ -467,7 +473,7 @@ export default function PortPage({
         onBack={handlePageBack}
         onHome={onHome}
         message={transactionFormState.message}
-        orderedFormSections={orderedFormSections}
+        orderedFormSections={filteredFormSections}
         renderOrderedFormItem={transactionFormState.renderOrderedFormItem}
         canManageDefaults={can.isAdmin}
         form={transactionFormState.form}
