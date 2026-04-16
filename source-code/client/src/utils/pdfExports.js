@@ -630,21 +630,22 @@ function paginateMeasuredRows(rowHeights, firstPageAvailableHeight, otherPageAva
 function getAdaptiveTableMetrics(orientation, columnCount) {
   const compact = columnCount >= (orientation === 'portrait' ? 7 : 9);
   const dense = columnCount >= (orientation === 'portrait' ? 9 : 11);
+  const veryDense = columnCount >= (orientation === 'portrait' ? 11 : 14);
 
   return {
     headerFontSize: orientation === 'portrait'
-      ? (dense ? 32 : compact ? 36 : 40)
-      : (dense ? 28 : compact ? 32 : 36),
+      ? (veryDense ? 24 : dense ? 28 : compact ? 36 : 40)
+      : (veryDense ? 20 : dense ? 24 : compact ? 32 : 36),
     cellFontSize: orientation === 'portrait'
       ? (dense ? 32 : compact ? 36 : 40)
       : (dense ? 26 : compact ? 30 : 34),
     headerLineHeight: orientation === 'portrait' ? 40 : 36,
     cellLineHeight: orientation === 'portrait' ? 40 : 34,
-    maxHeaderLines: dense ? 3 : 2,
+    maxHeaderLines: 1,
     maxCellLines: dense ? 3 : 2,
     paddingX: dense ? 16 : 20,
     paddingY: dense ? 16 : 18,
-    minHeaderHeight: orientation === 'portrait' ? 116 : 100,
+    minHeaderHeight: orientation === 'portrait' ? 80 : 64,
     minRowHeight: orientation === 'portrait' ? 108 : 88,
     summaryLabelSize: orientation === 'portrait' ? 30 : 32,
     summaryValueSize: orientation === 'portrait' ? 44 : 46,

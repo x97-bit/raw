@@ -457,6 +457,18 @@ export function buildCurrentTemplateColumns(sectionKey, fallbackColumns = []) {
     usedKeys.add(column.key);
   });
 
+  columnLibrary.forEach((sectionColumn, columnKey) => {
+    const exportKey = sectionColumn.dataKey;
+    if (usedKeys.has(exportKey)) return;
+
+    orderedColumns.push({
+      key: exportKey,
+      label: sectionColumn.label,
+      format: EXPORT_COLUMN_FORMATS[sectionColumn.type],
+    });
+    usedKeys.add(exportKey);
+  });
+
   return orderedColumns;
 }
 

@@ -447,7 +447,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table {
       width: 100%;
       border-collapse: collapse;
-      table-layout: fixed;
+      table-layout: auto;
     }
     .tay-table th,
     .tay-table td {
@@ -468,6 +468,10 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       background: ${TAY_ALRAWI_BRAND_COLORS.tableNavy};
       color: #fff;
       font-weight: 700;
+      white-space: nowrap;
+      word-break: normal;
+      padding: ${isPortrait ? '18px 10px' : '16px 8px'};
+      font-size: ${isPortrait ? '28px' : '26px'};
     }
     .tay-table tbody tr:nth-child(even) td {
       background: ${TAY_ALRAWI_BRAND_COLORS.rowTint};

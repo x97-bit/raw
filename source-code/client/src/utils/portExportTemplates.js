@@ -30,7 +30,7 @@ export const buildStatementExportTemplates = (sectionKey, columns = [], accountN
     {
       id: 'current-statement',
       label: 'النموذج الحالي',
-      columns,
+      columns: buildCurrentTemplateColumns(sectionKey, columns),
     },
     ...getSectionExportProfiles(sectionKey, 'statement').map((profile) => ({
       ...profile,
