@@ -630,12 +630,11 @@ function paginateMeasuredRows(rowHeights, firstPageAvailableHeight, otherPageAva
 function getAdaptiveTableMetrics(orientation, columnCount) {
   const compact = columnCount >= (orientation === 'portrait' ? 7 : 9);
   const dense = columnCount >= (orientation === 'portrait' ? 9 : 11);
-  const veryDense = columnCount >= (orientation === 'portrait' ? 11 : 14);
 
   return {
     headerFontSize: orientation === 'portrait'
-      ? (veryDense ? 24 : dense ? 28 : compact ? 36 : 40)
-      : (veryDense ? 20 : dense ? 24 : compact ? 32 : 36),
+      ? (dense ? 32 : compact ? 36 : 40)
+      : (dense ? 28 : compact ? 32 : 36),
     cellFontSize: orientation === 'portrait'
       ? (dense ? 32 : compact ? 36 : 40)
       : (dense ? 26 : compact ? 30 : 34),
@@ -693,9 +692,50 @@ function drawWrappedTableCellText(ctx, text, {
   return totalHeight;
 }
 
+function fitColumnsForHeaders(ctx, columns, tableWidth, orientation, metrics) {
+  const paddingTotal = metrics.paddingX * 2;
+  const baseWidths = computeAdaptiveColumnLayouts(columns, tableWidth, orientation);
+  let fontSize = metrics.headerFontSize;
+  const minFontSize = 16;
+
+  while (fontSize >= minFontSize) {
+    setFont(ctx, '700', fontSize);
+    const requiredWidths = columns.map((column) => ctx.measureText(String(column.label ?? '')).width + paddingTotal);
+    const targetWidths = columns.map((_, i) => Math.max(baseWidths[i], requiredWidths[i]));
+    const totalTarget = targetWidths.reduce((s, w) => s + w, 0);
+
+    if (totalTarget <= tableWidth) {
+      const extra = tableWidth - totalTarget;
+      const result = targetWidths.map((w) => w + (extra * (w / totalTarget)));
+      return { columnWidths: result, headerFontSize: fontSize };
+    }
+
+    const scaled = targetWidths.map((w) => (w / totalTarget) * tableWidth);
+    const allFit = columns.every((column, i) => {
+      const innerWidth = scaled[i] - paddingTotal;
+      return ctx.measureText(String(column.label ?? '')).width <= innerWidth;
+    });
+
+    if (allFit) {
+      return { columnWidths: scaled, headerFontSize: fontSize };
+    }
+
+    fontSize -= 2;
+  }
+
+  setFont(ctx, '700', minFontSize);
+  const requiredWidths = columns.map((column) => ctx.measureText(String(column.label ?? '')).width + paddingTotal);
+  const targetWidths = columns.map((_, i) => Math.max(baseWidths[i], requiredWidths[i]));
+  const totalTarget = targetWidths.reduce((s, w) => s + w, 0);
+  const finalWidths = targetWidths.map((w) => (w / totalTarget) * tableWidth);
+  return { columnWidths: finalWidths, headerFontSize: minFontSize };
+}
+
 function measureAdaptiveTableLayout(ctx, { columns, rows, totalsRow, width, orientation }) {
   const metrics = getAdaptiveTableMetrics(orientation, columns.length);
-  const columnWidths = computeAdaptiveColumnLayouts(columns, width, orientation);
+  const fitted = fitColumnsForHeaders(ctx, columns, width, orientation, metrics);
+  const columnWidths = fitted.columnWidths;
+  metrics.headerFontSize = fitted.headerFontSize;
 
   const headerHeight = columns.reduce((maxHeight, column, index) => {
     const innerWidth = Math.max(18, columnWidths[index] - (metrics.paddingX * 2));
@@ -729,7 +769,7 @@ function measureAdaptiveTableLayout(ctx, { columns, rows, totalsRow, width, orie
         : (totalsRow[column.key] !== undefined ? formatExportCellValue(totalsRow[column.key], column.format) : '');
       const lineCount = measureWrappedLineCount(ctx, value, {
         maxWidth: innerWidth,
-        maxLines: metrics.maxCellLines,
+        maxLines: 1,
         size: metrics.cellFontSize,
         weight: '700',
       });
@@ -922,16 +962,23 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
       const value = index === 0
         ? '\u0627\u0644\u0645\u062c\u0645\u0648\u0639'
         : (totalsRow[column.key] !== undefined ? formatExportCellValue(totalsRow[column.key], column.format) : '');
+      const innerWidth = cellWidth - (metrics.paddingX * 2);
+      let cellFontSize = metrics.cellFontSize;
+      setFont(ctx, '700', cellFontSize);
+      while (cellFontSize > 14 && ctx.measureText(String(value ?? '')).width > innerWidth) {
+        cellFontSize -= 2;
+        setFont(ctx, '700', cellFontSize);
+      }
       drawWrappedTableCellText(ctx, value, {
         x: currentX,
         y: rowY,
         width: cellWidth,
         height: totalRowHeight,
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
-        size: metrics.cellFontSize,
+        size: cellFontSize,
         weight: '700',
         lineHeight: metrics.cellLineHeight,
-        maxLines: metrics.maxCellLines,
+        maxLines: 1,
         align: 'center',
         paddingX: metrics.paddingX,
       });

@@ -10,10 +10,10 @@ export default function AuditLogDetailModal({ log, onClose }) {
   return (
     <ModalPortal>
       <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+        className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/40 p-0 sm:items-start sm:p-4 sm:pt-10"
         onMouseDown={(event) => event.target === event.currentTarget && onClose()}
       >
-        <div className="w-full max-w-5xl rounded-t-2xl bg-white shadow-[0_10px_45px_rgba(15,23,42,0.18)] sm:rounded-2xl">
+        <div className="w-full max-w-5xl rounded-t-2xl bg-white shadow-[0_10px_45px_rgba(15,23,42,0.18)] sm:mb-10 sm:rounded-2xl">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <button
               onClick={onClose}
@@ -31,9 +31,11 @@ export default function AuditLogDetailModal({ log, onClose }) {
           </div>
 
           <div className="grid gap-4 p-6 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <AuditLogDetailCard title="الحقول المتغيرة" value={log.changes} variant="changes" />
+            </div>
             <AuditLogDetailCard title="قبل التعديل" value={log.beforeData} />
             <AuditLogDetailCard title="بعد التعديل" value={log.afterData} />
-            <AuditLogDetailCard title="الحقول المتغيرة" value={log.changes} />
             <AuditLogDetailCard title="بيانات إضافية" value={log.metadata} />
           </div>
         </div>
