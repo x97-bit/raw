@@ -56,6 +56,7 @@ export default function ReportsProfitsView({
               CostUSD: profitTotals.totalCostUSD,
               AmountUSD: profitTotals.totalAmountUSD,
               ProfitUSD: profitTotals.totalProfitUSD,
+              ProfitIQD: profitTotals.totalProfitIQD,
             }}
             printStrategy="table"
             printMetaItems={buildReportPrintMetaItems(activePort, filters)}
@@ -73,11 +74,12 @@ export default function ReportsProfitsView({
 
         {loading ? <LoadingSpinner /> : data && (
           <>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               <SummaryCard label="عدد الشحنات" value={profitTotals.shipmentCount || 0} tone="text-[#9ab6ca]" />
               <SummaryCard label="إجمالي التكلفة ($)" value={`$${formatReportNumber(profitTotals.totalCostUSD)}`} tone="text-[#c8d4df]" />
               <SummaryCard label="إجمالي المبلغ ($)" value={`$${formatReportNumber(profitTotals.totalAmountUSD)}`} tone="text-[#eef3f7]" />
               <SummaryCard label="إجمالي الربح ($)" value={`$${formatReportNumber(profitTotals.totalProfitUSD)}`} tone={profitTone} />
+              <SummaryCard label="إجمالي الربح (د.ع)" value={formatReportNumber(profitTotals.totalProfitIQD)} tone={profitIqdTone} />
             </div>
 
             {traderProfits.length > 0 && (
@@ -138,9 +140,14 @@ export default function ReportsProfitsView({
                   <TrendingUp size={16} className="text-[#8eb8ad]" />
                   تفاصيل الشحنات ({profitRows.length} شحنة)
                 </span>
-                <span className={`font-bold ${profitTone}`}>
-                  إجمالي الربح: ${formatReportNumber(profitTotals.totalProfitUSD)}
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className={`font-bold ${profitTone}`}>
+                    الربح ($): ${formatReportNumber(profitTotals.totalProfitUSD)}
+                  </span>
+                  <span className={`font-bold ${profitIqdTone}`}>
+                    الربح (د.ع): {formatReportNumber(profitTotals.totalProfitIQD)}
+                  </span>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -154,11 +161,12 @@ export default function ReportsProfitsView({
                       <th className="px-4 py-3 font-semibold">التكلفة ($)</th>
                       <th className="px-4 py-3 font-semibold">المبلغ ($)</th>
                       <th className="px-4 py-3 font-semibold">الربح ($)</th>
+                      <th className="px-4 py-3 font-semibold">الربح (د.ع)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {profitRows.length === 0 ? (
-                      <EmptyTableRow colSpan={7} message="لا توجد شحنات مطابقة." />
+                      <EmptyTableRow colSpan={8} message="لا توجد شحنات مطابقة." />
                     ) : (
                       profitRows.map((row, index) => (
                         <tr
@@ -173,6 +181,7 @@ export default function ReportsProfitsView({
                           <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(row.CostUSD)}</td>
                           <td className="px-4 py-3">${formatReportNumber(row.AmountUSD)}</td>
                           <td className={`px-4 py-3 font-bold ${getProfitTone(row.ProfitUSD)}`}>${formatReportNumber(row.ProfitUSD)}</td>
+                          <td className={`px-4 py-3 ${getProfitTone(row.ProfitIQD)}`}>{formatReportNumber(row.ProfitIQD)}</td>
                         </tr>
                       ))
                     )}
@@ -183,6 +192,7 @@ export default function ReportsProfitsView({
                       <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(profitTotals.totalCostUSD)}</td>
                       <td className="px-4 py-3">${formatReportNumber(profitTotals.totalAmountUSD)}</td>
                       <td className={`px-4 py-3 ${profitTone}`}>${formatReportNumber(profitTotals.totalProfitUSD)}</td>
+                      <td className={`px-4 py-3 ${profitIqdTone}`}>{formatReportNumber(profitTotals.totalProfitIQD)}</td>
                     </tr>
                   </tfoot>
                 </table>

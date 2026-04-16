@@ -1,4 +1,4 @@
-import { REPORT_PORTS } from '../../utils/reportsConfig';
+import { REPORT_PORTS, REPORT_SPECIAL_ACCOUNTS } from '../../utils/reportsConfig';
 
 export function createEmptyTraderForm(overrides = {}) {
   return {
@@ -17,6 +17,10 @@ export function getReportPortById(portId) {
   return REPORT_PORTS.find((entry) => entry.id === portId) || null;
 }
 
+export function getReportSpecialAccountById(accountId) {
+  return REPORT_SPECIAL_ACCOUNTS.find((entry) => entry.id === accountId) || null;
+}
+
 export function buildReportRequestPath(action, portId, filters = {}) {
   const from = filters.from || '';
   const to = filters.to || '';
@@ -27,6 +31,17 @@ export function buildReportRequestPath(action, portId, filters = {}) {
 
   if (action === 'profits') {
     return `/reports/profits?${new URLSearchParams({ port: portId, from, to }).toString()}`;
+  }
+
+  return null;
+}
+
+export function buildSpecialAccountReportRequestPath(accountId, filters = {}) {
+  const from = filters.from || '';
+  const to = filters.to || '';
+
+  if (accountId === 'haider') {
+    return `/special/haider?${new URLSearchParams({ from, to }).toString()}`;
   }
 
   return null;

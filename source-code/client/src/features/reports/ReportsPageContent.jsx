@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import ReportsAddTraderView from './components/ReportsAddTraderView';
 import ReportsExpensesView from './components/ReportsExpensesView';
+import ReportsHaiderProfitsView from './components/ReportsHaiderProfitsView';
 import ReportsLandingView from './components/ReportsLandingView';
 import ReportsProfitsView from './components/ReportsProfitsView';
 import {
   buildReportRequestPath,
+  buildSpecialAccountReportRequestPath,
   buildTraderFormForPort,
   createEmptyTraderForm,
   getReportPortById,
+  getReportSpecialAccountById,
 } from './reportsPageHelpers';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -15,6 +18,7 @@ export default function ReportsPage({ onBack }) {
   const { api } = useAuth();
   const [view, setView] = useState('main');
   const [activePort, setActivePort] = useState(null);
+  const [activeSpecialAccount, setActiveSpecialAccount] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ from: '', to: '' });
@@ -37,6 +41,7 @@ export default function ReportsPage({ onBack }) {
   const backToMain = () => {
     setView('main');
     setData(null);
+    setActiveSpecialAccount(null);
   };
 
   const openAction = async (portId, action) => {
@@ -68,6 +73,29 @@ export default function ReportsPage({ onBack }) {
     }
   };
 
+  const openSpecialAction = async (accountId, action) => {
+    const account = getReportSpecialAccountById(accountId);
+    setActiveSpecialAccount(account);
+
+    const requestPath = buildSpecialAccountReportRequestPath(accountId, filters);
+    if (!requestPath) {
+      return;
+    }
+
+    setLoading(true);
+    setView(`special-${accountId}-${action}`);
+
+    try {
+      const response = await api(requestPath);
+      setData(response);
+    } catch (error) {
+      console.error(error);
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveTrader = async () => {
     if (!traderForm.AccountName) {
       window.alert('أدخل اسم التاجر');
@@ -87,7 +115,7 @@ export default function ReportsPage({ onBack }) {
   };
 
   if (view === 'main') {
-    return <ReportsLandingView onBack={onBack} onOpenAction={openAction} />;
+    return <ReportsLandingView onBack={onBack} onOpenAction={openAction} onOpenSpecialAction={openSpecialAction} />;
   }
 
   if (view === 'add-trader') {
@@ -128,6 +156,20 @@ export default function ReportsPage({ onBack }) {
         onBack={backToMain}
         onFilterChange={updateDateFilter}
         onRefresh={() => openAction(activePort.id, 'profits')}
+      />
+    );
+  }
+
+  if (view === 'special-haider-profits') {
+    return (
+      <ReportsHaiderProfitsView
+        activeAccount={activeSpecialAccount}
+        data={data}
+        filters={filters}
+        loading={loading}
+        onBack={backToMain}
+        onFilterChange={updateDateFilter}
+        onRefresh={() => openSpecialAction('haider', 'profits')}
       />
     );
   }

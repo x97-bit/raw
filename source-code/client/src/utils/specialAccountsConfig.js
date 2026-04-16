@@ -70,11 +70,10 @@ export const SPECIAL_ACCOUNT_DEFS = {
     buildSummaryCards: (totals) => ([
       { label: 'إجمالي الكلفة ($)', value: `$${formatNum(totals.totalCostUSD)}`, tone: SPECIAL_CARD_TONES.soft },
       { label: 'إجمالي المبلغ ($)', value: `$${formatNum(totals.totalAmountUSD)}`, tone: SPECIAL_CARD_TONES.usd },
-      { label: 'إجمالي الربح ($)', value: `$${formatNum(totals.totalProfitUSD)}`, tone: totals.totalProfitUSD >= 0 ? SPECIAL_CARD_TONES.success : SPECIAL_CARD_TONES.rose },
       { label: 'إجمالي الكلفة (د.ع)', value: formatNum(totals.totalCostIQD), tone: SPECIAL_CARD_TONES.soft },
       { label: 'إجمالي المبلغ (د.ع)', value: formatNum(totals.totalAmountIQD), tone: SPECIAL_CARD_TONES.iqd },
       { label: 'إجمالي الفرق (د.ع)', value: formatNum(totals.totalDifferenceIQD), tone: SPECIAL_CARD_TONES.warning },
-      { label: 'الصافي (د.ع)', value: formatNum(totals.totalNetIQD), tone: totals.totalNetIQD >= 0 ? SPECIAL_CARD_TONES.success : SPECIAL_CARD_TONES.rose },
+      { label: 'مجموع الطلب الكلي', value: formatNum(totals.totalNetIQD), tone: totals.totalNetIQD >= 0 ? SPECIAL_CARD_TONES.success : SPECIAL_CARD_TONES.rose },
       { label: 'مجموع الوزن الكلي', value: formatNum(totals.totalWeight), tone: SPECIAL_CARD_TONES.muted },
     ]),
     buildExportTotalsRow: (totals) => ({

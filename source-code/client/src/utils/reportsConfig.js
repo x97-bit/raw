@@ -4,6 +4,10 @@ export const REPORT_PORTS = [
   { id: 'port-3', name: 'القائم', iconLines: ['القائم'] },
 ];
 
+export const REPORT_SPECIAL_ACCOUNTS = [
+  { id: 'haider', name: 'حيدر شركة الأنوار', type: 'haider' },
+];
+
 export const EXPENSES_EXPORT_COLUMNS = [
   { key: 'expenseDate', label: 'التاريخ', format: 'date' },
   { key: 'description', label: 'البيان' },
@@ -21,6 +25,7 @@ export const PROFITS_EXPORT_COLUMNS = [
   { key: 'CostUSD', label: 'التكلفة ($)', format: 'money' },
   { key: 'AmountUSD', label: 'المبلغ ($)', format: 'money' },
   { key: 'ProfitUSD', label: 'الربح ($)', format: 'money' },
+  { key: 'ProfitIQD', label: 'الربح (د.ع)', format: 'money_iqd' },
 ];
 
 export const PROFITS_BY_TRADER_EXPORT_COLUMNS = [
@@ -49,7 +54,8 @@ export function buildProfitSummaryCards(totals = {}) {
     { label: 'عدد الشحنات', value: totals.shipmentCount || 0 },
     { label: 'إجمالي التكلفة', value: `$${formatNum(totals.totalCostUSD)}` },
     { label: 'إجمالي المبلغ', value: `$${formatNum(totals.totalAmountUSD)}` },
-    { label: 'إجمالي الربح', value: `$${formatNum(totals.totalProfitUSD)}` },
+    { label: 'إجمالي الربح ($)', value: `$${formatNum(totals.totalProfitUSD)}` },
+    { label: 'إجمالي الربح (د.ع)', value: formatNum(totals.totalProfitIQD) },
   ];
 }
 
@@ -59,6 +65,54 @@ export function buildReportPrintMetaItems(activePort, filters = {}) {
     { label: 'من تاريخ', value: filters?.from || 'كل الفترة' },
     { label: 'إلى تاريخ', value: filters?.to || 'كل الفترة' },
   ];
+}
+
+export const HAIDER_REPORT_EXPORT_COLUMNS = [
+  { key: 'TransDate', label: 'التاريخ', format: 'date' },
+  { key: 'Destination', label: 'الوجهة' },
+  { key: 'DriverName', label: 'اسم السائق' },
+  { key: 'PlateNumber', label: 'رقم السيارة' },
+  { key: 'GoodType', label: 'نوع البضاعة' },
+  { key: 'Weight', label: 'الوزن', format: 'number' },
+  { key: 'CostUSD', label: 'الكلفة ($)', format: 'money' },
+  { key: 'AmountUSD', label: 'المبلغ ($)', format: 'money' },
+  { key: 'ProfitUSD', label: 'الربح ($)', format: 'money' },
+  { key: 'CostIQD', label: 'الكلفة (د.ع)', format: 'money_iqd' },
+  { key: 'AmountIQD', label: 'المبلغ (د.ع)', format: 'money_iqd' },
+  { key: 'DifferenceIQD', label: 'الفرق (د.ع)', format: 'money_iqd' },
+  { key: 'NetIQD', label: 'الصافي (د.ع)', format: 'money_iqd' },
+];
+
+export function buildHaiderReportSummaryCards(totals = {}) {
+  return [
+    { label: 'عدد العمليات', value: totals.count || 0 },
+    { label: 'إجمالي الكلفة ($)', value: `$${formatNum(totals.totalCostUSD)}` },
+    { label: 'إجمالي المبلغ ($)', value: `$${formatNum(totals.totalAmountUSD)}` },
+    { label: 'إجمالي الربح ($)', value: `$${formatNum(totals.totalProfitUSD)}` },
+    { label: 'إجمالي الربح (د.ع)', value: formatNum(totals.totalNetIQD) },
+    { label: 'إجمالي الفرق (د.ع)', value: formatNum(totals.totalDifferenceIQD) },
+  ];
+}
+
+export function buildHaiderReportPrintSections({ rows = [], totals = {} } = {}) {
+  return [{
+    key: 'haider-details',
+    title: 'تفاصيل العمليات - حيدر شركة الأنوار',
+    columns: HAIDER_REPORT_EXPORT_COLUMNS,
+    rows,
+    totalsRow: {
+      Weight: totals.totalWeight,
+      CostUSD: totals.totalCostUSD,
+      AmountUSD: totals.totalAmountUSD,
+      ProfitUSD: totals.totalProfitUSD,
+      CostIQD: totals.totalCostIQD,
+      AmountIQD: totals.totalAmountIQD,
+      DifferenceIQD: totals.totalDifferenceIQD,
+      NetIQD: totals.totalNetIQD,
+    },
+    highlightRows: false,
+    emptyMessage: 'لا توجد عمليات مطابقة.',
+  }];
 }
 
 export function buildProfitsPrintSections({ traderProfits = [], profitRows = [], profitTotals = {} } = {}) {
@@ -91,6 +145,7 @@ export function buildProfitsPrintSections({ traderProfits = [], profitRows = [],
       CostUSD: profitTotals.totalCostUSD,
       AmountUSD: profitTotals.totalAmountUSD,
       ProfitUSD: profitTotals.totalProfitUSD,
+      ProfitIQD: profitTotals.totalProfitIQD,
     },
     highlightRows: false,
     emptyMessage: 'لا توجد شحنات مطابقة.',
