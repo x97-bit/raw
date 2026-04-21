@@ -7,13 +7,15 @@ export default function PortStatementAccountPicker({
   accounts,
   onSelectAccount,
   accountLabel = 'تاجر',
+  hideSearch = false,
 }) {
   const { isDark } = useTheme();
   const filteredAccounts = accounts.filter((account) => !search || account.AccountName.includes(search));
 
   return (
     <>
-      <div className="mb-4">
+      {!hideSearch && (
+        <div className="mb-4">
         <div className="relative">
           <Search
             size={18}
@@ -27,7 +29,8 @@ export default function PortStatementAccountPicker({
             placeholder={`ابحث عن ${accountLabel}...`}
           />
         </div>
-      </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {filteredAccounts.map((account) => (
           <button

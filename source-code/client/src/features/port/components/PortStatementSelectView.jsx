@@ -44,6 +44,7 @@ export default function PortStatementSelectView({
           statementDisabled={!statementFilterAccountId}
           resetLabel="مسح التواريخ"
           statementButtonLabel={labels.statementOpenLabel || 'عرض كشف الحساب'}
+          accountLabel={accountLabel}
         />
         <PortStatementAccountPicker
           search={search}
@@ -51,6 +52,7 @@ export default function PortStatementSelectView({
           accounts={accounts}
           onSelectAccount={onSelectAccount}
           accountLabel={accountLabel}
+          hideSearch={sectionKey === 'transport-1'}
         />
       </div>
     </div>

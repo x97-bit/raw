@@ -146,7 +146,7 @@ export default function PortListView({
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             className="input-field pr-10"
-            placeholder="ابحث بالمرجع أو الملاحظات أو اسم التاجر..."
+            placeholder={`ابحث بالمرجع أو الملاحظات أو اسم ${isTransport ? 'الناقل' : 'التاجر'}...`}
           />
         </div>
 
@@ -163,6 +163,7 @@ export default function PortListView({
           onStatement={onOpenStatement}
           statementDisabled={!filters.accountId}
           statementButtonLabel={labels.statementButtonLabel}
+          accountLabel={isTransport ? 'الناقل' : 'التاجر'}
         />
 
         <PortSummaryCardsGrid cards={listSummaryCards} />

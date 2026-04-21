@@ -15,6 +15,7 @@ export default function PortAccountDateFilters({
   statementButtonLabel = 'كشف الحساب',
   statementDisabled = false,
   resetLabel = 'إعادة تعيين',
+  accountLabel = 'تاجر',
 }) {
   const selectedAccountName = useMemo(
     () => accounts.find((account) => String(account.AccountID) === String(accountId || ''))?.AccountName || '',
@@ -29,7 +30,7 @@ export default function PortAccountDateFilters({
   return (
     <div className="surface-card grid grid-cols-1 gap-4 p-4 md:grid-cols-2 md:p-5 xl:grid-cols-12 xl:items-end">
       <div className="xl:col-span-5">
-        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-utility-muted">اسم التاجر</label>
+        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-utility-muted">اسم {accountLabel}</label>
         <AutocompleteInput
           value={accountText}
           options={accounts}
@@ -51,8 +52,8 @@ export default function PortAccountDateFilters({
               onAccountChange(String(createdAccount.AccountID));
             }
             : undefined}
-          addNewLabel="إضافة تاجر مباشرة"
-          placeholder="ابحث عن التاجر أو أضفه مباشرة..."
+          addNewLabel={`إضافة ${accountLabel} مباشرة`}
+          placeholder={`ابحث عن ${accountLabel} أو أضفه مباشرة...`}
           className="input-field"
         />
       </div>

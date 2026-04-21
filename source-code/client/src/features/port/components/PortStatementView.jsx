@@ -1,3 +1,5 @@
+import { useState, useMemo } from 'react';
+import { Search } from 'lucide-react';
 import ExportButtons from '../../../components/ExportButtons';
 import PageHeader from '../../../components/PageHeader';
 import PortAccountDateFilters from './PortAccountDateFilters';
@@ -32,6 +34,7 @@ export default function PortStatementView({
   transactionModal,
   portViewLabels,
 }) {
+  const [localSearch, setLocalSearch] = useState('');
   const labels = portViewLabels || {};
   const statementTitle = `${labels.statementTitlePrefix || 'كشف حساب'} - ${statement.account.AccountName}`;
 
@@ -87,6 +90,21 @@ export default function PortStatementView({
         <PortSummaryCardsGrid cards={statementSummaryCards} className={statementSummaryGridClass} />
 
         <div className="surface-card overflow-hidden p-0">
+          <div className="border-b border-panel-border p-3 md:p-4 bg-utility-soft-bg flex items-center justify-between">
+            <div className="relative w-full md:w-1/3">
+              <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-utility-muted" />
+              <input
+                type="text"
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                placeholder="تصفية حسب التاجر أو الملاحظات..."
+                className="input-field pr-10"
+              />
+            </div>
+            <div className="text-sm font-medium text-utility-muted ml-2">
+              تصفية الكشف
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full w-max text-sm lg:text-[0.95rem]">
               <thead>
@@ -98,7 +116,15 @@ export default function PortStatementView({
               </thead>
 
               <tbody>
-                {(statement.statement || []).map((transaction, index) => {
+                {(statement.statement || []).filter((transaction) => {
+                  if (!localSearch) return true;
+                  const term = localSearch.toLowerCase();
+                  return (
+                    String(transaction.TraderNote || '').toLowerCase().includes(term) ||
+                    String(transaction.Notes || '').toLowerCase().includes(term) ||
+                    String(transaction.RefNo || '').toLowerCase().includes(term)
+                  );
+                }).map((transaction, index) => {
                   let typeId = Number(transaction.TransTypeID || transaction.transTypeId || 0);
                   const rt = String(transaction.RecordType || transaction.recordType || '').toLowerCase();
                   const tn = String(transaction.TransTypeName || transaction.transTypeName || '').toLowerCase();
