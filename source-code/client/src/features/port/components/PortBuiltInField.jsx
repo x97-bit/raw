@@ -18,6 +18,8 @@ export default function PortBuiltInField({
   setTraderText,
   accounts,
   setAccounts,
+  merchants,
+  setMerchants,
   accountType,
   portId,
   drivers,
@@ -60,6 +62,28 @@ export default function PortBuiltInField({
       setAccounts((prev) => [...prev, newAccount]);
       setTraderText(name);
       setField('AccountID', newAcc.id);
+      setMsg(`تم إضافة التاجر بنجاح: ${name}`);
+    } catch (error) {
+      console.error(error);
+      setMsg('حدث خطأ أثناء إضافة التاجر');
+    }
+  };
+
+  const addMerchant = async (name) => {
+    try {
+      const newAcc = await api('/accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          AccountName: name,
+          AccountTypeID: 1,
+          DefaultPortID: portId || null,
+        }),
+      });
+      const accountRow = { AccountID: newAcc.id, AccountName: name };
+      if (setMerchants) {
+        setMerchants((prev) => (prev.some((item) => String(item.AccountID) === String(accountRow.AccountID)) ? prev : [...prev, accountRow]));
+      }
+      setField('TraderNote', name);
       setMsg(`تم إضافة التاجر بنجاح: ${name}`);
     } catch (error) {
       console.error(error);
@@ -497,10 +521,20 @@ export default function PortBuiltInField({
         return (
           <div key={field.key}>
             <label className={LABEL_CLASS}>{label}</label>
-            <input
-              type="text"
+            <AutocompleteInput
               value={form.TraderNote || ''}
-              onChange={(event) => setField('TraderNote', event.target.value)}
+              options={merchants || []}
+              labelKey="AccountName"
+              valueKey="AccountID"
+              dropdownSide="top"
+              addNewLabel="إضافة تاجر جديد"
+              onChange={(text) => {
+                setField('TraderNote', text);
+              }}
+              onSelect={(merchant) => {
+                setField('TraderNote', merchant.AccountName);
+              }}
+              onAddNew={addMerchant}
               placeholder={`اكتب ${label}...`}
               className={INPUT_CLASS}
             />

@@ -23,6 +23,7 @@ export default function usePortData({
   const [govs, setGovs] = useState([]);
   const [total, setTotal] = useState(0);
   const [listSummary, setListSummary] = useState(EMPTY_PORT_SUMMARY);
+  const [merchants, setMerchants] = useState([]);
 
   const loadData = useCallback(async () => {
     try {
@@ -36,12 +37,13 @@ export default function usePortData({
       });
       const accountsQuery = buildPortAccountsQuery({ portId, accountType });
 
-      const [transactionsResponse, accountsResponse, goodsResponse, governoratesResponse, companiesResponse] = await Promise.all([
+      const [transactionsResponse, accountsResponse, goodsResponse, governoratesResponse, companiesResponse, merchantsResponse] = await Promise.all([
         api(`/transactions?${transactionsQuery}`),
         api(`/accounts${accountsQuery ? `?${accountsQuery}` : ''}`),
         api(`/lookups/goods-types?port=${portId || ''}`),
         api('/lookups/governorates'),
         api('/lookups/companies'),
+        api('/accounts?accountType=1'),
       ]);
 
       setTransactions(transactionsResponse.transactions);
@@ -51,6 +53,7 @@ export default function usePortData({
       setGoods(goodsResponse);
       setGovs(governoratesResponse);
       setCompanies(companiesResponse);
+      setMerchants(merchantsResponse);
     } catch (error) {
       console.error(error);
       setListSummary(EMPTY_PORT_SUMMARY);
@@ -79,8 +82,10 @@ export default function usePortData({
     listSummary,
     loadData,
     loadDriversVehicles,
+    merchants,
     setAccounts,
     setCompanies,
+    setMerchants,
     total,
     transactions,
     vehicles,

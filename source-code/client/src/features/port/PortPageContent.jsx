@@ -71,8 +71,10 @@ export default function PortPage({
     listSummary,
     loadData,
     loadDriversVehicles,
+    merchants,
     setAccounts,
     setCompanies,
+    setMerchants,
     total,
     transactions,
     vehicles,
@@ -145,6 +147,8 @@ export default function PortPage({
     loadDriversVehicles,
     accounts,
     setAccounts,
+    merchants,
+    setMerchants,
     drivers,
     vehicles,
     goods,
@@ -270,7 +274,7 @@ export default function PortPage({
         accountType,
         from: filters.from,
         to: filters.to,
-        by: sectionKey === 'transport-1' ? 'carrier' : undefined,
+        by: undefined,
       });
       const statementResponse = await api(`/reports/account-statement/${normalizedAccountId}${query ? `?${query}` : ''}`);
       setStatement(statementResponse);

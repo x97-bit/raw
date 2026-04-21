@@ -553,7 +553,7 @@ function resolveExportColumnValue(row, column) {
     return column.getValue(row);
   }
 
-  return row?.[column?.key];
+  return row?.[column?.key] ?? row?.[column?.rawKey];
 }
 
 function formatExportCellValue(val, format) {
@@ -1485,7 +1485,7 @@ function measureInvoiceSectionHeight(ctx, section, width) {
   if (!rows) return contentHeight + INVOICE_SHELL_PADDING;
 
   return contentHeight
-    + (rows * 305)
+    + (rows * INVOICE_FIELD_CARD_HEIGHT)
     + ((rows - 1) * 18)
     + INVOICE_SHELL_PADDING;
 }
@@ -1671,7 +1671,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
     return sectionHeight;
   }
 
-  const rowHeight = 305;
+  const rowHeight = INVOICE_FIELD_CARD_HEIGHT;
   const rowGap = 18;
   const rowWidth = contentWidth;
   const cellWidth = rowWidth / 2;

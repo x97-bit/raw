@@ -44,6 +44,8 @@ export default function usePortTransactionForm({
   loadDriversVehicles,
   accounts,
   setAccounts,
+  merchants,
+  setMerchants,
   drivers,
   vehicles,
   goods,
@@ -336,6 +338,8 @@ export default function usePortTransactionForm({
           setTraderText={setTraderText}
           accounts={accounts}
           setAccounts={setAccounts}
+          merchants={merchants}
+          setMerchants={setMerchants}
           accountType={accountType}
           portId={portId}
           drivers={drivers}
@@ -346,6 +350,7 @@ export default function usePortTransactionForm({
           setCompanies={setCompanies}
           api={api}
           setMsg={setMessage}
+          sectionKey={sectionKey}
         />
       );
     }
@@ -374,10 +379,12 @@ export default function usePortTransactionForm({
     getBuiltInFormFieldLabel,
     goods,
     govs,
+    merchants,
     portId,
     setAccounts,
     setCompanies,
     setField,
+    setMerchants,
     setNumericField,
     traderText,
     vehicles,
