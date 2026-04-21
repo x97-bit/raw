@@ -379,7 +379,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? '32px' : '30px'};
+      font-size: ${isPortrait ? '42px' : '38px'};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
       line-height: 1.5;
@@ -387,7 +387,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
-      font-size: 18px;
+      font-size: 24px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
       font-weight: 700;
     }
@@ -395,26 +395,26 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
       margin-bottom: 6mm;
     }
     .tay-summary-card {
       border: 1px solid #d8dce7;
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 14px 16px;
       background: rgba(255, 255, 255, 0.96);
     }
     .tay-summary-card span {
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       color: #5c6482;
-      font-size: 19px;
+      font-size: 24px;
       font-weight: 700;
     }
     .tay-summary-card strong {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 32px;
+      font-size: 38px;
     }
     .tay-sections {
       position: relative;
@@ -438,13 +438,13 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-section-title {
       margin: 0;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 28px;
+      font-size: 34px;
       font-weight: 800;
     }
     .tay-section-subtitle {
       margin-top: 3px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
-      font-size: 17px;
+      font-size: 22px;
       font-weight: 700;
     }
     .tay-table-wrap {
@@ -463,12 +463,12 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table th,
     .tay-table td {
       border: 1px solid #d7dbe4;
-      padding: ${isPortrait ? '22px 20px' : '20px 18px'};
+      padding: ${isPortrait ? '26px 24px' : '24px 20px'};
       text-align: center;
       vertical-align: middle;
       color: #1f2937;
-      font-size: ${isPortrait ? '32px' : '30px'};
-      line-height: 1.5;
+      font-size: ${isPortrait ? '34px' : '32px'};
+      line-height: 1.6;
       word-break: break-word;
     }
     .tay-table .tay-date-cell {
@@ -478,11 +478,11 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table th {
       background: ${TAY_ALRAWI_BRAND_COLORS.tableNavy};
       color: #fff;
-      font-weight: 700;
+      font-weight: 800;
       white-space: nowrap;
       word-break: normal;
-      padding: ${isPortrait ? '18px 10px' : '16px 8px'};
-      font-size: ${isPortrait ? '28px' : '26px'};
+      padding: ${isPortrait ? '26px 16px' : '24px 14px'};
+      font-size: ${isPortrait ? '40px' : '38px'};
     }
     .tay-table tbody tr:nth-child(even) td {
       background: ${TAY_ALRAWI_BRAND_COLORS.rowTint};
@@ -539,7 +539,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       display: flex;
       align-items: center;
       color: #fff;
-      font-size: 10px;
+      font-size: 14px;
       font-weight: 500;
       direction: ltr;
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
@@ -566,16 +566,16 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-meta-stack {
       display: flex;
       align-items: flex-start;
-      gap: 8px 18px;
+      gap: 12px 22px;
       flex-wrap: wrap;
       color: #1f2937;
-      font-size: 12px;
+      font-size: 26px;
       font-weight: 600;
     }
     .tay-meta-stack {
       flex-direction: column;
       align-items: stretch;
-      gap: 4px;
+      gap: 8px;
     }
     .tay-meta-label {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};

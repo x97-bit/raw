@@ -1,5 +1,7 @@
+import { useMemo, useState } from 'react';
 import AutocompleteInput from '../../../components/AutocompleteInput';
 import { isTransportSectionScope } from '../portPageHelpers';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const INPUT_CLASS = 'input-field';
 const TEXTAREA_CLASS = 'input-field min-h-[112px] resize-y';
@@ -26,7 +28,16 @@ export default function PortBuiltInField({
   setCompanies,
   api,
   setMsg,
+  sectionKey,
 }) {
+  const enrichedAccounts = useMemo(() => {
+    if (sectionKey !== 'transport-1') return accounts;
+    const preferred = ['ابراهيم سعد رمضان', 'عبدالعزيز', 'صباح اسماعيل'];
+    const exists = new Set(accounts.map(a => a.AccountName.trim()));
+    const missing = preferred.filter(p => !exists.has(p)).map((p, i) => ({ AccountID: `preset-${i}`, AccountName: p, isPreset: true }));
+    return [...missing, ...accounts];
+  }, [accounts, sectionKey]);
+
   const addAccount = async (name) => {
     try {
       const newAcc = await api('/accounts', {
@@ -127,31 +138,39 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'account_name':
+    case 'account_name': {
+      const isTransport = sectionKey === 'transport-1';
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label} *</label>
           <AutocompleteInput
             value={traderText}
-            options={accounts}
+            options={enrichedAccounts}
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
-            addNewLabel="إضافة تاجر جديد"
+            addNewLabel={isTransport ? "إضافة ناقل جديد" : "إضافة تاجر جديد"}
             onChange={(text) => {
               setTraderText(text);
               setField('AccountID', null);
             }}
             onSelect={(account) => {
               setTraderText(account.AccountName);
-              setField('AccountID', account.AccountID);
+              if (account.isPreset) {
+                setField('AccountID', null);
+                addAccount(account.AccountName);
+              } else {
+                setField('AccountID', account.AccountID);
+              }
             }}
             onAddNew={addAccount}
-            placeholder="اكتب اسم التاجر..."
+            placeholder={`اكتب ${label}...`}
             className={INPUT_CLASS}
+            readOnly={field.readOnly}
           />
         </div>
       );
+    }
 
     case 'currency':
       return (
@@ -259,31 +278,7 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'carrier_name':
-      return (
-        <div key={field.key}>
-          <label className={LABEL_CLASS}>{label}</label>
-          <AutocompleteInput
-            value={form._carrierText || ''}
-            options={accounts}
-            labelKey="AccountName"
-            valueKey="AccountID"
-            dropdownSide="top"
-            addNewLabel="إضافة ناقل جديد"
-            onChange={(text) => {
-              setField('_carrierText', text);
-              setField('CarrierID', null);
-            }}
-            onSelect={(account) => {
-              setField('_carrierText', account.AccountName);
-              setField('CarrierID', account.AccountID);
-            }}
-            onAddNew={addCarrier}
-            placeholder="اكتب اسم الناقل..."
-            className={INPUT_CLASS}
-          />
-        </div>
-      );
+
 
     case 'gov_name':
       return (
@@ -498,6 +493,20 @@ export default function PortBuiltInField({
       );
 
     case 'trader_note':
+      if (sectionKey === 'transport-1') {
+        return (
+          <div key={field.key}>
+            <label className={LABEL_CLASS}>{label}</label>
+            <input
+              type="text"
+              value={form.TraderNote || ''}
+              onChange={(event) => setField('TraderNote', event.target.value)}
+              placeholder={`اكتب ${label}...`}
+              className={INPUT_CLASS}
+            />
+          </div>
+        );
+      }
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
