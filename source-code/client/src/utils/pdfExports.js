@@ -441,11 +441,11 @@ function splitRowsIntoPages(rows, firstPageCapacity, otherPagesCapacity, reserve
 
 function drawReportHeader(ctx, spec, xRight, startY, { title, subtitle }) {
   let y = startY;
-  drawText(ctx, title || '', xRight, y, { size: 44, weight: '700', color: TAY_ALRAWI_BRAND_COLORS.headerNavy });
-  y += 56;
+  drawText(ctx, title || '', xRight, y, { size: 65, weight: '800', color: TAY_ALRAWI_BRAND_COLORS.headerNavy });
+  y += 75;
   if (subtitle) {
-    drawText(ctx, subtitle, xRight, y, { size: 28, weight: '700', color: TAY_ALRAWI_BRAND_COLORS.accentRedDark });
-    y += 38;
+    drawText(ctx, subtitle, xRight, y, { size: 45, weight: '700', color: TAY_ALRAWI_BRAND_COLORS.accentRedDark });
+    y += 50;
   }
   return y;
 }
@@ -465,8 +465,8 @@ function drawSummaryCards(ctx, spec, x, y, width, summaryCards) {
       const cardX = x + width - ((index + 1) * cardWidth) - (index * gap);
       const cardY = y + row * (cardHeight + 12);
       drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 18, '#ffffff', '#d8dce7', 2);
-      drawText(ctx, card.label, cardX + cardWidth - 24, cardY + 34, { size: 22, weight: '700', color: '#5c6482', maxWidth: cardWidth - 34 });
-      drawText(ctx, card.value, cardX + cardWidth - 24, cardY + 74, { size: 34, weight: '700', color: TAY_ALRAWI_BRAND_COLORS.headerNavy, maxWidth: cardWidth - 34 });
+      drawText(ctx, card.label, cardX + cardWidth - 24, cardY + 34, { size: 36, weight: '700', color: '#5c6482', maxWidth: cardWidth - 34 });
+      drawText(ctx, card.value, cardX + cardWidth - 24, cardY + 74, { size: 54, weight: '700', color: TAY_ALRAWI_BRAND_COLORS.headerNavy, maxWidth: cardWidth - 34 });
     });
   }
 
@@ -486,7 +486,7 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
     drawText(ctx, column.label, cursorX + cellWidth / 2, y + headerHeight / 2, {
       align: 'center',
       color: '#ffffff',
-      size: orientation === 'portrait' ? 28 : 24,
+      size: orientation === 'portrait' ? 44 : 38,
       weight: '700',
       maxWidth: cellWidth - 20,
     });
@@ -519,7 +519,7 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
       drawText(ctx, formatCellValue(row[column.key], column.format), currentX + cellWidth / 2, rowY + rowHeight / 2, {
         align: 'center',
         color: textColor,
-        size: orientation === 'portrait' ? 24 : 21,
+        size: orientation === 'portrait' ? 38 : 34,
         weight: textWeight,
         maxWidth: cellWidth - 18,
       });
@@ -537,7 +537,7 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
       drawText(ctx, value, currentX + cellWidth / 2, rowY + rowHeight / 2, {
         align: 'center',
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
-        size: orientation === 'portrait' ? 24 : 21,
+        size: orientation === 'portrait' ? 38 : 34,
         weight: '700',
         maxWidth: cellWidth - 18,
       });
@@ -655,23 +655,23 @@ function getAdaptiveTableMetrics(orientation, columnCount) {
 
   return {
     headerFontSize: orientation === 'portrait'
-      ? (dense ? 32 : compact ? 36 : 40)
-      : (dense ? 28 : compact ? 32 : 36),
+      ? (dense ? 48 : compact ? 56 : 64)
+      : (dense ? 44 : compact ? 52 : 60),
     cellFontSize: orientation === 'portrait'
-      ? (dense ? 32 : compact ? 36 : 40)
-      : (dense ? 26 : compact ? 30 : 34),
-    headerLineHeight: orientation === 'portrait' ? 40 : 36,
-    cellLineHeight: orientation === 'portrait' ? 40 : 34,
+      ? (dense ? 46 : compact ? 54 : 60)
+      : (dense ? 42 : compact ? 48 : 56),
+    headerLineHeight: orientation === 'portrait' ? 66 : 60,
+    cellLineHeight: orientation === 'portrait' ? 64 : 56,
     maxHeaderLines: 1,
     maxCellLines: dense ? 3 : 2,
     paddingX: dense ? 16 : 20,
     paddingY: dense ? 16 : 18,
-    minHeaderHeight: orientation === 'portrait' ? 80 : 64,
-    minRowHeight: orientation === 'portrait' ? 108 : 88,
-    summaryLabelSize: orientation === 'portrait' ? 30 : 32,
-    summaryValueSize: orientation === 'portrait' ? 44 : 46,
-    summaryLabelLineHeight: orientation === 'portrait' ? 32 : 34,
-    summaryValueLineHeight: orientation === 'portrait' ? 46 : 48,
+    minHeaderHeight: orientation === 'portrait' ? 100 : 88,
+    minRowHeight: orientation === 'portrait' ? 120 : 100,
+    summaryLabelSize: orientation === 'portrait' ? 44 : 48,
+    summaryValueSize: orientation === 'portrait' ? 64 : 68,
+    summaryLabelLineHeight: orientation === 'portrait' ? 46 : 50,
+    summaryValueLineHeight: orientation === 'portrait' ? 66 : 70,
   };
 }
 

@@ -379,7 +379,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? '42px' : '38px'};
+      font-size: ${isPortrait ? '64px' : '58px'};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
       line-height: 1.5;
@@ -387,7 +387,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
-      font-size: 24px;
+      font-size: 44px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
       font-weight: 700;
     }
@@ -409,12 +409,12 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       display: block;
       margin-bottom: 6px;
       color: #5c6482;
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 50px;
+      font-weight: 800;
     }
     .tay-summary-card strong {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 38px;
+      font-size: 80px;
     }
     .tay-sections {
       position: relative;
@@ -438,13 +438,13 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-section-title {
       margin: 0;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 34px;
+      font-size: 54px;
       font-weight: 800;
     }
     .tay-section-subtitle {
       margin-top: 3px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
-      font-size: 22px;
+      font-size: 40px;
       font-weight: 700;
     }
     .tay-table-wrap {
@@ -463,12 +463,12 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table th,
     .tay-table td {
       border: 1px solid #d7dbe4;
-      padding: ${isPortrait ? '26px 24px' : '24px 20px'};
+      padding: 4px 6px;
       text-align: center;
       vertical-align: middle;
       color: #1f2937;
-      font-size: ${isPortrait ? '34px' : '32px'};
-      line-height: 1.6;
+      font-size: ${isPortrait ? '48px' : '44px'};
+      line-height: 1.15;
       word-break: break-word;
     }
     .tay-table .tay-date-cell {
@@ -481,8 +481,8 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       font-weight: 800;
       white-space: nowrap;
       word-break: normal;
-      padding: ${isPortrait ? '26px 16px' : '24px 14px'};
-      font-size: ${isPortrait ? '40px' : '38px'};
+      padding: 6px 6px;
+      font-size: ${isPortrait ? '52px' : '48px'};
     }
     .tay-table tbody tr:nth-child(even) td {
       background: ${TAY_ALRAWI_BRAND_COLORS.rowTint};
@@ -569,8 +569,8 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       gap: 12px 22px;
       flex-wrap: wrap;
       color: #1f2937;
-      font-size: 26px;
-      font-weight: 600;
+      font-size: 55px;
+      font-weight: 700;
     }
     .tay-meta-stack {
       flex-direction: column;
