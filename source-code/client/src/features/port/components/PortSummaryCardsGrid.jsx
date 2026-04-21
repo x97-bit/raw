@@ -10,7 +10,7 @@ export default function PortSummaryCardsGrid({ cards, className = 'grid grid-col
           key={`${card.key}-${card.label}`}
           label={card.label}
           value={card.value}
-          tone={card.accent || 'text-[#eef3f7]'}
+          tone={card.accent || 'text-utility-strong'}
         />
       ))}
     </div>

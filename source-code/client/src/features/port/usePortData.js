@@ -4,7 +4,6 @@ import {
   PORT_PAGE_LIMIT,
   buildPortAccountsQuery,
   buildPortTransactionsQuery,
-  filterScopedPortAccounts,
 } from './portPageHelpers';
 
 export default function usePortData({
@@ -48,7 +47,7 @@ export default function usePortData({
       setTransactions(transactionsResponse.transactions);
       setTotal(transactionsResponse.total);
       setListSummary({ ...EMPTY_PORT_SUMMARY, ...(transactionsResponse.summary || {}) });
-      setAccounts(filterScopedPortAccounts(accountsResponse, { portId, accountType }));
+      setAccounts(accountsResponse);
       setGoods(goodsResponse);
       setGovs(governoratesResponse);
       setCompanies(companiesResponse);

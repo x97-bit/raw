@@ -1,110 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
 import { runExportToExcel, runExportToPDF } from '../utils/exportActions';
 
-function hexToRgb(hex) {
-  const normalized = String(hex || '').replace('#', '').trim();
-  if (normalized.length !== 6) return null;
-
-  const value = Number.parseInt(normalized, 16);
-  if (Number.isNaN(value)) return null;
-
-  return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255,
-  };
-}
-
-function withAlpha(hex, alpha) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-}
-
-function tintColor(hex, amount) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-
-  const tint = (channel) => Math.round(channel + (255 - channel) * amount);
-  return `rgb(${tint(rgb.r)}, ${tint(rgb.g)}, ${tint(rgb.b)})`;
-}
-
-function getTemplateSelectAppearance({ inHeader, isDark, themeAccent }) {
-  const accentBorder = withAlpha(themeAccent, isDark ? 0.22 : 0.18);
-  const accentShadow = withAlpha(themeAccent, isDark ? 0.2 : 0.12);
-
+function getTemplateSelectAppearance({ inHeader }) {
   if (inHeader) {
-    return isDark
-      ? {
-          className: 'rounded-2xl px-3 py-2 text-xs font-semibold text-[#eef3f7] outline-none transition-all duration-200 hover:-translate-y-0.5',
-          style: {
-            background: `linear-gradient(135deg, ${withAlpha(themeAccent, 0.16)} 0%, rgba(255,255,255,0.05) 100%)`,
-            border: `1px solid ${accentBorder}`,
-            boxShadow: `0 12px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04)`,
-          },
-        }
-      : {
-          className: 'rounded-2xl px-3 py-2 text-xs font-semibold text-[#24313c] outline-none transition-all duration-200 hover:-translate-y-0.5',
-          style: {
-            background: '#ffffff',
-            border: `1px solid ${accentBorder}`,
-            boxShadow: `0 12px 24px ${accentShadow}`,
-          },
-        };
+    return {
+      className: 'rounded-2xl px-3 py-2 text-xs font-semibold text-utility-strong bg-utility-soft-bg border border-utility-soft-border outline-none transition-all duration-200 hover:-translate-y-0.5 shadow-sm hover:bg-utility-soft-bg-hover',
+      style: {}
+    };
   }
 
-  return isDark
-    ? {
-        className: 'rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-[#e6edf4] outline-none transition-all duration-200 hover:-translate-y-0.5',
-        style: {
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 12px 24px rgba(0,0,0,0.18)',
-        },
-      }
-    : {
-        className: 'rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-[#24313c] outline-none transition-all duration-200 hover:-translate-y-0.5',
-        style: {
-          background: '#ffffff',
-          border: '1px solid #d7e1e2',
-          boxShadow: '0 10px 22px rgba(53,78,89,0.06)',
-        },
-      };
+  return {
+    className: 'rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-utility-strong bg-utility-soft-bg border border-utility-soft-border outline-none transition-all duration-200 hover:-translate-y-0.5 shadow-sm hover:bg-utility-soft-bg-hover',
+    style: {}
+  };
 }
 
-function getExportToneAppearance({ tone, inHeader, isDark, themeAccent }) {
+function getExportToneAppearance({ tone, inHeader }) {
   const sizes = inHeader
-    ? 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5'
-    : 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5';
+    ? 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5 shadow-sm'
+    : 'flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5 shadow-sm';
 
-  const palettes = {
-    pdf: {
-      dark: { bg: withAlpha('#b15b68', 0.18), border: withAlpha('#b15b68', 0.28), text: '#f4dde2', hover: withAlpha('#b15b68', 0.24), shadow: '0 12px 24px rgba(0,0,0,0.18)' },
-      light: { bg: '#f9ecef', border: '#e7cdd3', text: '#9b4f5d', hover: '#f4e3e7', shadow: '0 10px 22px rgba(53,78,89,0.05)' },
-    },
-    excel: {
-      dark: { bg: withAlpha('#4f7f67', 0.2), border: withAlpha('#4f7f67', 0.3), text: '#dceee5', hover: withAlpha('#4f7f67', 0.26), shadow: '0 12px 24px rgba(0,0,0,0.18)' },
-      light: { bg: '#eaf4ee', border: '#cfe1d7', text: '#446d5b', hover: '#e1eee6', shadow: '0 10px 22px rgba(53,78,89,0.05)' },
-    },
-    neutral: {
-      dark: { bg: withAlpha(themeAccent, 0.18), border: withAlpha(themeAccent, 0.28), text: '#eef3f7', hover: withAlpha(themeAccent, 0.24), shadow: '0 12px 24px rgba(0,0,0,0.18)' },
-      light: { bg: tintColor(themeAccent, 0.92), border: withAlpha(themeAccent, 0.18), text: '#29414d', hover: tintColor(themeAccent, 0.88), shadow: '0 10px 22px rgba(53,78,89,0.05)' },
-    },
+  const tones = {
+    pdf: 'bg-utility-danger-bg text-utility-danger-text ring-1 ring-utility-danger-border hover:bg-utility-danger-bg-strong',
+    excel: 'bg-utility-success-bg text-utility-success-text ring-1 ring-utility-success-border hover:bg-utility-success-bg-strong',
+    neutral: 'bg-utility-soft-bg text-utility-strong ring-1 ring-utility-soft-border hover:bg-utility-soft-bg-hover'
   };
 
-  const palette = isDark ? palettes[tone]?.dark || palettes.neutral.dark : palettes[tone]?.light || palettes.neutral.light;
+  const selectedTone = tones[tone] || tones.neutral;
 
   return {
-    className: sizes,
-    style: {
-      background: palette.bg,
-      border: `1px solid ${palette.border}`,
-      color: palette.text,
-      boxShadow: palette.shadow,
-    },
-    hoverBackground: palette.hover,
+    className: `${sizes} ${selectedTone}`,
+    style: {}
   };
 }
 
@@ -197,13 +124,10 @@ function TemplateSelect({
   value,
   onChange,
   inHeader,
-  themeAccent = '#648ea9',
-  themeAccentSoft = 'rgba(100,142,169,0.16)',
 }) {
-  const { isDark } = useTheme();
   if (!templates?.length) return null;
 
-  const appearance = getTemplateSelectAppearance({ inHeader, isDark, themeAccent, themeAccentSoft });
+  const appearance = getTemplateSelectAppearance({ inHeader });
 
   return (
     <select value={value} onChange={(event) => onChange(event.target.value)} className={appearance.className} style={appearance.style}>
@@ -223,11 +147,8 @@ function ExportActionButton({
   disabled = false,
   inHeader = false,
   tone = 'neutral',
-  themeAccent = '#648ea9',
-  themeAccentSoft = 'rgba(100,142,169,0.16)',
 }) {
-  const { isDark } = useTheme();
-  const resolvedTone = getExportToneAppearance({ tone, inHeader, isDark, themeAccent, themeAccentSoft });
+  const resolvedTone = getExportToneAppearance({ tone, inHeader });
 
   return (
     <button
@@ -235,12 +156,6 @@ function ExportActionButton({
       disabled={disabled}
       className={resolvedTone.className}
       style={resolvedTone.style}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.background = resolvedTone.hoverBackground;
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.background = resolvedTone.style.background;
-      }}
     >
       <Icon size={inHeader ? 14 : 15} /> {label}
     </button>
@@ -265,6 +180,7 @@ export default function ExportButtons({
   selectedTemplateId,
   onTemplateChange,
   sectionKey,
+  summaryStyle,
   themeAccent = '#648ea9',
   themeAccentSoft = 'rgba(100,142,169,0.16)',
 }) {
@@ -313,8 +229,9 @@ export default function ExportButtons({
       printEmptyMessage,
       printContext,
       sectionKey,
+      summaryStyle,
     }),
-    [rows, columns, title, subtitle, filename, summaryCards, totalsRow, orientation, printSections, printMetaItems, printEmptyMessage, printContext, sectionKey],
+    [rows, columns, title, subtitle, filename, summaryCards, totalsRow, orientation, printSections, printMetaItems, printEmptyMessage, printContext, sectionKey, summaryStyle],
   );
 
   const selectedTemplate = useMemo(

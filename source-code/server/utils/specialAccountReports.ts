@@ -89,21 +89,37 @@ export function buildPartnershipSpecialReport(rows: any[], filters: { from?: str
     }));
 
   const rowsResult = sortByDateDesc(mappedRows);
+  const totalAmountUSD = rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD || 0), 0);
+  const totalAmountIQD = rowsResult.reduce((sum, row) => sum + Number(row.AmountIQD || 0), 0);
+  const totalPartnerBaseUSD = rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD_Partner || 0), 0);
+  const totalDifferenceIQD = rowsResult.reduce((sum, row) => sum + Number(row.DifferenceIQD || 0), 0);
+  const totalCLR = rowsResult.reduce((sum, row) => sum + Number(row.CLR || 0), 0);
+  const totalTX = rowsResult.reduce((sum, row) => sum + Number(row.TX || 0), 0);
+  const totalTaxiWater = rowsResult.reduce((sum, row) => sum + Number(row.TaxiWater || 0), 0);
+
+  const totalTaxiAndOfficer = totalTX + totalTaxiWater;
+  const totalPartnerExtras = totalDifferenceIQD + totalCLR + totalTaxiAndOfficer;
+  const totalPartnerUSD = totalPartnerBaseUSD + totalPartnerExtras;
+  const totalPartnerIQD = totalPartnerExtras;
+  const totalNetUSD = totalAmountUSD - totalPartnerUSD;
+  const totalNetIQD = totalAmountIQD - totalPartnerIQD;
+
   const totals = {
     count: rowsResult.length,
-    totalAmountUSD: rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD || 0), 0),
-    totalAmountIQD: rowsResult.reduce((sum, row) => sum + Number(row.AmountIQD || 0), 0),
-    totalPartnerBaseUSD: rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD_Partner || 0), 0),
-    totalDifferenceIQD: rowsResult.reduce((sum, row) => sum + Number(row.DifferenceIQD || 0), 0),
-    totalCLR: rowsResult.reduce((sum, row) => sum + Number(row.CLR || 0), 0),
-    totalTX: rowsResult.reduce((sum, row) => sum + Number(row.TX || 0), 0),
-    totalTaxiWater: rowsResult.reduce((sum, row) => sum + Number(row.TaxiWater || 0), 0),
+    totalAmountUSD,
+    totalAmountIQD,
+    totalPartnerBaseUSD,
+    totalDifferenceIQD,
+    totalCLR,
+    totalTX,
+    totalTaxiWater,
+    totalTaxiAndOfficer,
+    totalPartnerExtras,
+    totalPartnerUSD,
+    totalPartnerIQD,
+    totalNetUSD,
+    totalNetIQD,
   };
-  totals.totalTaxiAndOfficer = totals.totalTX + totals.totalTaxiWater;
-  totals.totalPartnerUSD = totals.totalPartnerBaseUSD;
-  totals.totalPartnerIQD = totals.totalDifferenceIQD + totals.totalCLR + totals.totalTaxiAndOfficer;
-  totals.totalNetUSD = totals.totalAmountUSD - totals.totalPartnerUSD;
-  totals.totalNetIQD = totals.totalAmountIQD - totals.totalPartnerIQD;
 
   return { rows: rowsResult, totals };
 }

@@ -8,10 +8,14 @@ const TRANSIENT_PORT_FORM_KEYS = [
   '_newDriverName',
   '_newPlateNumber',
   '_newGoodType',
+  '_newGovName',
 ];
 
 export function sanitizePortTransactionPayload(form = {}) {
   const payload = { ...form };
+  if (!payload.GovID && payload._govText?.trim()) {
+    payload.GovName = payload._govText.trim();
+  }
   TRANSIENT_PORT_FORM_KEYS.forEach((key) => {
     delete payload[key];
   });

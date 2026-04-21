@@ -10,17 +10,12 @@ import {
   buildRouteDefaultsPayload,
   createPortFilters,
   dedupePortCustomFieldsById,
-  filterScopedPortAccounts,
-  getCanonicalTransportTraderName,
   getPortBuiltInFieldLabel,
   getPortFormTarget,
   getPortStatementFooterCell,
   getPortViewLabels,
-  getTransportTraderOrderIndex,
   getVisiblePortCustomFieldsForTarget,
   getVisiblePortFormulaFieldsForTarget,
-  isAllowedTransportTraderName,
-  normalizePortTraderName,
   relabelPortColumnsForSection,
   resolvePortSectionKey,
 } from './portPageHelpers';
@@ -53,32 +48,6 @@ describe('portPageHelpers', () => {
       from: '2026-04-01',
       to: '2026-04-09',
     })).toBe('portId=2&accountType=3&startDate=2026-04-01&endDate=2026-04-09');
-  });
-
-  it('limits transport traders to the approved three names', () => {
-    expect(normalizePortTraderName('  ابراهيم   سعد  ')).toBe('ابراهيم سعد');
-    expect(normalizePortTraderName('إبراهيم   سعد   رمضان')).toBe('ابراهيم سعد رمضان');
-    expect(isAllowedTransportTraderName('عبدالعزيز')).toBe(true);
-    expect(isAllowedTransportTraderName('عبدالعزيز احمد')).toBe(true);
-    expect(isAllowedTransportTraderName('إبراهيم سعد رمضان')).toBe(true);
-    expect(isAllowedTransportTraderName('تاجر آخر')).toBe(false);
-    expect(getCanonicalTransportTraderName('عبدالعزيز احمد')).toBe('عبدالعزيز');
-    expect(getCanonicalTransportTraderName('إبراهيم سعد رمضان')).toBe('ابراهيم سعد');
-    expect(getTransportTraderOrderIndex('صباح إسماعيل')).toBe(2);
-
-    expect(filterScopedPortAccounts([
-      { AccountID: 4, AccountName: 'تاجر آخر' },
-      { AccountID: 2, AccountName: 'عبدالعزيز احمد' },
-      { AccountID: 3, AccountName: 'صباح اسماعيل' },
-      { AccountID: 1, AccountName: 'إبراهيم سعد رمضان' },
-    ], {
-      portId: 'transport-1',
-      accountType: 2,
-    })).toEqual([
-      expect.objectContaining({ AccountID: 1, AccountName: 'ابراهيم سعد' }),
-      expect.objectContaining({ AccountID: 2, AccountName: 'عبدالعزيز' }),
-      expect.objectContaining({ AccountID: 3, AccountName: 'صباح اسماعيل' }),
-    ]);
   });
 
   it('builds initial port forms from form type and custom values', () => {
@@ -175,7 +144,7 @@ describe('portPageHelpers', () => {
     });
     expect(getPortStatementFooterCell({ key: 'AmountUSD' }, 1, { balanceUSD: 300 }, { sectionKey: 'transport-1' })).toEqual({
       value: '-',
-      className: 'px-3 py-3 text-[#91a0ad]',
+      className: 'px-3 py-3 text-utility-muted',
     });
     expect(getPortStatementFooterCell({ key: 'ProfitUSD' }, 2, { totalProfitUSD: -50 })).toEqual({
       value: '$-50',

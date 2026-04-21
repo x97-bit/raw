@@ -59,10 +59,10 @@ describe('sectionExportProfiles', () => {
       'GoodTypeName',
       'TransDate',
       'Weight',
-      'Meters',
       'AmountUSD',
       '__combinedNotes',
     ]);
+    expect(profiles.every((profile) => profile.columns.every((column) => column.key !== 'Meters'))).toBe(true);
 
     expect(profiles[2].columns.some((column) => column.key === 'AmountUSD')).toBe(true);
     expect(profiles[2].columns.some((column) => column.key === 'AmountIQD')).toBe(true);

@@ -78,18 +78,18 @@ export default function ReportsHaiderProfitsView({
         {loading ? <LoadingSpinner /> : data && (
           <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-              <SummaryCard label="عدد العمليات" value={totals.count || 0} tone="text-[#9ab6ca]" />
-              <SummaryCard label="إجمالي الكلفة ($)" value={`$${formatReportNumber(totals.totalCostUSD)}`} tone="text-[#c8d4df]" />
-              <SummaryCard label="إجمالي المبلغ ($)" value={`$${formatReportNumber(totals.totalAmountUSD)}`} tone="text-[#eef3f7]" />
+              <SummaryCard label="عدد العمليات" value={totals.count || 0} tone="text-utility-accent-text" />
+              <SummaryCard label="إجمالي الكلفة ($)" value={`$${formatReportNumber(totals.totalCostUSD)}`} tone="text-utility-muted" />
+              <SummaryCard label="إجمالي المبلغ ($)" value={`$${formatReportNumber(totals.totalAmountUSD)}`} tone="text-utility-strong" />
               <SummaryCard label="إجمالي الربح ($)" value={`$${formatReportNumber(totals.totalProfitUSD)}`} tone={profitUsdTone} />
               <SummaryCard label="إجمالي الربح (د.ع)" value={formatReportNumber(totals.totalNetIQD)} tone={netIqdTone} />
-              <SummaryCard label="إجمالي الفرق (د.ع)" value={formatReportNumber(totals.totalDifferenceIQD)} tone="text-[#d1b58b]" />
+              <SummaryCard label="إجمالي الفرق (د.ع)" value={formatReportNumber(totals.totalDifferenceIQD)} tone="text-utility-warning-text" />
             </div>
 
             <div className="surface-card overflow-hidden p-0">
-              <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.03] px-5 py-3.5">
-                <span className="flex items-center gap-2 font-bold text-[#eef3f7]">
-                  <Building2 size={16} className="text-[#648ea9]" />
+              <div className="flex items-center justify-between border-b border-utility-soft-border bg-utility-soft-bg px-5 py-3.5">
+                <span className="flex items-center gap-2 font-bold text-utility-strong">
+                  <Building2 size={16} className="text-utility-accent-text" />
                   تفاصيل العمليات ({rows.length} عملية)
                 </span>
                 <div className="flex items-center gap-4">
@@ -99,7 +99,7 @@ export default function ReportsHaiderProfitsView({
                   <span className={`font-bold ${netIqdTone}`}>
                     الربح (د.ع): {formatReportNumber(totals.totalNetIQD)}
                   </span>
-                  <span className="font-bold text-[#d1b58b]">
+                  <span className="font-bold text-utility-warning-text">
                     الفرق (د.ع): {formatReportNumber(totals.totalDifferenceIQD)}
                   </span>
                 </div>
@@ -108,9 +108,9 @@ export default function ReportsHaiderProfitsView({
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+                    <tr className="table-header text-right">
                       <th className="px-4 py-3 font-semibold">التاريخ</th>
-                      <th className="px-4 py-3 font-semibold">الوجهة</th>
+                      <th className="px-4 py-3 font-semibold">المحافظة</th>
                       <th className="px-4 py-3 font-semibold">السائق</th>
                       <th className="px-4 py-3 font-semibold">رقم السيارة</th>
                       <th className="px-4 py-3 font-semibold">البضاعة</th>
@@ -131,7 +131,7 @@ export default function ReportsHaiderProfitsView({
                       rows.map((row, index) => (
                         <tr
                           key={index}
-                          className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.04]"
+                          className="border-b border-utility-panel-border transition-colors hover:bg-utility-soft-bg-hover"
                         >
                           <td className="px-4 py-3">{formatReportDate(row.TransDate)}</td>
                           <td className="px-4 py-3">{row.Destination || '-'}</td>
@@ -139,27 +139,27 @@ export default function ReportsHaiderProfitsView({
                           <td className="px-4 py-3">{row.PlateNumber || '-'}</td>
                           <td className="px-4 py-3">{row.GoodType || '-'}</td>
                           <td className="px-4 py-3">{row.Weight ? formatReportNumber(row.Weight) : '-'}</td>
-                          <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(row.CostUSD)}</td>
+                          <td className="px-4 py-3 text-utility-muted">${formatReportNumber(row.CostUSD)}</td>
                           <td className="px-4 py-3">${formatReportNumber(row.AmountUSD)}</td>
                           <td className={`px-4 py-3 font-bold ${getProfitTone(row.ProfitUSD)}`}>${formatReportNumber(row.ProfitUSD)}</td>
-                          <td className="px-4 py-3 text-[#c8d4df]">{formatReportNumber(row.CostIQD)}</td>
+                          <td className="px-4 py-3 text-utility-muted">{formatReportNumber(row.CostIQD)}</td>
                           <td className="px-4 py-3">{formatReportNumber(row.AmountIQD)}</td>
-                          <td className="px-4 py-3 text-[#d1b58b]">{formatReportNumber(row.DifferenceIQD)}</td>
+                          <td className="px-4 py-3 text-utility-warning-text">{formatReportNumber(row.DifferenceIQD)}</td>
                           <td className={`px-4 py-3 font-bold ${getProfitTone(row.NetIQD)}`}>{formatReportNumber(row.NetIQD)}</td>
                         </tr>
                       ))
                     )}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t border-white/[0.08] bg-white/[0.03] font-bold">
-                      <td colSpan="5" className="px-4 py-3 text-[#eef3f7]">المجموع</td>
+                    <tr className="border-t border-utility-panel-border bg-utility-soft-bg font-bold">
+                      <td colSpan="5" className="px-4 py-3 text-utility-strong">المجموع</td>
                       <td className="px-4 py-3">{formatReportNumber(totals.totalWeight)}</td>
-                      <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(totals.totalCostUSD)}</td>
+                      <td className="px-4 py-3 text-utility-muted">${formatReportNumber(totals.totalCostUSD)}</td>
                       <td className="px-4 py-3">${formatReportNumber(totals.totalAmountUSD)}</td>
                       <td className={`px-4 py-3 ${profitUsdTone}`}>${formatReportNumber(totals.totalProfitUSD)}</td>
-                      <td className="px-4 py-3 text-[#c8d4df]">{formatReportNumber(totals.totalCostIQD)}</td>
+                      <td className="px-4 py-3 text-utility-muted">{formatReportNumber(totals.totalCostIQD)}</td>
                       <td className="px-4 py-3">{formatReportNumber(totals.totalAmountIQD)}</td>
-                      <td className="px-4 py-3 text-[#d1b58b]">{formatReportNumber(totals.totalDifferenceIQD)}</td>
+                      <td className="px-4 py-3 text-utility-warning-text">{formatReportNumber(totals.totalDifferenceIQD)}</td>
                       <td className={`px-4 py-3 ${netIqdTone}`}>{formatReportNumber(totals.totalNetIQD)}</td>
                     </tr>
                   </tfoot>

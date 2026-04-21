@@ -1,9 +1,9 @@
 import AutocompleteInput from '../../../components/AutocompleteInput';
-import { isAllowedTransportTraderName, isTransportSectionScope } from '../portPageHelpers';
+import { isTransportSectionScope } from '../portPageHelpers';
 
 const INPUT_CLASS = 'input-field';
 const TEXTAREA_CLASS = 'input-field min-h-[112px] resize-y';
-const LABEL_CLASS = 'mb-1 block text-sm font-medium text-[#b7c3ce]';
+const LABEL_CLASS = 'mb-1 block text-sm font-medium text-utility-muted';
 
 export default function PortBuiltInField({
   field,
@@ -28,14 +28,6 @@ export default function PortBuiltInField({
   setMsg,
 }) {
   const addAccount = async (name) => {
-    if (
-      isTransportSectionScope({ portId, accountType })
-      && !isAllowedTransportTraderName(name)
-    ) {
-      setMsg('في النقل، التجار المعتمدون حاليًا هم: ابراهيم سعد، عبدالعزيز، صباح اسماعيل');
-      return;
-    }
-
     try {
       const newAcc = await api('/accounts', {
         method: 'POST',
@@ -81,6 +73,28 @@ export default function PortBuiltInField({
     }
   };
 
+  const addCarrier = async (name) => {
+    try {
+      const newAcc = await api('/accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          AccountName: name,
+          AccountTypeID: accountType || 1,
+          DefaultPortID: portId || null,
+        }),
+      });
+      const accountRow = { AccountID: newAcc.id, AccountName: name };
+      setAccounts((prev) => (prev.some((item) => String(item.AccountID) === String(accountRow.AccountID)) ? prev : [...prev, accountRow]));
+      setField('_carrierText', name);
+      setField('CarrierID', newAcc.id);
+      setField('CarrierName', name);
+      setMsg(`تم إضافة الناقل بنجاح: ${name}`);
+    } catch (error) {
+      console.error(error);
+      setMsg('حدث خطأ أثناء إضافة الناقل');
+    }
+  };
+
   switch (field.key) {
     case 'ref_no':
       return (
@@ -94,7 +108,7 @@ export default function PortBuiltInField({
                 ? (type === 1 ? 'سيولد رقم استحقاق النقل تلقائيًا' : 'سيولد رقم سند الدفع تلقائيًا')
                 : (type === 3 ? 'سيولد رقم سند الإضافة تلقائيًا' : (type === 1 ? 'سيولد رقم الفاتورة تلقائيًا' : 'سيولد رقم سند القبض تلقائيًا'))
             }
-            className={`${INPUT_CLASS} bg-white/[0.03] text-[#91a0ad] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]`}
+            className={`${INPUT_CLASS} bg-utility-soft-bg text-utility-muted opacity-80`}
             disabled
           />
         </div>
@@ -201,6 +215,12 @@ export default function PortBuiltInField({
               setField('VehicleID', vehicle.AccountID);
               setField('_newPlateNumber', '');
             }}
+            onAddNew={(text) => {
+              setField('_vehicleText', text);
+              setField('VehicleID', null);
+              setField('_newPlateNumber', text);
+            }}
+            addNewLabel="إضافة رقم سيارة جديد"
             placeholder="اكتب رقم السيارة..."
             className={INPUT_CLASS}
           />
@@ -227,6 +247,12 @@ export default function PortBuiltInField({
               setField('GoodTypeID', good.AccountID);
               setField('_newGoodType', '');
             }}
+            onAddNew={(text) => {
+              setField('_goodText', text);
+              setField('GoodTypeID', null);
+              setField('_newGoodType', text);
+            }}
+            addNewLabel="إضافة نوع بضاعة جديد"
             placeholder="اكتب نوع البضاعة..."
             className={INPUT_CLASS}
           />
@@ -243,6 +269,7 @@ export default function PortBuiltInField({
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
+            addNewLabel="إضافة ناقل جديد"
             onChange={(text) => {
               setField('_carrierText', text);
               setField('CarrierID', null);
@@ -251,6 +278,7 @@ export default function PortBuiltInField({
               setField('_carrierText', account.AccountName);
               setField('CarrierID', account.AccountID);
             }}
+            onAddNew={addCarrier}
             placeholder="اكتب اسم الناقل..."
             className={INPUT_CLASS}
           />
@@ -270,12 +298,20 @@ export default function PortBuiltInField({
             onChange={(text) => {
               setField('_govText', text);
               setField('GovID', null);
+              setField('_newGovName', text);
             }}
             onSelect={(gov) => {
               setField('_govText', gov.AccountName);
               setField('GovID', gov.AccountID);
+              setField('_newGovName', '');
             }}
-            placeholder="اكتب الجهة الحكومية أو المحافظة..."
+            onAddNew={(text) => {
+              setField('_govText', text);
+              setField('GovID', null);
+              setField('_newGovName', text);
+            }}
+            addNewLabel="إضافة محافظة جديدة"
+            placeholder="اكتب اسم المحافظة..."
             className={INPUT_CLASS}
           />
         </div>
@@ -287,6 +323,7 @@ export default function PortBuiltInField({
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
+            step="any"
             value={form.Weight || ''}
             onChange={(event) => setNumericField('Weight', event.target.value)}
             className={INPUT_CLASS}
@@ -300,6 +337,7 @@ export default function PortBuiltInField({
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
+            step="any"
             value={form.Meters || ''}
             onChange={(event) => setNumericField('Meters', event.target.value)}
             className={INPUT_CLASS}

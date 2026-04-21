@@ -25,7 +25,7 @@ export default function SpecialAccountFormField({ field, value, onChange, accent
       <label className="block text-sm font-semibold text-[#c5d1db]">{field.label}</label>
       <input
         type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-        step={field.step}
+        step={field.type === 'number' ? (field.step || 'any') : undefined}
         value={resolvedValue}
         onChange={(event) => onChange(field.key, event.target.value)}
         className={commonClass}

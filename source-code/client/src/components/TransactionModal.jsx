@@ -182,6 +182,7 @@ export default function TransactionModal({
 
   useEffect(() => {
     if (!editMode || readOnly || !sectionKey || !editForm.AccountID) return undefined;
+    if (transaction?.TransID) return undefined;
 
     let cancelled = false;
 
@@ -209,7 +210,7 @@ export default function TransactionModal({
     return () => {
       cancelled = true;
     };
-  }, [api, editForm.AccountID, editForm.Currency, editForm.GovID, editMode, formTarget, readOnly, sectionKey, visibleBuiltInFieldKeys]);
+  }, [api, editForm.AccountID, editForm.Currency, editForm.GovID, editMode, formTarget, readOnly, sectionKey, transaction?.TransID, visibleBuiltInFieldKeys]);
 
   const setField = useCallback((fieldKey, value) => {
     setEditForm((form) => ({ ...form, [fieldKey]: value }));
@@ -303,10 +304,20 @@ export default function TransactionModal({
       draft.CompanyName = newCompany.CompanyName || draft._companyText.trim();
     }
 
+    if (!draft.GovID && (draft._newGovName?.trim() || draft._govText?.trim())) {
+      const govName = (draft._newGovName?.trim() || draft._govText?.trim());
+      const newGov = await api('/lookups/governorates', {
+        method: 'POST',
+        body: JSON.stringify({ GovName: govName }),
+      });
+      draft.GovID = newGov.id;
+    }
+
     delete draft._driverText;
     delete draft._vehicleText;
     delete draft._goodText;
     delete draft._govText;
+    delete draft._newGovName;
     delete draft._companyText;
     delete draft._carrierText;
 

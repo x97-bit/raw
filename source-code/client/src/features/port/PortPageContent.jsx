@@ -23,7 +23,7 @@ import usePortFieldConfig from './usePortFieldConfig';
 import usePortTransactionForm from './usePortTransactionForm';
 import useTransactionFormLayout from '../transactions/useTransactionFormLayout';
 import { filterSectionsByCurrency } from '../../utils/orderedFormSections';
-import { buildListExportTemplates, buildStatementExportTemplates } from '../../utils/portExportTemplates';
+import { buildListExportTemplates, buildStatementExportTemplates, buildListScreenTemplates, buildStatementScreenTemplates } from '../../utils/portExportTemplates';
 import { renderPortCell, toExportColumn, toPreviewColumn } from '../../utils/portPageColumns';
 import {
   EMPTY_PORT_SUMMARY,
@@ -205,6 +205,17 @@ export default function PortPage({
     [activeStatementColumnsBase, sectionKey],
   );
 
+  // Screen templates include ALL columns (cost_usd, cost_iqd visible on screen)
+  const listScreenTemplates = useMemo(
+    () => buildListScreenTemplates(sectionKey, listExportColumns, portName),
+    [listExportColumns, portName, sectionKey],
+  );
+  const statementScreenTemplates = useMemo(
+    () => buildStatementScreenTemplates(sectionKey, statementExportColumns, statement?.account?.AccountName || ''),
+    [sectionKey, statement?.account?.AccountName, statementExportColumns],
+  );
+
+  // Print/PDF templates strip cost columns
   const listExportTemplates = useMemo(
     () => buildListExportTemplates(sectionKey, listExportColumns, portName),
     [listExportColumns, portName, sectionKey],
@@ -214,21 +225,23 @@ export default function PortPage({
     [sectionKey, statement?.account?.AccountName, statementExportColumns],
   );
 
-  const activeListTemplate = useMemo(
-    () => listExportTemplates.find((template) => template.id === selectedListTemplateId) || listExportTemplates[0],
-    [listExportTemplates, selectedListTemplateId],
+  // Screen display uses screen templates (cost columns included)
+  const activeListScreenTemplate = useMemo(
+    () => listScreenTemplates.find((t) => t.id === selectedListTemplateId) || listScreenTemplates[0],
+    [listScreenTemplates, selectedListTemplateId],
   );
-  const activeStatementTemplate = useMemo(
-    () => statementExportTemplates.find((template) => template.id === selectedStatementTemplateId) || statementExportTemplates[0],
-    [selectedStatementTemplateId, statementExportTemplates],
+  const activeStatementScreenTemplate = useMemo(
+    () => statementScreenTemplates.find((t) => t.id === selectedStatementTemplateId) || statementScreenTemplates[0],
+    [selectedStatementTemplateId, statementScreenTemplates],
   );
+
   const activeListColumns = useMemo(
-    () => (activeListTemplate?.columns || []).map(toPreviewColumn),
-    [activeListTemplate],
+    () => (activeListScreenTemplate?.columns || []).map(toPreviewColumn),
+    [activeListScreenTemplate],
   );
   const activeStatementColumns = useMemo(
-    () => (activeStatementTemplate?.columns || []).map(toPreviewColumn),
-    [activeStatementTemplate],
+    () => (activeStatementScreenTemplate?.columns || []).map(toPreviewColumn),
+    [activeStatementScreenTemplate],
   );
 
   useEffect(() => {
@@ -257,6 +270,7 @@ export default function PortPage({
         accountType,
         from: filters.from,
         to: filters.to,
+        by: sectionKey === 'transport-1' ? 'carrier' : undefined,
       });
       const statementResponse = await api(`/reports/account-statement/${normalizedAccountId}${query ? `?${query}` : ''}`);
       setStatement(statementResponse);
@@ -264,7 +278,7 @@ export default function PortPage({
     } catch (error) {
       console.error(error);
     }
-  }, [accountType, api, filters.from, filters.to, portId]);
+  }, [accountType, api, filters.from, filters.to, portId, sectionKey]);
 
   const statementFilterAccountId = String(filters.accountId || stAccount || statement?.account?.AccountID || '');
 
@@ -417,6 +431,7 @@ export default function PortPage({
         onSearchChange={setSearch}
         onSelectAccount={handleStatementSelectAccount}
         portViewLabels={portViewLabels}
+        sectionKey={sectionKey}
       />
     );
   }

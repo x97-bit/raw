@@ -7,7 +7,7 @@ import { getStoredDirectionValue, isInvoiceDirection } from "../../utils/directi
 import { parseOptionalDecimal, parseOptionalInt, pickBodyField } from "../../utils/bodyFields";
 import { transactionCreateSchema } from "../../utils/financialValidation";
 import { TRANSACTION_VALIDATION_MESSAGE } from "./shared";
-import { getTrimmedText, resolveCompanySelection, resolveNewLookupId } from "./builderHelpers";
+import { getTrimmedText, resolveCompanySelection, resolveGovernorateId, resolveNewLookupId } from "./builderHelpers";
 
 type TransactionMutationBody = Record<string, unknown>;
 type TransactionCreatePayload = z.infer<typeof transactionCreateSchema>;
@@ -71,6 +71,12 @@ export async function buildTransactionCreateInput(
     pickBodyField(body, "companyName", "CompanyName", "company_name"),
   );
 
+  const resolvedGovId = await resolveGovernorateId(
+    db,
+    pickBodyField(body, "govId", "GovID", "gov_id"),
+    pickBodyField(body, "govName", "GovName", "gov_name", "_govText"),
+  );
+
   const data = validateInput(
     transactionCreateSchema,
     {
@@ -99,7 +105,7 @@ export async function buildTransactionCreateInput(
       qty: parseOptionalInt(pickBodyField(body, "qty", "Qty")) ?? null,
       companyId: parseOptionalInt(companyId) ?? null,
       companyName,
-      govId: parseOptionalInt(pickBodyField(body, "govId", "GovID", "gov_id")) ?? null,
+      govId: resolvedGovId,
       notes: pickBodyField(body, "notes", "Notes") ?? null,
       traderNote: pickBodyField(body, "traderNote", "TraderNote", "trader_note") ?? null,
       recordType,

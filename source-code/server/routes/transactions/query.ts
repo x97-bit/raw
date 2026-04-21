@@ -314,7 +314,7 @@ export function registerTransactionQueryRoutes(router: Router) {
         paged AS (
           SELECT *
           FROM filtered
-          ORDER BY id DESC
+          ORDER BY id ASC
           ${paginationFragment}
         )
         SELECT
@@ -334,7 +334,7 @@ export function registerTransactionQueryRoutes(router: Router) {
           (summary.totalInvoicesIQD - summary.totalPaymentsIQD) AS balanceIQD
         FROM summary
         LEFT JOIN paged ON TRUE
-        ORDER BY paged.id DESC
+        ORDER BY paged.id ASC
       `) as unknown as TransactionQueryResultRow[];
 
       const normalized = normalizeTransactionQueryResult(rawRows);

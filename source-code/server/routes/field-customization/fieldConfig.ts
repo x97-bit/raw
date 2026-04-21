@@ -3,7 +3,6 @@ import { and, asc, eq } from "drizzle-orm";
 import { fieldConfig } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { getDb } from "../../db";
-import { safeWriteAuditLog } from "../../utils/safeAuditLog";
 import { FIELD_SETTINGS_UPDATED_MESSAGE, FIELDS_ARRAY_REQUIRED_MESSAGE } from "./shared";
 
 export function registerFieldConfigRoutes(router: Router) {
@@ -79,16 +78,6 @@ export function registerFieldConfigRoutes(router: Router) {
         .from(fieldConfig)
         .where(eq(fieldConfig.sectionKey, sectionKey))
         .orderBy(asc(fieldConfig.sortOrder));
-
-      await safeWriteAuditLog(db, {
-        entityType: "field_config",
-        action: "update",
-        summary: `طھط­ط¯ظٹط« ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ظ‚ظˆظ„ ظ„ظ„ظ‚ط³ظ… ${sectionKey}`,
-        before: { sectionKey, fields: beforeConfigs },
-        after: { sectionKey, fields: afterConfigs },
-        appUser: req.appUser,
-        metadata: { sectionKey, fieldCount: afterConfigs.length },
-      });
 
       return res.json({ message: FIELD_SETTINGS_UPDATED_MESSAGE });
     } catch (error: any) {

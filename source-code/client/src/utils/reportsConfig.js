@@ -69,7 +69,7 @@ export function buildReportPrintMetaItems(activePort, filters = {}) {
 
 export const HAIDER_REPORT_EXPORT_COLUMNS = [
   { key: 'TransDate', label: 'التاريخ', format: 'date' },
-  { key: 'Destination', label: 'الوجهة' },
+  { key: 'Destination', label: 'المحافظة' },
   { key: 'DriverName', label: 'اسم السائق' },
   { key: 'PlateNumber', label: 'رقم السيارة' },
   { key: 'GoodType', label: 'نوع البضاعة' },

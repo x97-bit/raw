@@ -6,6 +6,21 @@ export const TAY_ALRAWI_BRAND_ASSETS = {
   logoOnWhite: '/templates/tayalrawi-logo-white-bg.png',
 };
 
+export const LOUAY_ALRAWI_BRAND_ASSETS = {
+  header: '/templates/louayalrawi-full-header.png',
+  footer: '/templates/louayalrawi-footer-area-clean.png',
+  invoiceFooter: '/templates/louayalrawi-invoice-footer.png',
+  logo: '/templates/louayalrawi-logo-trimmed.png',
+  logoOnWhite: '/templates/louayalrawi-logo-white-bg.png',
+};
+
+export function resolveBrandAssets({ sectionKey } = {}) {
+  if (sectionKey === 'special-partner' || sectionKey === 'partnership-yaser') {
+    return LOUAY_ALRAWI_BRAND_ASSETS;
+  }
+  return TAY_ALRAWI_BRAND_ASSETS;
+}
+
 export const TAY_ALRAWI_BRAND_COLORS = {
   headerNavy: '#1e2a5e',
   tableNavy: '#17365d',

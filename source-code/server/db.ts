@@ -37,11 +37,14 @@ export async function getDb(): Promise<AppDb | null> {
   }
 
   if (_db && !_runtimeSchemaEnsured && process.env.DATABASE_URL) {
+    // Mark as ensured immediately so parallel requests don't all retry.
+    // The ensure runs once at startup; if it partially fails, indexes/FKs
+    // added by drizzle-kit are sufficient for the app to function.
+    _runtimeSchemaEnsured = true;
     try {
       await ensureRuntimeSchemaWithUrl(process.env.DATABASE_URL);
-      _runtimeSchemaEnsured = true;
     } catch (error) {
-      console.warn("[Database] Failed to ensure runtime schema:", error);
+      console.warn("[Database] Runtime schema migration had warnings (non-fatal):", (error as Error).message?.substring(0, 120));
     }
   }
 

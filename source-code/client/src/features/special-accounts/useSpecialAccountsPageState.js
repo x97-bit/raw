@@ -116,6 +116,29 @@ export default function useSpecialAccountsPageState({ api }) {
     [visibleColumns],
   );
 
+
+  const exportRows = useMemo(() => {
+    if (activeDef?.id !== 'partnership-yaser') return filteredRows;
+    return filteredRows.map((row) => ({
+      ...row,
+      AmountUSD_Partner: Number(row?.AmountUSD_Partner || 0)
+        + Number(row?.CLR || 0)
+        + Number(row?.DifferenceIQD || 0)
+        + Number(row?.TaxiWater || 0)
+        + Number(row?.TX || 0),
+    }));
+  }, [activeDef, filteredRows]);
+
+  const printContext = useMemo(() => {
+    if (!activeDef || !derivedTotals) return null;
+    return {
+      accountName: activeDef.label,
+      fromDate: filters.from || '---',
+      toDate: filters.to || '---',
+      totals: derivedTotals,
+    };
+  }, [activeDef, derivedTotals, filters.from, filters.to]);
+
   const formFields = activeDef ? SPECIAL_FORM_FIELDS[activeDef.id] || [] : [];
 
   const openCreateModal = useCallback(() => {
@@ -148,9 +171,15 @@ export default function useSpecialAccountsPageState({ api }) {
     setSaving(true);
     try {
       const endpoint = editingRecord ? `/special/${editingRecord.id}` : '/special';
+      const payload = { ...form };
+      if (activeDef.id === 'partnership-yaser') {
+        payload.taxiWater = form.taxiAndOfficer ?? '';
+        payload.tx = 0;
+        delete payload.taxiAndOfficer;
+      }
       await api(endpoint, {
         method: editingRecord ? 'PUT' : 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       setMessage(editingRecord ? 'تم تحديث السجل بنجاح.' : 'تمت إضافة السجل بنجاح.');
       closeForm();
@@ -197,9 +226,11 @@ export default function useSpecialAccountsPageState({ api }) {
     editingRecord,
     exportColumns,
     filteredRows,
+    exportRows,
     filters,
     form,
     formFields,
+    printContext,
     handleDelete,
     handleFilterChange,
     handleFormChange,

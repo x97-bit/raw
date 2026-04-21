@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { eq } from "drizzle-orm";
-import { companies, drivers, goodsTypes, vehicles } from "../../../drizzle/schema";
+import { companies, drivers, goodsTypes, governorates, vehicles } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db";
@@ -101,6 +101,28 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
       const goodTypeId = Number(result[0].insertId);
       invalidateLookupReadCache();
       return res.json({ id: goodTypeId, GoodTypeID: goodTypeId, TypeName: name });
+    } catch (error) {
+      return respondRouteError(res, error);
+    }
+  });
+
+  router.post("/lookups/governorates", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const db = await getLookupDb(res);
+      if (!db) return;
+
+      const name = String(req.body.name || req.body.GovName || "").trim();
+      if (!name) return res.status(400).json({ error: "اسم المحافظة مطلوب" });
+
+      const [existing] = await db.select().from(governorates).where(eq(governorates.name, name)).limit(1);
+      if (existing) {
+        return res.json({ id: existing.id, GovID: existing.id, GovName: existing.name, existing: true });
+      }
+
+      const result = await db.insert(governorates).values({ name });
+      const govId = Number(result[0].insertId);
+      invalidateLookupReadCache();
+      return res.json({ id: govId, GovID: govId, GovName: name });
     } catch (error) {
       return respondRouteError(res, error);
     }

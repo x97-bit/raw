@@ -47,9 +47,9 @@ export function withinDateRange(dateValue: string, from?: string, to?: string) {
 
 export function sortByDateDesc<T extends { TransDate?: string; id?: number }>(rows: T[]) {
   return [...rows].sort((a, b) => {
-    const dateCompare = String(b.TransDate || "").localeCompare(String(a.TransDate || ""));
+    const dateCompare = String(a.TransDate || "").localeCompare(String(b.TransDate || ""));
     if (dateCompare !== 0) return dateCompare;
-    return Number(b.id || 0) - Number(a.id || 0);
+    return Number(a.id || 0) - Number(b.id || 0);
   });
 }
 

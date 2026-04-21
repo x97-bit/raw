@@ -133,7 +133,7 @@ export default function TransactionModalEditItem({
     case 'ref_no':
       return (
         <FieldShell key={fieldKey} label={label}>
-          <input type="text" value={editForm.RefNo || ''} readOnly className="input-field bg-slate-50 text-slate-500" />
+          <input type="text" value={editForm.RefNo || ''} onChange={(event) => setField('RefNo', event.target.value)} className="input-field" />
         </FieldShell>
       );
     case 'trans_date':
@@ -210,6 +210,11 @@ export default function TransactionModalEditItem({
             setField('_vehicleText', vehicle.PlateNumber);
             setField('VehicleID', vehicle.VehicleID);
           }}
+          onAddNew={(text) => {
+            setField('_vehicleText', text);
+            setField('VehicleID', null);
+          }}
+          addNewLabel="إضافة رقم سيارة جديد"
           placeholder={placeholderFor(fieldKey, 'اكتب رقم السيارة...')}
         />
       );
@@ -230,6 +235,11 @@ export default function TransactionModalEditItem({
             setField('_goodText', good.TypeName);
             setField('GoodTypeID', good.GoodTypeID);
           }}
+          onAddNew={(text) => {
+            setField('_goodText', text);
+            setField('GoodTypeID', null);
+          }}
+          addNewLabel="إضافة نوع بضاعة جديد"
           placeholder={placeholderFor(fieldKey, 'اكتب نوع البضاعة...')}
         />
       );
@@ -245,12 +255,20 @@ export default function TransactionModalEditItem({
           onChange={(text) => {
             setField('_govText', text);
             setField('GovID', null);
+            setField('_newGovName', text);
           }}
           onSelect={(gov) => {
             setField('_govText', gov.GovName);
             setField('GovID', gov.GovID);
+            setField('_newGovName', '');
           }}
-          placeholder={placeholderFor(fieldKey, 'اكتب المحافظة أو الجهة الحكومية...')}
+          onAddNew={(text) => {
+            setField('_govText', text);
+            setField('GovID', null);
+            setField('_newGovName', text);
+          }}
+          addNewLabel="إضافة محافظة جديدة"
+          placeholder={placeholderFor(fieldKey, 'اكتب اسم المحافظة...')}
         />
       );
     case 'company_name':
@@ -292,6 +310,15 @@ export default function TransactionModalEditItem({
             setField('CarrierID', account.AccountID);
             setField('CarrierName', account.AccountName);
           }}
+          onAddNew={onAddAccount ? async (name) => {
+            const created = await onAddAccount(name);
+            if (created) {
+              setField('_carrierText', created.AccountName);
+              setField('CarrierID', created.AccountID);
+              setField('CarrierName', created.AccountName);
+            }
+          } : undefined}
+          addNewLabel="إضافة ناقل جديد"
           placeholder={placeholderFor(fieldKey, 'اكتب اسم الناقل...')}
         />
       );
@@ -310,19 +337,19 @@ export default function TransactionModalEditItem({
     case 'amount_iqd':
       return (
         <FieldShell key={fieldKey} label={label}>
-          <input type="number" value={editForm.AmountIQD ?? ''} onChange={(event) => setNumericField('AmountIQD', event.target.value)} className="input-field text-lg font-bold" />
+          <input type="number" step="any" value={editForm.AmountIQD ?? ''} onChange={(event) => setNumericField('AmountIQD', event.target.value)} className="input-field text-lg font-bold" />
         </FieldShell>
       );
     case 'cost_iqd':
       return (
         <FieldShell key={fieldKey} label={label}>
-          <input type="number" value={editForm.CostIQD ?? ''} onChange={(event) => setNumericField('CostIQD', event.target.value)} className="input-field" />
+          <input type="number" step="any" value={editForm.CostIQD ?? ''} onChange={(event) => setNumericField('CostIQD', event.target.value)} className="input-field" />
         </FieldShell>
       );
     case 'weight':
       return (
         <FieldShell key={fieldKey} label={label}>
-          <input type="number" value={editForm.Weight ?? ''} onChange={(event) => setNumericField('Weight', event.target.value)} className="input-field" />
+          <input type="number" step="any" value={editForm.Weight ?? ''} onChange={(event) => setNumericField('Weight', event.target.value)} className="input-field" />
         </FieldShell>
       );
     case 'qty':
@@ -334,7 +361,7 @@ export default function TransactionModalEditItem({
     case 'meters':
       return (
         <FieldShell key={fieldKey} label={label}>
-          <input type="number" value={editForm.Meters ?? ''} onChange={(event) => setNumericField('Meters', event.target.value)} className="input-field" />
+          <input type="number" step="any" value={editForm.Meters ?? ''} onChange={(event) => setNumericField('Meters', event.target.value)} className="input-field" />
         </FieldShell>
       );
     case 'fee_usd':

@@ -163,6 +163,14 @@ export default function usePortTransactionForm({
       nextForm.GoodTypeID = response.id;
     }
 
+    if (!nextForm.GovID && nextForm._newGovName?.trim()) {
+      const response = await api('/lookups/governorates', {
+        method: 'POST',
+        body: JSON.stringify({ GovName: nextForm._newGovName.trim() }),
+      });
+      nextForm.GovID = response.id;
+    }
+
     if (!nextForm.CompanyID && nextForm._companyText?.trim()) {
       const response = await api('/lookups/companies', {
         method: 'POST',
@@ -230,7 +238,8 @@ export default function usePortTransactionForm({
     if (!formData) return false;
 
     try {
-      const payload = sanitizePortTransactionPayload(formData);
+      const enriched = await createMissingLookups(formData);
+      const payload = sanitizePortTransactionPayload(enriched);
       await api(`/transactions/${payload.TransID}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
@@ -243,7 +252,7 @@ export default function usePortTransactionForm({
       setMessage(error.message);
       return false;
     }
-  }, [api, editableCustomFields, loadData, saveCustomFieldValues]);
+  }, [api, createMissingLookups, editableCustomFields, loadData, saveCustomFieldValues]);
 
   const handleDelete = useCallback(async (id) => {
     if (!window.confirm(DELETE_CONFIRM_MESSAGE)) return false;

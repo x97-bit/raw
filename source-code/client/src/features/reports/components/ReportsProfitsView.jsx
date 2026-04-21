@@ -75,18 +75,18 @@ export default function ReportsProfitsView({
         {loading ? <LoadingSpinner /> : data && (
           <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              <SummaryCard label="عدد الشحنات" value={profitTotals.shipmentCount || 0} tone="text-[#9ab6ca]" />
-              <SummaryCard label="إجمالي التكلفة ($)" value={`$${formatReportNumber(profitTotals.totalCostUSD)}`} tone="text-[#c8d4df]" />
-              <SummaryCard label="إجمالي المبلغ ($)" value={`$${formatReportNumber(profitTotals.totalAmountUSD)}`} tone="text-[#eef3f7]" />
+              <SummaryCard label="عدد الشحنات" value={profitTotals.shipmentCount || 0} tone="text-utility-accent-text" />
+              <SummaryCard label="إجمالي التكلفة ($)" value={`$${formatReportNumber(profitTotals.totalCostUSD)}`} tone="text-utility-muted" />
+              <SummaryCard label="إجمالي المبلغ ($)" value={`$${formatReportNumber(profitTotals.totalAmountUSD)}`} tone="text-utility-strong" />
               <SummaryCard label="إجمالي الربح ($)" value={`$${formatReportNumber(profitTotals.totalProfitUSD)}`} tone={profitTone} />
               <SummaryCard label="إجمالي الربح (د.ع)" value={formatReportNumber(profitTotals.totalProfitIQD)} tone={profitIqdTone} />
             </div>
 
             {traderProfits.length > 0 && (
               <div className="surface-card overflow-hidden p-0">
-                <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.03] px-5 py-3.5">
-                  <BarChart3 size={16} className="text-[#9ab6ca]" />
-                  <span className="font-bold text-[#eef3f7]">
+                <div className="flex items-center gap-2 border-b border-utility-soft-border bg-utility-soft-bg px-5 py-3.5">
+                  <BarChart3 size={16} className="text-utility-accent-text" />
+                  <span className="font-bold text-utility-strong">
                     ملخص الأرباح حسب التاجر
                   </span>
                 </div>
@@ -94,7 +94,7 @@ export default function ReportsProfitsView({
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+                      <tr className="table-header text-right">
                         <th className="px-4 py-3 font-semibold">التاجر</th>
                         <th className="px-4 py-3 font-semibold">عدد الشحنات</th>
                         <th className="px-4 py-3 font-semibold">التكلفة ($)</th>
@@ -108,10 +108,10 @@ export default function ReportsProfitsView({
                         <EmptyTableRow colSpan={6} message="لا توجد أرباح مجمعة حسب التاجر." />
                       ) : (
                         traderProfits.map((trader, index) => (
-                          <tr key={index} className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.04]">
-                            <td className="px-4 py-3 font-semibold text-[#eef3f7]">{trader.AccountName}</td>
-                            <td className="px-4 py-3 text-center font-semibold text-[#9ab6ca]">{trader.shipmentCount}</td>
-                            <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(trader.totalCostUSD)}</td>
+                          <tr key={index} className="border-b border-utility-panel-border transition-colors hover:bg-utility-soft-bg-hover">
+                            <td className="px-4 py-3 font-semibold text-utility-strong">{trader.AccountName}</td>
+                            <td className="px-4 py-3 text-center font-semibold text-utility-accent-text">{trader.shipmentCount}</td>
+                            <td className="px-4 py-3 text-utility-muted">${formatReportNumber(trader.totalCostUSD)}</td>
                             <td className="px-4 py-3">${formatReportNumber(trader.totalAmountUSD)}</td>
                             <td className={`px-4 py-3 font-bold ${getProfitTone(trader.totalProfitUSD)}`}>${formatReportNumber(trader.totalProfitUSD)}</td>
                             <td className={`px-4 py-3 ${getProfitTone(trader.totalProfitIQD)}`}>{formatReportNumber(trader.totalProfitIQD)}</td>
@@ -120,10 +120,10 @@ export default function ReportsProfitsView({
                       )}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t border-white/[0.08] bg-white/[0.03] font-bold">
-                        <td className="px-4 py-3 text-[#eef3f7]">المجموع</td>
-                        <td className="px-4 py-3 text-center text-[#9ab6ca]">{profitTotals.shipmentCount}</td>
-                        <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(profitTotals.totalCostUSD)}</td>
+                      <tr className="border-t border-utility-panel-border bg-utility-soft-bg font-bold">
+                        <td className="px-4 py-3 text-utility-strong">المجموع</td>
+                        <td className="px-4 py-3 text-center text-utility-accent-text">{profitTotals.shipmentCount}</td>
+                        <td className="px-4 py-3 text-utility-muted">${formatReportNumber(profitTotals.totalCostUSD)}</td>
                         <td className="px-4 py-3">${formatReportNumber(profitTotals.totalAmountUSD)}</td>
                         <td className={`px-4 py-3 ${profitTone}`}>${formatReportNumber(profitTotals.totalProfitUSD)}</td>
                         <td className={`px-4 py-3 ${profitIqdTone}`}>{formatReportNumber(profitTotals.totalProfitIQD)}</td>
@@ -135,9 +135,9 @@ export default function ReportsProfitsView({
             )}
 
             <div className="surface-card overflow-hidden p-0">
-              <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.03] px-5 py-3.5">
-                <span className="flex items-center gap-2 font-bold text-[#eef3f7]">
-                  <TrendingUp size={16} className="text-[#8eb8ad]" />
+              <div className="flex items-center justify-between border-b border-utility-soft-border bg-utility-soft-bg px-5 py-3.5">
+                <span className="flex items-center gap-2 font-bold text-utility-strong">
+                  <TrendingUp size={16} className="text-utility-success-text" />
                   تفاصيل الشحنات ({profitRows.length} شحنة)
                 </span>
                 <div className="flex items-center gap-4">
@@ -153,7 +153,7 @@ export default function ReportsProfitsView({
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+                    <tr className="table-header text-right">
                       <th className="px-4 py-3 font-semibold">التاريخ</th>
                       <th className="px-4 py-3 font-semibold">المرجع</th>
                       <th className="px-4 py-3 font-semibold">التاجر</th>
@@ -172,13 +172,13 @@ export default function ReportsProfitsView({
                         <tr
                           key={index}
                           onClick={() => setSelectedTx(row)}
-                          className="cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04]"
+                          className="cursor-pointer border-b border-utility-panel-border transition-colors hover:bg-utility-soft-bg-hover"
                         >
                           <td className="px-4 py-3">{formatReportDate(row.TransDate)}</td>
-                          <td className="px-4 py-3 text-xs text-[#91a0ad]">{row.RefNo}</td>
-                          <td className="px-4 py-3 font-semibold text-[#eef3f7]">{row.AccountName}</td>
+                          <td className="px-4 py-3 text-xs text-utility-muted">{row.RefNo}</td>
+                          <td className="px-4 py-3 font-semibold text-utility-strong">{row.AccountName}</td>
                           <td className="px-4 py-3">{row.GoodTypeName || row.GoodType || '-'}</td>
-                          <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(row.CostUSD)}</td>
+                          <td className="px-4 py-3 text-utility-muted">${formatReportNumber(row.CostUSD)}</td>
                           <td className="px-4 py-3">${formatReportNumber(row.AmountUSD)}</td>
                           <td className={`px-4 py-3 font-bold ${getProfitTone(row.ProfitUSD)}`}>${formatReportNumber(row.ProfitUSD)}</td>
                           <td className={`px-4 py-3 ${getProfitTone(row.ProfitIQD)}`}>{formatReportNumber(row.ProfitIQD)}</td>
@@ -187,9 +187,9 @@ export default function ReportsProfitsView({
                     )}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t border-white/[0.08] bg-white/[0.03] font-bold">
-                      <td colSpan="4" className="px-4 py-3 text-[#eef3f7]">المجموع</td>
-                      <td className="px-4 py-3 text-[#c8d4df]">${formatReportNumber(profitTotals.totalCostUSD)}</td>
+                    <tr className="border-t border-utility-panel-border bg-utility-soft-bg font-bold">
+                      <td colSpan="4" className="px-4 py-3 text-utility-strong">المجموع</td>
+                      <td className="px-4 py-3 text-utility-muted">${formatReportNumber(profitTotals.totalCostUSD)}</td>
                       <td className="px-4 py-3">${formatReportNumber(profitTotals.totalAmountUSD)}</td>
                       <td className={`px-4 py-3 ${profitTone}`}>${formatReportNumber(profitTotals.totalProfitUSD)}</td>
                       <td className={`px-4 py-3 ${profitIqdTone}`}>{formatReportNumber(profitTotals.totalProfitIQD)}</td>

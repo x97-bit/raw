@@ -47,6 +47,8 @@ export default function AccountsPage({ onBack }) {
     batchOptions,
     view,
     visibleColumns,
+    printContext,
+    exportRows,
   } = useSpecialAccountsPageState({ api });
 
   if (view === 'main') {
@@ -69,21 +71,31 @@ export default function AccountsPage({ onBack }) {
   return (
     <div className="page-shell">
       <PageHeader title={activeDef.label} subtitle="حسابات خاصة" onBack={resetView}>
-        {filteredRows.length > 0 && derivedTotals && (
-          <ExportButtons
-            inHeader
-            rows={filteredRows}
-            columns={exportColumns}
-            title={activeDef.label}
-            subtitle="حسابات خاصة"
-            filename={activeDef.label.replace(/\s+/g, '_')}
-            summaryCards={summaryCards.map((card) => ({ label: card.label, value: card.value }))}
-            totalsRow={activeDef.buildExportTotalsRow(derivedTotals)}
-            printStrategy="table"
-            themeAccent={activeDef.accent}
-            themeAccentSoft={activeDef.accentSoft}
-          />
-        )}
+        {filteredRows.length > 0 && derivedTotals && (() => {
+            const PRINT_HIDDEN = new Set(['CostUSD', 'CostIQD']);
+            const printColumns = exportColumns.filter((col) => !PRINT_HIDDEN.has(col.key));
+            return (
+              <ExportButtons
+                inHeader
+                rows={exportRows}
+                columns={printColumns}
+                title={activeDef.label}
+                subtitle="حسابات خاصة"
+                filename={activeDef.label.replace(/\s+/g, '_')}
+                summaryCards={activeDef.buildExportSummaryCards
+                  ? activeDef.buildExportSummaryCards(derivedTotals, activeDef.label)
+                  : summaryCards.map((card) => ({ label: card.label, value: card.value }))}
+                totalsRow={activeDef.buildExportTotalsRow(derivedTotals)}
+                summaryStyle={activeDef.buildExportSummaryCards ? 'text-lines' : undefined}
+                printStrategy="table"
+                sectionKey={activeDef.sectionKey}
+                printContext={printContext}
+                themeAccent={activeDef.accent}
+                themeAccentSoft={activeDef.accentSoft}
+              />
+            );
+          })()}
+
         {can.isAdmin && (
           <button
             onClick={openCreateModal}

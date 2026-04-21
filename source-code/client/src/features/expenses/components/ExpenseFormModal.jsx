@@ -116,6 +116,7 @@ export default function ExpenseFormModal({
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">المبلغ (د.ع)</label>
                 <input
                   type="number"
+                  step="any"
                   value={form.amountIQD || ''}
                   onChange={(event) => onChange('amountIQD', event.target.value)}
                   className="input-field"

@@ -43,7 +43,7 @@ describe('reportsPageHelpers', () => {
     expect(formatReportNumber(0)).toBe('0');
     expect(formatReportDate('2026-04-08 11:22:33')).toBe('2026-04-08');
     expect(formatReportDate('')).toBe('-');
-    expect(getProfitTone(4)).toBe('text-[#8eb8ad]');
-    expect(getProfitTone(-1)).toBe('text-[#c697a1]');
+    expect(getProfitTone(4)).toBe('text-utility-success-text');
+    expect(getProfitTone(-1)).toBe('text-utility-danger-text');
   });
 });

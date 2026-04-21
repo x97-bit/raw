@@ -79,12 +79,14 @@ export function renderPortCell(column, row, options = {}) {
       return <span className="whitespace-nowrap">{value?.split(' ')[0] || '-'}</span>;
     case 'badge':
       return (
-        <span className={`rounded px-2 py-0.5 text-xs ${
-          row.TransTypeID === 2
-            ? 'bg-orange-100 text-orange-700'
-            : row.TransTypeID === 3
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-blue-100 text-blue-700'
+        <span className={`rounded px-2 py-0.5 text-xs font-semibold ${
+          row.TransTypeID === 1
+            ? 'bg-orange-500/10 text-orange-500'
+            : row.TransTypeID === 2
+              ? 'bg-[#8eb8ad]/10 text-[#8eb8ad]'
+              : row.TransTypeID === 3
+                ? 'bg-[#b76169]/10 text-[#b76169]'
+                : 'bg-blue-500/10 text-blue-500'
         }`}>
           {getTransactionTypeLabel(value, row.TransTypeID, { ...options, recordType: row?.RecordType })}
         </span>

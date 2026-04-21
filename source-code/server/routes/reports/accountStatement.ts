@@ -35,12 +35,16 @@ export function registerReportAccountStatementRoutes(router: Router) {
       if (!db) return res.status(500).json({ error: "Database unavailable" });
 
       const accountId = parseInt(req.params.id, 10);
-      const { startDate, endDate, portId, accountType } = req.query;
+      const { startDate, endDate, portId, accountType, by } = req.query;
       const requestedPortId = readQueryString(portId);
       const requestedAccountType = readQueryString(accountType);
       const requestedStartDate = readQueryString(startDate);
       const requestedEndDate = readQueryString(endDate);
-      const conditions: SQL<unknown>[] = [eq(transactions.accountId, accountId)];
+      const statementBy = readQueryString(by);
+      const isCarrierStatement = statementBy === "carrier";
+      const conditions: SQL<unknown>[] = [
+        isCarrierStatement ? eq(transactions.carrierId, accountId) : eq(transactions.accountId, accountId),
+      ];
       if (requestedPortId) conditions.push(eq(transactions.portId, requestedPortId));
       if (requestedAccountType) conditions.push(eq(transactions.accountType, requestedAccountType));
       if (requestedStartDate) conditions.push(sql`${transactions.transDate} >= ${requestedStartDate}`);
@@ -48,16 +52,19 @@ export function registerReportAccountStatementRoutes(router: Router) {
 
       const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(asc(transactions.transDate), asc(transactions.id));
       const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
-      const expenseConditions: SQL<unknown>[] = [eq(expenses.accountId, accountId)];
-      if (requestedPortId) expenseConditions.push(eq(expenses.portId, requestedPortId));
-      if (requestedStartDate) expenseConditions.push(sql`${expenses.expenseDate} >= ${requestedStartDate}`);
-      if (requestedEndDate) expenseConditions.push(sql`${expenses.expenseDate} <= ${requestedEndDate}`);
-
-      const chargedExpenseRows = await db
-        .select()
-        .from(expenses)
-        .where(and(...expenseConditions))
-        .orderBy(asc(expenses.expenseDate), asc(expenses.id));
+      const chargedExpenseRows = isCarrierStatement
+        ? []
+        : await (async () => {
+            const expenseConditions: SQL<unknown>[] = [eq(expenses.accountId, accountId)];
+            if (requestedPortId) expenseConditions.push(eq(expenses.portId, requestedPortId));
+            if (requestedStartDate) expenseConditions.push(sql`${expenses.expenseDate} >= ${requestedStartDate}`);
+            if (requestedEndDate) expenseConditions.push(sql`${expenses.expenseDate} <= ${requestedEndDate}`);
+            return db
+              .select()
+              .from(expenses)
+              .where(and(...expenseConditions))
+              .orderBy(asc(expenses.expenseDate), asc(expenses.id));
+          })();
       const enrichedRows = await enrichTransactions(db, rows);
       const chargedExpenseStatements = chargedExpenseRows
         .filter((expense) => normalizeExpenseChargeTarget(expense.chargeTarget) === "trader")

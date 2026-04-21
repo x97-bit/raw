@@ -41,7 +41,7 @@ export default function PortFormView({
 
       <div className="mx-auto max-w-5xl p-5 md:p-6">
         {message && (
-          <div className="mb-4 rounded-[1.15rem] bg-[#c697a1]/[0.12] px-4 py-3 text-[#f0d7dd] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-[#c697a1]/[0.18]">
+          <div className="mb-4 rounded-[1.15rem] bg-utility-danger-bg px-4 py-3 text-utility-danger-text shadow-sm ring-1 ring-utility-danger-border">
             {message}
           </div>
         )}
@@ -50,18 +50,18 @@ export default function PortFormView({
           <div className="mb-5 rounded-[1.35rem] bg-gradient-to-l from-white/[0.06] via-white/[0.04] to-white/[0.02] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_16px_32px_rgba(0,0,0,0.16)] ring-1 ring-white/[0.06] md:px-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-[#eef3f7]">{intro}</h2>
-                <p className="mt-1 text-sm text-[#91a0ad]">{hint}</p>
+                <h2 className="text-lg font-bold text-utility-strong">{intro}</h2>
+                <p className="mt-1 text-sm text-utility-muted">{hint}</p>
               </div>
               <div
                 className={`inline-flex self-start rounded-full px-3 py-1 text-xs font-bold ring-1 ${
                   isTransport
-                    ? 'bg-[#c697a1]/[0.16] text-[#f4dde2] ring-[#c697a1]/[0.24]'
+                    ? 'bg-utility-danger-bg text-utility-danger-text ring-utility-danger-border'
                     : isDebitNote
-                      ? 'bg-[#d6b36b]/[0.18] text-[#f6e7c2] ring-[#d6b36b]/[0.24]'
+                      ? 'bg-utility-warning-bg text-utility-warning-text ring-utility-warning-border'
                     : isInvoice
-                      ? 'bg-[#9ab6ca]/[0.16] text-[#dce8f2] ring-[#9ab6ca]/[0.24]'
-                      : 'bg-[#8eb8ad]/[0.16] text-[#d8ece6] ring-[#8eb8ad]/[0.24]'
+                      ? 'bg-utility-accent-bg text-utility-accent-text ring-utility-accent-border'
+                      : 'bg-utility-success-bg text-utility-success-text ring-utility-success-border'
                 }`}
               >
                 {title}

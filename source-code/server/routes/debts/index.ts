@@ -14,18 +14,18 @@ import { debtCreateSchema, debtUpdateSchema } from "../../utils/financialValidat
 
 type DebtInsert = typeof debts.$inferInsert;
 
-const DEBT_VALIDATION_MESSAGE = "ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ظٹظ† ط؛ظٹط± طµط§ظ„ط­ط©";
+const DEBT_VALIDATION_MESSAGE = "بيانات الدين غير صالحة";
 const DEBT_UPDATE_VALIDATION_MESSAGE =
-  "ط¨ظٹط§ظ†ط§طھ طھط­ط¯ظٹط« ط§ظ„ط¯ظٹظ† ط؛ظٹط± طµط§ظ„ط­ط©";
-const DEBT_ID_LABEL = "ظ…ط¹ط±ظپ ط§ظ„ط¯ظٹظ†";
-const DEBT_NOT_FOUND_MESSAGE = "ط§ظ„ط¯ظٹظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯";
-const DEBT_CREATED_MESSAGE = "طھظ… ط¥ط¶ط§ظپط© ط§ظ„ط¯ظٹظ†";
-const DEBT_UPDATED_MESSAGE = "طھظ… طھط­ط¯ظٹط« ط§ظ„ط¯ظٹظ†";
-const DEBT_DELETED_MESSAGE = "طھظ… ط­ط°ظپ ط§ظ„ط¯ظٹظ†";
-const DEBT_NO_CHANGES_MESSAGE = "ظ„ط§ طھظˆط¬ط¯ طھط؛ظٹظٹط±ط§طھ";
-const DEBT_CREATE_SUMMARY_PREFIX = "ط¥ظ†ط´ط§ط، ط¯ظٹظ†";
-const DEBT_UPDATE_SUMMARY_PREFIX = "طھط­ط¯ظٹط« ط¯ظٹظ†";
-const DEBT_DELETE_SUMMARY_PREFIX = "ط­ط°ظپ ط¯ظٹظ†";
+  "بيانات تحديث الدين غير صالحة";
+const DEBT_ID_LABEL = "معرف الدين";
+const DEBT_NOT_FOUND_MESSAGE = "الدين غير موجود";
+const DEBT_CREATED_MESSAGE = "تم إضافة الدين";
+const DEBT_UPDATED_MESSAGE = "تم تحديث الدين";
+const DEBT_DELETED_MESSAGE = "تم حذف الدين";
+const DEBT_NO_CHANGES_MESSAGE = "لا توجد تغييرات";
+const DEBT_CREATE_SUMMARY_PREFIX = "إنشاء دين";
+const DEBT_UPDATE_SUMMARY_PREFIX = "تحديث دين";
+const DEBT_DELETE_SUMMARY_PREFIX = "حذف دين";
 
 async function resolveDebtDebtorName(db: AppDb, body: Record<string, unknown>) {
   const directName = pickBodyField(body, "debtorName", "accountName", "AccountName");

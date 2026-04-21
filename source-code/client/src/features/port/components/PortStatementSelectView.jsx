@@ -20,9 +20,11 @@ export default function PortStatementSelectView({
   onSearchChange,
   onSelectAccount,
   portViewLabels,
+  sectionKey,
 }) {
   const labels = portViewLabels || {};
   const statementTitle = `${labels.statementTitlePrefix || 'كشف حساب'} - ${portName}`;
+  const accountLabel = sectionKey === 'transport-1' ? 'ناقل' : 'تاجر';
 
   return (
     <div className="page-shell">
@@ -48,6 +50,7 @@ export default function PortStatementSelectView({
           onSearchChange={onSearchChange}
           accounts={accounts}
           onSelectAccount={onSelectAccount}
+          accountLabel={accountLabel}
         />
       </div>
     </div>

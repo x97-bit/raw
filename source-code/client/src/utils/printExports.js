@@ -1,8 +1,9 @@
-﻿import { getCurrencyLabel } from './currencyLabels';
+import { getCurrencyLabel } from './currencyLabels';
 import {
   formatEnglishLongDate,
   shouldUseTayAlRawiBranding,
   TAY_ALRAWI_BRAND_ASSETS,
+  resolveBrandAssets,
   TAY_ALRAWI_BRAND_COLORS,
 } from './exportBranding';
 
@@ -124,8 +125,13 @@ function getGenericRowClass(row) {
   const transTypeId = Number(row?.TransTypeID || row?.transTypeId || 0);
   const direction = String(row?.Direction || row?.direction || '').toUpperCase();
 
-  if (transTypeId === 2 || direction === 'OUT' || direction === 'CR') return 'payment-row';
-  if (transTypeId === 1 || transTypeId === 3 || direction === 'IN' || direction === 'DR') return 'receipt-row';
+  const rt = String(row?.RecordType || row?.recordType || '').toLowerCase();
+  const tn = String(row?.TransTypeName || row?.transTypeName || '').toLowerCase();
+
+  if (transTypeId === 1 || direction === 'IN' || direction === 'DR' || rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || row?.ShipID || row?.shipment_id) return 'tay-row-invoice';
+  if (transTypeId === 2 || direction === 'OUT' || direction === 'CR' || rt === 'payment' || tn.includes('قبض') || tn.includes('دفع')) return 'tay-row-payment';
+  if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) return 'tay-row-debit';
+
   return '';
 }
 
@@ -271,12 +277,14 @@ function getShellHtml({
   branded = true,
   watermark = true,
   showFooterMeta = true,
+  sectionKey,
 }) {
   const pageClass = orientation === 'portrait' ? 'portrait' : 'landscape';
   const today = formatEnglishLongDate(new Date());
-  const headerUrl = resolveAssetUrl(TAY_ALRAWI_BRAND_ASSETS.header);
-  const footerUrl = resolveAssetUrl(TAY_ALRAWI_BRAND_ASSETS.footer);
-  const logoUrl = resolveAssetUrl(TAY_ALRAWI_BRAND_ASSETS.logo);
+  const brand = resolveBrandAssets({ sectionKey });
+  const headerUrl = resolveAssetUrl(brand.header);
+  const footerUrl = resolveAssetUrl(brand.footer);
+  const logoUrl = resolveAssetUrl(brand.logo);
 
   return `
     <main class="tay-print-shell ${pageClass} ${branded ? 'is-branded' : 'is-plain'}">
@@ -316,7 +324,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
   const pageMinHeight = isPortrait ? 'calc(297mm - 12mm)' : 'calc(210mm - 12mm)';
   const headerHeight = branded ? (isPortrait ? '35mm' : '31mm') : (isPortrait ? '18mm' : '16mm');
   const footerHeight = branded ? (isPortrait ? '24mm' : '22mm') : (isPortrait ? '14mm' : '12mm');
-  const contentPaddingTop = branded ? (isPortrait ? '40mm' : '35mm') : (isPortrait ? '24mm' : '22mm');
+  const contentPaddingTop = branded ? (isPortrait ? '56mm' : '52mm') : (isPortrait ? '24mm' : '22mm');
   const contentPaddingBottom = branded ? (isPortrait ? '28mm' : '26mm') : (isPortrait ? '18mm' : '16mm');
 
   return `
@@ -366,13 +374,16 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 6mm;
+      margin-top: 12mm;
+      margin-bottom: 8mm;
     }
     .tay-title-block h1 {
       margin: 0;
       font-size: ${isPortrait ? '32px' : '30px'};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
+      line-height: 1.5;
+      padding-bottom: 6px;
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
@@ -477,13 +488,17 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       background: ${TAY_ALRAWI_BRAND_COLORS.rowTint};
     }
     ${highlightRows ? `
-      .tay-table tr.receipt-row td {
-        color: #0f7a3c;
-        font-weight: 700;
+      .tay-table tr.tay-row-invoice td {
+        background-color: rgba(249, 115, 22, 0.08) !important;
+        border-right: 4px solid rgba(249, 115, 22, 0.8) !important;
       }
-      .tay-table tr.payment-row td {
-        color: #b91c1c;
-        font-weight: 700;
+      .tay-table tr.tay-row-payment td {
+        background-color: rgba(16, 185, 129, 0.08) !important;
+        border-right: 4px solid rgba(16, 185, 129, 0.8) !important;
+      }
+      .tay-table tr.tay-row-debit td {
+        background-color: rgba(225, 29, 72, 0.08) !important;
+        border-right: 4px solid rgba(225, 29, 72, 0.8) !important;
       }
     ` : ''}
     .tay-table tfoot td {
@@ -612,6 +627,7 @@ export function printTabularReport({
     branded,
     watermark: branded,
     showFooterMeta: true,
+    sectionKey,
   });
 
   openPrintWindow(
@@ -698,6 +714,7 @@ export function printSaudiStatementTemplate({
     branded,
     watermark: branded,
     showFooterMeta: true,
+    sectionKey,
   });
 
   openPrintWindow(title, html, getShellCss({ orientation: 'landscape', highlightRows: true, branded }));

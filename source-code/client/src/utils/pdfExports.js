@@ -9,6 +9,7 @@ import {
   formatEnglishLongDate,
   shouldUseTayAlRawiBranding,
   TAY_ALRAWI_BRAND_ASSETS,
+  resolveBrandAssets,
   TAY_ALRAWI_BRAND_COLORS,
 } from './exportBranding';
 
@@ -81,12 +82,13 @@ function loadImage(url) {
   return promise;
 }
 
-async function loadBrandAssets(assetOverrides = {}) {
+async function loadBrandAssets(assetOverrides = {}, { sectionKey } = {}) {
+  const brand = resolveBrandAssets({ sectionKey });
   const [header, footer, logo, logoOnWhite] = await Promise.all([
-    loadImage(assetOverrides.header || TAY_ALRAWI_BRAND_ASSETS.header),
-    loadImage(assetOverrides.footer || TAY_ALRAWI_BRAND_ASSETS.footer),
-    loadImage(assetOverrides.logo || TAY_ALRAWI_BRAND_ASSETS.logo),
-    loadImage(assetOverrides.logoOnWhite || TAY_ALRAWI_BRAND_ASSETS.logoOnWhite),
+    loadImage(assetOverrides.header || brand.header),
+    loadImage(assetOverrides.footer || brand.footer),
+    loadImage(assetOverrides.logo || brand.logo),
+    loadImage(assetOverrides.logoOnWhite || brand.logoOnWhite),
   ]);
 
   return { header, footer, logo, logoOnWhite };
@@ -333,6 +335,13 @@ function drawPageBackdrop(ctx, spec, branded, assets) {
     ctx.restore();
   }
 
+  ctx.strokeStyle = TAY_ALRAWI_BRAND_COLORS.headerNavy;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, headerHeight);
+  ctx.lineTo(spec.width, headerHeight);
+  ctx.stroke();
+
   return { headerHeight, footerHeight };
 }
 
@@ -485,10 +494,23 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
 
   let rowY = y + headerHeight;
   rows.forEach((row, rowIndex) => {
-    const rowClass = Number(row?.TransTypeID || row?.transTypeId || 0) === 2 ? 'payment' : 'default';
-    const rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
-    const textColor = rowClass === 'payment' ? '#b91c1c' : '#1f2937';
+    const transTypeId = Number(row?.TransTypeID || row?.transTypeId || 0);
+    const direction = String(row?.Direction || row?.direction || '').toUpperCase();
+    const rt = String(row?.RecordType || row?.recordType || '').toLowerCase();
+    const tn = String(row?.TransTypeName || row?.transTypeName || '').toLowerCase();
+    
+    let rowClass = 'default';
+    if (transTypeId === 1 || direction === 'IN' || direction === 'DR' || rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || row?.ShipID || row?.shipment_id) rowClass = 'invoice';
+    if (transTypeId === 2 || direction === 'OUT' || direction === 'CR' || rt === 'payment' || tn.includes('قبض') || tn.includes('دفع')) rowClass = 'payment';
+    if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) rowClass = 'debit';
 
+    let rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
+    if (rowClass === 'invoice') rowFill = '#fff7ed';
+    if (rowClass === 'payment') rowFill = '#ecfdf5';
+    if (rowClass === 'debit') rowFill = '#fff1f2';
+
+    const textColor = rowClass === 'invoice' ? '#ea580c' : rowClass === 'payment' ? '#0f7a3c' : rowClass === 'debit' ? '#e11d48' : '#1f2937';
+    const textWeight = rowClass !== 'default' ? '700' : '500';
     let currentX = x + width;
     columns.forEach((column, index) => {
       const cellWidth = columnWidths[index];
@@ -498,7 +520,7 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
         align: 'center',
         color: textColor,
         size: orientation === 'portrait' ? 24 : 21,
-        weight: rowClass === 'payment' ? '700' : '500',
+        weight: textWeight,
         maxWidth: cellWidth - 18,
       });
     });
@@ -751,7 +773,10 @@ function measureAdaptiveTableLayout(ctx, { columns, rows, totalsRow, width, orie
   const rowHeights = rows.map((row) => columns.reduce((maxHeight, column, index) => {
     const innerWidth = Math.max(18, columnWidths[index] - (metrics.paddingX * 2));
     const value = formatExportCellValue(resolveExportColumnValue(row, column), column.format);
-    const weight = Number(row?.TransTypeID || row?.transTypeId || 0) === 2 ? '700' : '500';
+    const transTypeId = Number(row?.TransTypeID || row?.transTypeId || 0);
+    const direction = String(row?.Direction || row?.direction || '').toUpperCase();
+    let weight = '500';
+    if (transTypeId === 1 || transTypeId === 2 || transTypeId === 3 || direction === 'IN' || direction === 'DR' || direction === 'OUT' || direction === 'CR') weight = '700';
     const lineCount = measureWrappedLineCount(ctx, value, {
       maxWidth: innerWidth,
       maxLines: metrics.maxCellLines,
@@ -794,35 +819,27 @@ function drawCenteredReportHeader(ctx, spec, startY, { title, subtitle }) {
     align: 'center',
     size: 52,
     weight: '800',
-    lineHeight: 46,
+    lineHeight: 64,
     maxLines: 2,
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
     maxWidth,
     family: PDF_TITLE_FONT_FAMILY,
   });
-  y += titleHeight + 12;
+  y += titleHeight + 20;
 
   if (subtitle) {
     const subtitleHeight = drawWrappedText(ctx, subtitle, centerX, y, {
       align: 'center',
       size: 24,
       weight: '600',
-      lineHeight: 28,
+      lineHeight: 32,
       maxLines: 2,
       color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
       maxWidth,
       family: PDF_BODY_FONT_FAMILY,
     });
-    y += subtitleHeight + 12;
+    y += subtitleHeight + 16;
   }
-
-  ctx.strokeStyle = 'rgba(216, 37, 44, 0.18)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(centerX - 140, y + 4);
-  ctx.lineTo(centerX + 140, y + 4);
-  ctx.stroke();
-  y += 18;
 
   return y;
 }
@@ -925,9 +942,22 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
 
   let rowY = y + headerHeight;
   rows.forEach((row, rowIndex) => {
-    const rowClass = Number(row?.TransTypeID || row?.transTypeId || 0) === 2 ? 'payment' : 'default';
-    const rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
-    const textColor = rowClass === 'payment' ? '#b91c1c' : '#1f2937';
+    const transTypeId = Number(row?.TransTypeID || row?.transTypeId || 0);
+    const direction = String(row?.Direction || row?.direction || '').toUpperCase();
+    const rt = String(row?.RecordType || row?.recordType || '').toLowerCase();
+    const tn = String(row?.TransTypeName || row?.transTypeName || '').toLowerCase();
+    let rowClass = 'default';
+    if (transTypeId === 1 || direction === 'IN' || direction === 'DR' || rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || row?.ShipID || row?.shipment_id) rowClass = 'invoice';
+    if (transTypeId === 2 || direction === 'OUT' || direction === 'CR' || rt === 'payment' || tn.includes('قبض') || tn.includes('دفع')) rowClass = 'payment';
+    if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) rowClass = 'debit';
+
+    let rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
+    if (rowClass === 'invoice') rowFill = '#fff7ed';
+    if (rowClass === 'payment') rowFill = '#ecfdf5';
+    if (rowClass === 'debit') rowFill = '#fff1f2';
+
+    const textColor = rowClass === 'invoice' ? '#ea580c' : rowClass === 'payment' ? '#0f7a3c' : rowClass === 'debit' ? '#e11d48' : '#1f2937';
+    const textWeight = rowClass !== 'default' ? '700' : '500';
     const rowHeight = rowHeights?.[rowIndex] || metrics.minRowHeight;
 
     let currentX = x + width;
@@ -942,7 +972,7 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
         height: rowHeight,
         color: textColor,
         size: metrics.cellFontSize,
-        weight: rowClass === 'payment' ? '700' : '500',
+        weight: textWeight,
         lineHeight: metrics.cellLineHeight,
         maxLines: metrics.maxCellLines,
         align: 'center',
@@ -989,19 +1019,226 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
   return rowY;
 }
 
-async function exportReportAsCanvasPdf({ rows, columns, title, subtitle, filename, summaryCards = [], totalsRow, orientation = 'landscape', branded }) {
+function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
+  if (!grid) return startY;
+
+  const fontSize = 30;
+  const lineHeight = 44;
+  const marginLeft = 60;
+  const marginRight = 60;
+  const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
+  const red = '#d82534';
+
+  const rightX = spec.width - marginRight - 80;
+  const leftX = marginLeft + 420 - 10;
+  const centerX = spec.width / 2 + 140;
+
+  let cursorY = startY + 18;
+
+  if (grid.accountName) {
+    drawText(ctx, `${grid.accountLabel || 'اسم التاجر'} : ${grid.accountName}`, rightX, cursorY, {
+      align: 'right',
+      size: fontSize,
+      weight: '700',
+      color: navy,
+      family: PDF_BODY_FONT_FAMILY,
+    });
+  }
+
+  drawText(ctx, `${grid.fromLabel || 'من تاريخ'} : ${grid.fromDate || '---'}`, leftX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  cursorY += lineHeight;
+
+  if (grid.totalLabel) {
+    drawText(ctx, `${grid.totalLabel}: ${grid.totalValue || '---'}`, rightX, cursorY, {
+      align: 'right',
+      size: fontSize,
+      weight: '700',
+      color: grid.totalColor || red,
+      family: PDF_BODY_FONT_FAMILY,
+    });
+  }
+
+  if (grid.selectedLabel) {
+    drawText(ctx, `${grid.selectedLabel}: ${grid.selectedValue || '---'}`, centerX, cursorY, {
+      align: 'right',
+      size: fontSize,
+      weight: '700',
+      color: navy,
+      family: PDF_BODY_FONT_FAMILY,
+    });
+  }
+
+  drawText(ctx, `${grid.toLabel || 'الى تاريخ'} : ${grid.toDate || '---'}`, leftX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  cursorY += lineHeight;
+  return cursorY + 8;
+}
+
+function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
+  if (!grid) return startY;
+
+  const fontSize = 30;
+  const lineHeight = 46;
+  const marginLeft = 60;
+  const marginRight = 60;
+  const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
+  const red = '#d82534';
+
+  const rightX = spec.width - marginRight - 40;
+  const leftX = marginLeft + 300;
+  const centerX = rightX - 500;
+
+  let cursorY = startY + 18;
+
+  drawText(ctx, `اسم التاجر : ${grid.accountName || '---'}`, rightX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  drawText(ctx, `المبلغ الصافي: ${grid.netValue || '---'}`, centerX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: red,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  drawText(ctx, `من تاريخ : ${grid.fromDate || '---'}`, leftX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  cursorY += lineHeight;
+
+  drawText(ctx, `المبلغ عليه: ${grid.amountOnValue || '---'}`, rightX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  drawText(ctx, `المبلغ له: ${grid.amountForValue || '---'}`, centerX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  drawText(ctx, `الى تاريخ : ${grid.toDate || '---'}`, leftX, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: navy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  cursorY += lineHeight;
+  return cursorY + 8;
+}
+
+function drawTextLineSummary(ctx, spec, startY, summaryCards) {
+  if (!summaryCards?.length) return startY;
+
+  const fontSize = 30;
+  const lineHeight = 42;
+  const marginLeft = 60;
+  const marginRight = 60;
+
+  let cursorY = startY + 18;
+
+  const firstCard = summaryCards[0];
+  const restCards = summaryCards.slice(1);
+
+  drawText(ctx, `${firstCard.label} :  ${firstCard.value}`, spec.width - marginRight - 80, cursorY, {
+    align: 'right',
+    size: fontSize,
+    weight: '700',
+    color: firstCard.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+    family: PDF_BODY_FONT_FAMILY,
+  });
+
+  const leftColWidth = 420;
+  const leftGroupX = marginLeft + leftColWidth * 2 + 20;
+
+  for (let i = 0; i < restCards.length; i += 2) {
+    const rowY = cursorY + Math.floor(i / 2) * lineHeight;
+    const card1 = restCards[i];
+    const card2 = restCards[i + 1];
+
+    if (card2) {
+      drawText(ctx, `${card2.label} :  ${card2.value}`, marginLeft + leftColWidth - 10, rowY, {
+        align: 'right',
+        size: fontSize,
+        weight: '700',
+        color: card2.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+        family: PDF_BODY_FONT_FAMILY,
+      });
+    }
+
+    drawText(ctx, `${card1.label} :  ${card1.value}`, leftGroupX, rowY, {
+      align: 'right',
+      size: fontSize,
+      weight: '700',
+      color: card1.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+      family: PDF_BODY_FONT_FAMILY,
+    });
+  }
+
+  const totalDataRows = Math.ceil(restCards.length / 2);
+  cursorY += totalDataRows * lineHeight;
+
+  return cursorY + 8;
+}
+
+async function exportReportAsCanvasPdf({ rows, columns, title, subtitle, filename, summaryCards = [], summaryGrid, totalsRow, orientation = 'landscape', branded, summaryStyle, sectionKey }) {
   await ensurePdfFontsReady();
-  const assets = await loadBrandAssets();
+  const assets = await loadBrandAssets({}, { sectionKey });
   const spec = CANVAS_PAGE_SPECS[orientation] || CANVAS_PAGE_SPECS.landscape;
   const marginX = 54;
-  const topGap = 26;
+  const topGap = 160;
   const tableGap = 24;
 
+  const useTextLines = summaryStyle === 'text-lines';
+  const useSaudiGrid = summaryStyle === 'saudi-statement-grid' && summaryGrid;
+  const usePartnerGrid = summaryStyle === 'partnership-grid' && summaryGrid;
   const pageProbe = createCanvasPage(orientation);
   const { headerHeight, footerHeight } = drawPageBackdrop(pageProbe.ctx, pageProbe.spec, branded, assets);
-  const titleEndY = drawCenteredReportHeader(pageProbe.ctx, spec, headerHeight + topGap, { title, subtitle });
-  const summaryEndY = drawAdaptiveSummaryCards(pageProbe.ctx, spec, marginX, titleEndY + 8, spec.width - marginX * 2, summaryCards);
-  const firstPageTableY = summaryCards.length ? summaryEndY + tableGap : titleEndY + 16;
+  let firstPageTableY;
+  if (usePartnerGrid) {
+    const summaryEndY = drawPartnershipHeaderGrid(pageProbe.ctx, spec, headerHeight + 8, summaryGrid);
+    firstPageTableY = summaryEndY + tableGap;
+  } else if (useSaudiGrid) {
+    const summaryEndY = drawSaudiStatementHeaderGrid(pageProbe.ctx, spec, headerHeight + 8, summaryGrid);
+    firstPageTableY = summaryEndY + tableGap;
+  } else if (useTextLines && summaryCards.length) {
+    const summaryEndY = drawTextLineSummary(pageProbe.ctx, spec, headerHeight + 8, summaryCards);
+    firstPageTableY = summaryEndY + tableGap;
+  } else {
+    const titleEndY = drawCenteredReportHeader(pageProbe.ctx, spec, headerHeight + topGap, { title, subtitle });
+    const summaryEndY = drawAdaptiveSummaryCards(pageProbe.ctx, spec, marginX, titleEndY + 8, spec.width - marginX * 2, summaryCards);
+    firstPageTableY = summaryCards.length ? summaryEndY + tableGap : titleEndY + 16;
+  }
   const nextPageTableY = headerHeight + topGap + 52;
   const tableLayout = measureAdaptiveTableLayout(pageProbe.ctx, {
     columns,
@@ -1026,14 +1263,37 @@ async function exportReportAsCanvasPdf({ rows, columns, title, subtitle, filenam
 
     const { canvas, ctx } = createCanvasPage(orientation);
     const { headerHeight: currentHeaderHeight, footerHeight: currentFooterHeight } = drawPageBackdrop(ctx, spec, branded, assets);
-    const currentTitleEndY = drawCenteredReportHeader(ctx, spec, currentHeaderHeight + topGap, { title, subtitle });
 
     let tableY;
-    if (pageIndex === 0) {
-      const currentSummaryEndY = drawAdaptiveSummaryCards(ctx, spec, marginX, currentTitleEndY + 8, spec.width - marginX * 2, summaryCards);
-      tableY = summaryCards.length ? currentSummaryEndY + tableGap : currentTitleEndY + 16;
+    if (usePartnerGrid) {
+      if (pageIndex === 0) {
+        const currentSummaryEndY = drawPartnershipHeaderGrid(ctx, spec, currentHeaderHeight + 8, summaryGrid);
+        tableY = currentSummaryEndY + tableGap;
+      } else {
+        tableY = nextPageTableY;
+      }
+    } else if (useSaudiGrid) {
+      if (pageIndex === 0) {
+        const currentSummaryEndY = drawSaudiStatementHeaderGrid(ctx, spec, currentHeaderHeight + 8, summaryGrid);
+        tableY = currentSummaryEndY + tableGap;
+      } else {
+        tableY = nextPageTableY;
+      }
+    } else if (useTextLines && summaryCards.length) {
+      if (pageIndex === 0) {
+        const currentSummaryEndY = drawTextLineSummary(ctx, spec, currentHeaderHeight + 8, summaryCards);
+        tableY = currentSummaryEndY + tableGap;
+      } else {
+        tableY = nextPageTableY;
+      }
     } else {
-      tableY = nextPageTableY;
+      const currentTitleEndY = drawCenteredReportHeader(ctx, spec, currentHeaderHeight + topGap, { title, subtitle });
+      if (pageIndex === 0) {
+        const currentSummaryEndY = drawAdaptiveSummaryCards(ctx, spec, marginX, currentTitleEndY + 8, spec.width - marginX * 2, summaryCards);
+        tableY = summaryCards.length ? currentSummaryEndY + tableGap : currentTitleEndY + 16;
+      } else {
+        tableY = nextPageTableY;
+      }
     }
 
     const slice = pageSlices[pageIndex];
@@ -1538,9 +1798,7 @@ function getInvoiceFields(transaction, transactionTypeLabel) {
     { label: 'الوزن', value: transaction.Weight ? Number(transaction.Weight).toLocaleString('en-US') : '-' },
     { label: 'العدد', value: transaction.Qty || '-' },
     { label: 'الأمتار', value: transaction.Meters || '-' },
-    { label: 'الكلفة دولار', value: transaction.CostUSD ? `$${Number(transaction.CostUSD).toLocaleString('en-US')}` : '-' },
     { label: 'المبلغ دولار', value: transaction.AmountUSD ? `$${Number(transaction.AmountUSD).toLocaleString('en-US')}` : '-' },
-    { label: 'الكلفة دينار', value: transaction.CostIQD ? `${Number(transaction.CostIQD).toLocaleString('en-US')} د.ع` : '-' },
     { label: 'المبلغ دينار', value: transaction.AmountIQD ? `${Number(transaction.AmountIQD).toLocaleString('en-US')} د.ع` : '-' },
     { label: 'المحافظة', value: transaction.GovName || '-' },
     { label: 'الشركة', value: transaction.CompanyName || '-' },
@@ -1649,8 +1907,39 @@ export async function exportToPDF({
   totalsRow,
   orientation = 'landscape',
   sectionKey,
+  summaryStyle,
+  printContext,
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
+
+  if (sectionKey === 'special-partner' && printContext) {
+    const totals = printContext.totals || {};
+    const fmt = (val) => Number(val || 0).toLocaleString('en-US');
+    const summaryGrid = {
+      accountName: printContext.accountName || '---',
+      fromDate: printContext.fromDate || '---',
+      toDate: printContext.toDate || '---',
+      amountOnValue: `$${fmt(totals.totalAmountUSD)}`,
+      amountForValue: `$${fmt(totals.totalPartnerUSD)}`,
+      netValue: `$${fmt(totals.totalNetUSD)}`,
+    };
+
+    await exportReportAsCanvasPdf({
+      rows,
+      columns,
+      title: undefined,
+      subtitle: undefined,
+      filename,
+      summaryGrid,
+      totalsRow,
+      orientation,
+      branded,
+      summaryStyle: 'partnership-grid',
+      sectionKey,
+    });
+    return;
+  }
+
   await exportReportAsCanvasPdf({
     rows,
     columns,
@@ -1661,7 +1950,39 @@ export async function exportToPDF({
     totalsRow,
     orientation,
     branded,
+    summaryStyle,
+    sectionKey,
   });
+}
+
+function buildPortStatementSummaryCards(printContext = {}) {
+  const totals = printContext?.totals || {};
+  const fmt = (val) => Number(val || 0).toLocaleString('en-US');
+  const cards = [];
+
+  if (printContext.accountName) {
+    cards.push({ label: 'اسم التاجر', value: printContext.accountName });
+  }
+  if (printContext.fromDate || printContext.toDate) {
+    const range = `${printContext.fromDate || '---'}  →  ${printContext.toDate || '---'}`;
+    cards.push({ label: 'الفترة', value: range });
+  }
+  if (totals.totalInvoicesIQD !== undefined) {
+    cards.push({ label: 'الاجمالي دينار', value: fmt(totals.totalInvoicesIQD) });
+  }
+  if (totals.balanceIQD !== undefined) {
+    cards.push({ label: 'المبلغ المحدد دينار', value: fmt(totals.balanceIQD), color: '#d82534' });
+  }
+  if (totals.totalInvoicesUSD !== undefined) {
+    cards.push({ label: 'الاجمالي دولار', value: `$${fmt(totals.totalInvoicesUSD)}` });
+  }
+  if (totals.balanceUSD !== undefined) {
+    cards.push({ label: 'المبلغ المحدد دولار', value: `$${fmt(totals.balanceUSD)}`, color: '#d82534' });
+  }
+  if (totals.totalWeight !== undefined && totals.totalWeight !== null) {
+    cards.push({ label: 'مجموع الوزن', value: fmt(totals.totalWeight) });
+  }
+  return cards;
 }
 
 export async function exportSaudiStatementPDF({
@@ -1673,8 +1994,48 @@ export async function exportSaudiStatementPDF({
   templateVariant = 'both',
   printContext,
   sectionKey,
+  totalsRow,
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
+  const useGridHeader = templateVariant === 'usd' || templateVariant === 'iqd';
+
+  if (useGridHeader) {
+    const totals = printContext?.totals || {};
+    const fmt = (val) => Number(val || 0).toLocaleString('en-US');
+    const totalValue = templateVariant === 'usd'
+      ? `$${fmt(totals.totalInvoicesUSD)}`
+      : fmt(totals.totalInvoicesIQD);
+    const selectedValue = templateVariant === 'usd'
+      ? `$${fmt(totals.balanceUSD)}`
+      : fmt(totals.balanceIQD);
+
+    const summaryGrid = {
+      accountName: sectionKey === 'port-3' ? null : (printContext?.accountName || '---'),
+      fromDate: printContext?.fromDate || '---',
+      toDate: printContext?.toDate || '---',
+      totalLabel: '\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0643\u0644\u064a',
+      totalValue,
+      selectedLabel: '\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f',
+      selectedValue,
+    };
+
+    await exportReportAsCanvasPdf({
+      rows,
+      columns,
+      title,
+      subtitle: subtitle || '\u0643\u0634\u0641 \u062d\u0633\u0627\u0628',
+      filename,
+      summaryGrid,
+      totalsRow,
+      summaryStyle: 'saudi-statement-grid',
+      orientation: 'landscape',
+      branded,
+      sectionKey,
+    });
+    return;
+  }
+
+  const summaryCards = buildPortStatementSummaryCards(printContext);
 
   await exportReportAsCanvasPdf({
     rows,
@@ -1682,7 +2043,10 @@ export async function exportSaudiStatementPDF({
     title,
     subtitle: subtitle || '\u0643\u0634\u0641 \u062d\u0633\u0627\u0628',
     filename,
-    summaryCards: [],
+    summaryCards,
+    totalsRow,
+    summaryStyle: summaryCards.length ? 'text-lines' : undefined,
+    sectionKey,
     orientation: 'landscape',
     branded,
   });

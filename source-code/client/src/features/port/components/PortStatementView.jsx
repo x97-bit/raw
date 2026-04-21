@@ -48,7 +48,7 @@ export default function PortStatementView({
           rows={statement.statement}
           columns={statementExportColumns}
           title={statementTitle}
-          subtitle={portName}
+          subtitle=""
           filename={`${labels.statementTitlePrefix || 'كشف_حساب'}_${statement.account.AccountName}`}
           totalsRow={{ AmountUSD: statement.totals?.balanceUSD, AmountIQD: statement.totals?.balanceIQD }}
           templates={statementExportTemplates}
@@ -90,35 +90,48 @@ export default function PortStatementView({
           <div className="overflow-x-auto">
             <table className="min-w-full w-max text-sm lg:text-[0.95rem]">
               <thead>
-                <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+                <tr className="bg-panel-border/20 border-b border-panel-border text-right">
                   {activeStatementColumns.map((column) => (
-                    <th key={column.key} className="whitespace-nowrap px-3 py-3">{column.label}</th>
+                    <th key={column.key} className="whitespace-nowrap px-3 py-3 text-panel-text">{column.label}</th>
                   ))}
                 </tr>
               </thead>
 
               <tbody>
-                {(statement.statement || []).map((transaction, index) => (
-                  <tr
-                    key={index}
-                    onClick={() => onSelectTransaction(transaction)}
-                    className={`cursor-pointer border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${
-                      transaction.TransTypeID === 2
-                        ? 'bg-[#8eb8ad]/[0.05]'
-                        : transaction.TransTypeID === 3
-                          ? 'bg-[#d6b36b]/[0.07]'
-                          : ''
-                    }`}
-                  >
+                {(statement.statement || []).map((transaction, index) => {
+                  let typeId = Number(transaction.TransTypeID || transaction.transTypeId || 0);
+                  const rt = String(transaction.RecordType || transaction.recordType || '').toLowerCase();
+                  const tn = String(transaction.TransTypeName || transaction.transTypeName || '').toLowerCase();
+                  
+                  if (rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || tn === 'invoice') typeId = 1;
+                  else if (rt === 'payment' || tn.includes('قبض') || tn.includes('دفع') || tn === 'payment') typeId = 2;
+                  else if (rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) typeId = 3;
+                  else if (transaction.ShipID || transaction.shipment_id) typeId = 1;
+
+                  return (
+                    <tr
+                      key={index}
+                      onClick={() => onSelectTransaction(transaction)}
+                      className={`cursor-pointer border-b border-panel-border transition-colors ${
+                        typeId === 1
+                          ? 'border-r-4 border-r-utility-warning-text !bg-utility-warning-bg hover:!bg-utility-warning-bg-strong'
+                          : typeId === 2
+                            ? 'border-r-4 border-r-utility-success-text !bg-utility-success-bg hover:!bg-utility-success-bg-strong'
+                            : typeId === 3
+                              ? 'border-r-4 border-r-utility-danger-text !bg-utility-danger-bg hover:!bg-utility-danger-bg-strong'
+                              : 'hover:bg-row-hover'
+                      }`}
+                    >
                     {activeStatementColumns.map((column) => (
                       <td key={column.key} className={`px-3 py-2 align-top ${column.type === 'date' ? 'whitespace-nowrap' : ''}`}>{renderPortCell(column, transaction)}</td>
                     ))}
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
 
               <tfoot>
-                <tr className="border-t border-white/[0.08] bg-white/[0.05] font-bold">
+                <tr className="border-t-2 border-panel-border bg-panel-border/10 font-bold text-panel-text">
                   {activeStatementColumns.map((column, index) => {
                     const footer = getPortStatementFooterCell(column, index, statement.totals, { sectionKey });
                     return (

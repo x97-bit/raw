@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import AuditLogDetailModal from './components/AuditLogDetailModal';
 import AuditLogsFiltersPanel from './components/AuditLogsFiltersPanel';
 import AuditLogsStatsGrid from './components/AuditLogsStatsGrid';
 import AuditLogsTable from './components/AuditLogsTable';
@@ -18,10 +17,9 @@ export default function AuditLogsPage({ onBack }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [selectedLog, setSelectedLog] = useState(null);
   const [filters, setFilters] = useState(() => createAuditFilters());
 
-  const loadAuditLogs = useCallback(async (nextFilters = filters) => {
+  const loadAuditLogs = useCallback(async (nextFilters) => {
     setLoading(true);
     setMessage('');
 
@@ -36,7 +34,7 @@ export default function AuditLogsPage({ onBack }) {
     } finally {
       setLoading(false);
     }
-  }, [api, filters]);
+  }, [api]);
 
   useEffect(() => {
     loadAuditLogs(filters);
@@ -48,6 +46,12 @@ export default function AuditLogsPage({ onBack }) {
     setFilters((current) => ({ ...current, [key]: value }));
   };
 
+  const handleReset = () => {
+    const fresh = createAuditFilters();
+    setFilters(fresh);
+    loadAuditLogs(fresh);
+  };
+
   return (
     <div className="page-shell">
       <PageHeader
@@ -57,36 +61,38 @@ export default function AuditLogsPage({ onBack }) {
       >
         <button
           onClick={() => loadAuditLogs(filters)}
-          className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium transition-all hover:bg-white/20"
+          disabled={loading}
+          className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-white/20 disabled:opacity-50"
         >
-          <RefreshCcw size={15} />
+          <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
           تحديث
         </button>
       </PageHeader>
 
       <div className="space-y-4 p-5">
         {message && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
             {message}
           </div>
         )}
+
+        <AuditLogsStatsGrid stats={stats} />
 
         <AuditLogsFiltersPanel
           filters={filters}
           onFieldChange={handleFilterChange}
           onApply={() => loadAuditLogs(filters)}
+          onReset={handleReset}
         />
 
-        <AuditLogsStatsGrid stats={stats} />
-
         {loading ? (
-          <LoadingSpinner label="جارٍ تحميل سجل العمليات..." />
+          <div className="flex items-center justify-center rounded-2xl border border-white/[0.06] bg-[#0b1219] p-12 shadow-[0_8px_30px_rgb(0,0,0,0.3)]">
+            <LoadingSpinner label="جارٍ تحميل سجل العمليات..." />
+          </div>
         ) : (
-          <AuditLogsTable rows={rows} onSelectLog={setSelectedLog} />
+          <AuditLogsTable rows={rows} />
         )}
       </div>
-
-      <AuditLogDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />
     </div>
   );
 }

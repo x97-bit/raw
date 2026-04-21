@@ -75,7 +75,7 @@ export default function SpecialAccountsTable({
                         key={column.key}
                         className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? 'font-bold text-[#f4f8fb]' : ''} ${column.isMedium ? 'font-semibold' : ''} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ''} ${column.isNotes ? 'max-w-[220px] truncate text-xs text-[#91a0ad]' : ''} ${isDateColumn(column) ? 'whitespace-nowrap' : ''}`}
                       >
-                        {column.render(row[column.dataKey])}
+                        {column.render(row[column.dataKey], row)}
                       </td>
                     ))}
                     {canEdit && (

@@ -53,7 +53,7 @@ export default function PortListView({
         <button
           key="payment"
           onClick={onOpenPaymentForm}
-          className="flex items-center gap-1.5 rounded-xl bg-[#8eb8ad]/[0.18] px-3.5 py-2 text-sm font-medium text-[#dceee8] ring-1 ring-[#8eb8ad]/[0.22] transition-all hover:bg-[#8eb8ad]/[0.24]"
+          className="flex items-center gap-1.5 rounded-xl bg-utility-success-bg px-3.5 py-2 text-sm font-medium text-utility-success-text ring-1 ring-utility-success-border transition-all hover:bg-utility-success-bg-strong"
         >
           <CreditCard size={16} />
           {labels.paymentLabel || 'سند قبض'}
@@ -66,7 +66,7 @@ export default function PortListView({
         <button
           key="invoice"
           onClick={onOpenInvoiceForm}
-          className="flex items-center gap-1.5 rounded-xl bg-white/[0.06] px-3.5 py-2 text-sm font-medium text-[#dce8f2] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:bg-white/[0.1]"
+          className="flex items-center gap-1.5 rounded-xl bg-utility-soft-bg px-3.5 py-2 text-sm font-medium text-utility-strong hover:bg-utility-soft-bg-hover transition-all"
         >
           <Plus size={16} />
           {labels.invoiceLabel || 'فاتورة'}
@@ -79,7 +79,7 @@ export default function PortListView({
         <button
           key="invoice"
           onClick={onOpenInvoiceForm}
-          className="flex items-center gap-1.5 rounded-xl bg-white/[0.06] px-3.5 py-2 text-sm font-medium text-[#dce8f2] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:bg-white/[0.1]"
+          className="flex items-center gap-1.5 rounded-xl bg-utility-soft-bg px-3.5 py-2 text-sm font-medium text-utility-strong hover:bg-utility-soft-bg-hover transition-all"
         >
           <Plus size={16} />
           {labels.invoiceLabel || 'فاتورة'}
@@ -90,7 +90,7 @@ export default function PortListView({
         <button
           key="debit"
           onClick={onOpenDebitForm}
-          className="flex items-center gap-1.5 rounded-xl bg-[#d6b36b]/[0.16] px-3.5 py-2 text-sm font-medium text-[#f6e7c2] ring-1 ring-[#d6b36b]/[0.22] transition-all hover:bg-[#d6b36b]/[0.24]"
+          className="flex items-center gap-1.5 rounded-xl bg-utility-warning-bg px-3.5 py-2 text-sm font-medium text-utility-warning-text ring-1 ring-utility-warning-border transition-all hover:bg-utility-warning-bg-strong"
         >
           <Plus size={16} />
           {labels.debitLabel || 'سند إضافة'}
@@ -103,7 +103,7 @@ export default function PortListView({
         <button
           key="payment"
           onClick={onOpenPaymentForm}
-          className="flex items-center gap-1.5 rounded-xl bg-[#8eb8ad]/[0.16] px-3.5 py-2 text-sm font-medium text-[#dceee8] ring-1 ring-[#8eb8ad]/[0.2] transition-all hover:bg-[#8eb8ad]/[0.22]"
+          className="flex items-center gap-1.5 rounded-xl bg-utility-success-bg px-3.5 py-2 text-sm font-medium text-utility-success-text ring-1 ring-utility-success-border transition-all hover:bg-utility-success-bg-strong"
         >
           <CreditCard size={16} />
           {labels.paymentLabel || 'سند قبض'}
@@ -134,13 +134,13 @@ export default function PortListView({
 
       <div className="space-y-4 p-5">
         {message && (
-          <div className="rounded-[22px] border border-white/[0.06] bg-[#8eb8ad]/[0.08] px-4 py-3 text-[#dceee8] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="rounded-[22px] border border-utility-success-border bg-utility-success-bg px-4 py-3 text-utility-success-text shadow-sm">
             {message}
           </div>
         )}
 
         <div className="relative">
-          <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#91a0ad]" />
+          <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-utility-muted" />
           <input
             type="text"
             value={search}
@@ -170,8 +170,8 @@ export default function PortListView({
         <div className="surface-card overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+              <thead className="table-header">
+                <tr className="text-right">
                   {activeListColumns.map((column) => (
                     <th key={column.key} className="whitespace-nowrap px-3 py-3">
                       {column.label}
@@ -181,28 +181,47 @@ export default function PortListView({
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
-                  <tr
-                    key={transaction.TransID}
-                    onClick={() => onSelectTransaction(transaction)}
-                    className="group cursor-pointer border-b border-white/[0.05] transition-colors hover:bg-white/[0.04]"
-                  >
+                {transactions.map((transaction) => {
+                  let typeId = Number(transaction.TransTypeID || transaction.transTypeId || 0);
+                  const rt = String(transaction.RecordType || transaction.recordType || '').toLowerCase();
+                  const tn = String(transaction.TransTypeName || transaction.transTypeName || '').toLowerCase();
+                  
+                  if (rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || tn === 'invoice') typeId = 1;
+                  else if (rt === 'payment' || tn.includes('قبض') || tn.includes('دفع') || tn === 'payment') typeId = 2;
+                  else if (rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) typeId = 3;
+                  else if (transaction.ShipID || transaction.shipment_id) typeId = 1;
+
+                  return (
+                    <tr
+                      key={transaction.TransID}
+                      onClick={() => onSelectTransaction(transaction)}
+                      className={`group cursor-pointer border-b border-utility-panel-border transition-colors ${
+                        typeId === 1
+                          ? 'border-r-4 border-r-utility-warning-text !bg-utility-warning-bg hover:!bg-utility-warning-bg-strong'
+                          : typeId === 2
+                            ? 'border-r-4 border-r-utility-success-text !bg-utility-success-bg hover:!bg-utility-success-bg-strong'
+                            : typeId === 3
+                              ? 'border-r-4 border-r-utility-danger-text !bg-utility-danger-bg hover:!bg-utility-danger-bg-strong'
+                              : 'hover:!bg-utility-soft-bg-hover'
+                      }`}
+                    >
                     {activeListColumns.map((column) => (
                       <td key={column.key} className={`px-3 py-2 ${column.type === 'date' ? 'whitespace-nowrap' : ''}`}>
                         {renderPortCell(column, transaction)}
                       </td>
                     ))}
                     <td className="px-3 py-2">
-                      <Eye size={14} className="text-[#64727f] transition-colors group-hover:text-[#dce8f2]" />
+                       <Eye size={14} className="text-utility-muted transition-colors group-hover:text-utility-strong" />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/[0.06] bg-white/[0.03] px-4 py-3">
-            <p className="text-sm text-[#91a0ad]">
+          <div className="flex items-center justify-between border-t border-utility-panel-border bg-utility-soft-bg px-4 py-3">
+            <p className="text-sm text-utility-muted">
               عرض {page * limit + 1} - {Math.min((page + 1) * limit, total)} من {total}
             </p>
             <div className="flex gap-2">

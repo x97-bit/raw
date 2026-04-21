@@ -29,7 +29,7 @@ export default function PortAccountDateFilters({
   return (
     <div className="surface-card grid grid-cols-1 gap-4 p-4 md:grid-cols-2 md:p-5 xl:grid-cols-12 xl:items-end">
       <div className="xl:col-span-5">
-        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-[#b7c3ce]">اسم التاجر</label>
+        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-utility-muted">اسم التاجر</label>
         <AutocompleteInput
           value={accountText}
           options={accounts}
@@ -58,12 +58,12 @@ export default function PortAccountDateFilters({
       </div>
 
       <div className="xl:col-span-3">
-        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-[#b7c3ce]">من تاريخ</label>
+        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-utility-muted">من تاريخ</label>
         <input type="date" value={from} onChange={(event) => onFromChange(event.target.value)} className="input-field" />
       </div>
 
       <div className="xl:col-span-2">
-        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-[#b7c3ce]">إلى تاريخ</label>
+        <label className="mb-1.5 block px-1 text-right text-sm font-semibold text-utility-muted">إلى تاريخ</label>
         <input type="date" value={to} onChange={(event) => onToChange(event.target.value)} className="input-field" />
       </div>
 

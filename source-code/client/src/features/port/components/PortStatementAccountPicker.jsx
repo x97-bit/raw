@@ -6,6 +6,7 @@ export default function PortStatementAccountPicker({
   onSearchChange,
   accounts,
   onSelectAccount,
+  accountLabel = 'تاجر',
 }) {
   const { isDark } = useTheme();
   const filteredAccounts = accounts.filter((account) => !search || account.AccountName.includes(search));
@@ -16,14 +17,14 @@ export default function PortStatementAccountPicker({
         <div className="relative">
           <Search
             size={18}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-[#91a0ad]' : 'text-[#667480]'}`}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-utility-muted"
           />
           <input
             type="text"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             className="input-field pr-10"
-            placeholder="ابحث عن تاجر..."
+            placeholder={`ابحث عن ${accountLabel}...`}
           />
         </div>
       </div>
@@ -32,11 +33,7 @@ export default function PortStatementAccountPicker({
           <button
             key={account.AccountID}
             onClick={() => onSelectAccount(account.AccountID)}
-            className={`rounded-[20px] border px-4 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 ${
-              isDark
-                ? 'border-white/[0.06] bg-white/[0.03] text-[#d8e1ea] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:bg-white/[0.06] hover:text-white'
-                : 'border-[#d7e1e2] bg-white text-[#24313c] shadow-[0_14px_28px_rgba(53,78,89,0.08)] hover:bg-[#eef4f3] hover:text-[#24313c]'
-            }`}
+            className="w-full rounded-2xl border border-utility-soft-border bg-utility-soft-bg px-4 py-3 text-center font-medium text-utility-strong shadow-sm transition-all hover:-translate-y-0.5 hover:bg-utility-soft-bg-hover hover:text-utility-strong"
           >
             {account.AccountName}
           </button>

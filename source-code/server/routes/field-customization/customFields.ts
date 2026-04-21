@@ -6,7 +6,6 @@ import { respondRouteError } from "../../_core/routeResponses";
 import { assertPositiveIntegerParam } from "../../_core/requestValidation";
 import { getDb } from "../../db";
 import { getCustomFieldsWithSections, syncCustomFieldSections } from "../../utils/customFieldSections";
-import { safeWriteAuditLog } from "../../utils/safeAuditLog";
 import {
   CUSTOM_FIELD_CREATED_MESSAGE,
   CUSTOM_FIELD_DELETED_MESSAGE,
@@ -66,26 +65,6 @@ export function registerCustomFieldRoutes(router: Router) {
         }
       }
 
-      await safeWriteAuditLog(db, {
-        entityType: "custom_field",
-        entityId: newId,
-        action: "create",
-        summary: `ط¥ظ†ط´ط§ط، ط­ظ‚ظ„ ظ…ط®طµطµ ${label || fieldKey}`,
-        after: {
-          id: newId,
-          fieldKey,
-          label,
-          fieldType: fieldType || "text",
-          options: options || null,
-          defaultValue: defaultValue || null,
-          placement: placement || "transaction",
-          formula: fieldType === "formula" ? formula || null : null,
-          sections: Array.isArray(sections) ? sections : [],
-        },
-        appUser: req.appUser,
-        metadata: { fieldKey, sections: Array.isArray(sections) ? sections : [] },
-      });
-
       return res.json({ id: newId, fieldKey, message: CUSTOM_FIELD_CREATED_MESSAGE });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
@@ -131,23 +110,6 @@ export function registerCustomFieldRoutes(router: Router) {
         .where(eq(fieldConfig.fieldKey, existingField.fieldKey))
         .orderBy(asc(fieldConfig.sectionKey), asc(fieldConfig.sortOrder));
 
-      await safeWriteAuditLog(db, {
-        entityType: "custom_field",
-        entityId: id,
-        action: "update",
-        summary: `طھط­ط¯ظٹط« ط­ظ‚ظ„ ظ…ط®طµطµ ${existingField.label || existingField.fieldKey}`,
-        before: {
-          ...existingField,
-          sections: beforeSections.map((entry: any) => entry.sectionKey),
-        },
-        after: {
-          ...updatedField,
-          sections: afterSections.map((entry: any) => entry.sectionKey),
-        },
-        appUser: req.appUser,
-        metadata: { fieldKey: existingField.fieldKey },
-      });
-
       return res.json({ message: CUSTOM_FIELD_UPDATED_MESSAGE });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
@@ -174,20 +136,6 @@ export function registerCustomFieldRoutes(router: Router) {
       await db.delete(customFieldValues).where(eq(customFieldValues.customFieldId, id));
       await db.delete(fieldConfig).where(eq(fieldConfig.fieldKey, fieldKey));
       await db.delete(customFields).where(eq(customFields.id, id));
-
-      await safeWriteAuditLog(db, {
-        entityType: "custom_field",
-        entityId: id,
-        action: "delete",
-        summary: `ط­ط°ظپ ط­ظ‚ظ„ ظ…ط®طµطµ ${field[0].label || fieldKey}`,
-        before: {
-          ...field[0],
-          sections: existingSections.map((entry: any) => entry.sectionKey),
-          valueCount: existingValues.length,
-        },
-        appUser: req.appUser,
-        metadata: { fieldKey, valueCount: existingValues.length },
-      });
 
       return res.json({ message: CUSTOM_FIELD_DELETED_MESSAGE });
     } catch (error: any) {

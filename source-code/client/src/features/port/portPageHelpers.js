@@ -4,28 +4,6 @@ import { getFieldLabel } from '../../utils/fieldConfigMetadata';
 import { getSectionColumns, STATEMENT_CORE_COLUMN_KEYS } from '../../utils/sectionScreenSpecs';
 
 export const PORT_PAGE_LIMIT = 30;
-export const TRANSPORT_TRADER_GROUPS = [
-  {
-    canonical: 'ابراهيم سعد',
-    aliases: ['ابراهيم سعد', 'إبراهيم سعد', 'ابراهيم سعد رمضان', 'إبراهيم سعد رمضان'],
-  },
-  {
-    canonical: 'عبدالعزيز',
-    aliases: ['عبدالعزيز', 'عبد العزيز', 'عبدالعزيز احمد', 'عبد العزيز احمد'],
-  },
-  {
-    canonical: 'صباح اسماعيل',
-    aliases: ['صباح اسماعيل', 'صباح إسماعيل'],
-  },
-];
-
-export const normalizePortTraderName = (value = '') => String(value)
-  .trim()
-  .replace(/[إأآ]/g, 'ا')
-  .replace(/ى/g, 'ي')
-  .replace(/\s+/g, ' ');
-
-export const CANONICAL_TRANSPORT_TRADER_NAMES = TRANSPORT_TRADER_GROUPS.map((group) => group.canonical);
 
 export const isTransportSectionScope = ({ sectionKey, portId, accountType } = {}) => (
   resolvePortSectionKey(portId, accountType) === 'transport-1' || sectionKey === 'transport-1'
@@ -102,52 +80,6 @@ export const getPortBuiltInFieldLabel = (sectionKey, fieldKey, formType, fallbac
   }
 
   return formType === 2 ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
-};
-
-export const isAllowedTransportTraderName = (name) => {
-  const normalizedName = normalizePortTraderName(name);
-  return TRANSPORT_TRADER_GROUPS.some((group) => group.aliases.some((alias) => normalizePortTraderName(alias) === normalizedName));
-};
-
-export const getCanonicalTransportTraderName = (name) => {
-  const normalizedName = normalizePortTraderName(name);
-  const match = TRANSPORT_TRADER_GROUPS.find((group) => group.aliases.some((alias) => normalizePortTraderName(alias) === normalizedName));
-  return match?.canonical || String(name || '').trim();
-};
-
-export const getTransportTraderOrderIndex = (name) => {
-  const canonicalName = getCanonicalTransportTraderName(name);
-  return CANONICAL_TRANSPORT_TRADER_NAMES
-    .map(normalizePortTraderName)
-    .indexOf(normalizePortTraderName(canonicalName));
-};
-
-export const filterScopedPortAccounts = (accounts = [], scope = {}) => {
-  if (!isTransportSectionScope(scope)) {
-    return accounts;
-  }
-
-  return (accounts || [])
-    .filter((account) => isAllowedTransportTraderName(account?.AccountName || account?.name))
-    .map((account) => {
-      const canonicalName = getCanonicalTransportTraderName(account?.AccountName || account?.name);
-      return {
-        ...account,
-        AccountName: canonicalName,
-        name: canonicalName,
-      };
-    })
-    .sort((left, right) => {
-      const leftIndex = getTransportTraderOrderIndex(left?.AccountName || left?.name);
-      const rightIndex = getTransportTraderOrderIndex(right?.AccountName || right?.name);
-      const normalizedLeftIndex = leftIndex >= 0 ? leftIndex : Number.MAX_SAFE_INTEGER;
-      const normalizedRightIndex = rightIndex >= 0 ? rightIndex : Number.MAX_SAFE_INTEGER;
-      return normalizedLeftIndex - normalizedRightIndex;
-    })
-    .filter((account, index, list) => {
-      const currentName = normalizePortTraderName(account?.AccountName || account?.name);
-      return list.findIndex((item) => normalizePortTraderName(item?.AccountName || item?.name) === currentName) === index;
-    });
 };
 
 function shouldUseTransportAccountTypeOnly({ portId, accountType }) {
@@ -239,12 +171,13 @@ export const buildPortTransactionsQuery = ({
   return params.toString();
 };
 
-export const buildPortStatementQuery = ({ portId, accountType, from, to }) => {
+export const buildPortStatementQuery = ({ portId, accountType, from, to, by }) => {
   const params = new URLSearchParams();
   appendQueryValue(params, 'portId', portId);
   appendQueryValue(params, 'accountType', accountType);
   appendQueryValue(params, 'startDate', from);
   appendQueryValue(params, 'endDate', to);
+  if (by) params.set('by', by);
   return params.toString();
 };
 
@@ -490,7 +423,7 @@ export const getPortStatementFooterCell = (column, index, totals = {}, options =
   if (isTransport && (metricKey === 'amount_usd' || metricKey === 'amountusd')) {
     return {
       value: '-',
-      className: 'px-3 py-3 text-[#91a0ad]',
+      className: 'px-3 py-3 text-utility-muted',
     };
   }
 

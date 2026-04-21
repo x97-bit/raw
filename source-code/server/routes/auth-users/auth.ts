@@ -140,12 +140,12 @@ export function registerAuthRoutes(router: Router) {
 
       const [updatedUser] = await db.select().from(appUsers).where(eq(appUsers.id, appUser.id)).limit(1);
       if (!updatedUser) {
-        return res.status(404).json({ error: "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+        return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
       const { password: _password, ...safeUser } = updatedUser;
       return res.json({
-        message: payload.profileImage ? "طھظ… طھط­ط¯ظٹط« ط§ظ„طµظˆط±ط© ط§ظ„ط´ط®طµظٹط©" : "طھظ… ط­ط°ظپ ط§ظ„طµظˆط±ط© ط§ظ„ط´ط®طµظٹط©",
+        message: payload.profileImage ? "تم تحديث الصورة الشخصية" : "تم حذف الصورة الشخصية",
         user: toLegacyUserShape(safeUser),
       });
     } catch (error) {
@@ -162,12 +162,12 @@ export function registerAuthRoutes(router: Router) {
       const payload = validateInput(changePasswordSchema, req.body, CHANGE_PASSWORD_VALIDATION_MESSAGE);
       const valid = await bcrypt.compare(payload.currentPassword, appUser.password);
       if (!valid) {
-        return res.status(400).json({ error: "ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط­ط§ظ„ظٹط© ط؛ظٹط± طµط­ظٹط­ط©" });
+        return res.status(400).json({ error: "كلمة المرور الحالية غير صحيحة" });
       }
 
       const hashed = await bcrypt.hash(payload.newPassword, 10);
       await db.update(appUsers).set({ password: hashed }).where(eq(appUsers.id, appUser.id));
-      return res.json({ message: "طھظ… طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±" });
+      return res.json({ message: "تم تغيير كلمة المرور" });
     } catch (error) {
       return respondRouteError(res, error);
     }

@@ -23,6 +23,7 @@ const CURRENT_TEMPLATE_START_KEYS = [
   'good_type',
   'weight',
   'qty',
+  'meters',
   'cost_usd',
   'amount_usd',
   'cost_iqd',
@@ -80,10 +81,11 @@ const buildSaudiStatementSummaryCards = (printContext = {}) => {
   ];
 };
 
-const buildSaudiStatementProfiles = ({ includeSummaryCards = false } = {}) => {
+const buildSaudiStatementProfiles = ({ includeSummaryCards = false, includeMeters = true } = {}) => {
   const summaryCardConfig = includeSummaryCards
     ? { summaryCards: ({ printContext }) => buildSaudiStatementSummaryCards(printContext) }
     : {};
+  const metersColumn = includeMeters ? [createDirectColumn('Meters', 'Meters', 'number')] : [];
 
   return [
     {
@@ -98,7 +100,7 @@ const buildSaudiStatementProfiles = ({ includeSummaryCards = false } = {}) => {
         createDirectColumn('GoodTypeName', 'GoodTypeName'),
         createDirectColumn('TransDate', 'TransDate', 'date'),
         createDirectColumn('Weight', 'Weight', 'number'),
-        createDirectColumn('Meters', 'Meters', 'number'),
+        ...metersColumn,
         createDirectColumn('AmountUSD', 'AmountUSD', 'money'),
         buildCombinedNotesColumn(),
       ],
@@ -116,7 +118,7 @@ const buildSaudiStatementProfiles = ({ includeSummaryCards = false } = {}) => {
         createDirectColumn('GoodTypeName', 'GoodTypeName'),
         createDirectColumn('TransDate', 'TransDate', 'date'),
         createDirectColumn('Weight', 'Weight', 'number'),
-        createDirectColumn('Meters', 'Meters', 'number'),
+        ...metersColumn,
         createDirectColumn('AmountIQD', 'AmountIQD', 'money_iqd'),
         buildCombinedNotesColumn(),
       ],
@@ -134,7 +136,7 @@ const buildSaudiStatementProfiles = ({ includeSummaryCards = false } = {}) => {
         createDirectColumn('GoodTypeName', 'GoodTypeName'),
         createDirectColumn('TransDate', 'TransDate', 'date'),
         createDirectColumn('Weight', 'Weight', 'number'),
-        createDirectColumn('Meters', 'Meters', 'number'),
+        ...metersColumn,
         createDirectColumn('AmountUSD', 'AmountUSD', 'money'),
         createDirectColumn('AmountIQD', 'AmountIQD', 'money_iqd'),
         buildCombinedNotesColumn(),
@@ -154,7 +156,7 @@ const buildSaudiStatementProfiles = ({ includeSummaryCards = false } = {}) => {
         createDirectColumn('Governorate', 'Governorate'),
         createDirectColumn('TransDate', 'TransDate', 'date'),
         createDirectColumn('Weight', 'Weight', 'number'),
-        createDirectColumn('Meters', 'Meters', 'number'),
+        ...metersColumn,
         createDirectColumn('AmountUSD', 'AmountUSD', 'money'),
         createDirectColumn('AmountIQD', 'AmountIQD', 'money_iqd'),
         buildCombinedNotesColumn(),
@@ -221,7 +223,6 @@ const PROFILE_SPECS = {
       createProfile('saudi-ops', 'تشغيلي', [
         'trans_date',
         'ref_no',
-        'account_name',
         'driver_name',
         'vehicle_plate',
         'good_type',
@@ -234,7 +235,6 @@ const PROFILE_SPECS = {
       createProfile('saudi-finance', 'مالي', [
         'ref_no',
         'trans_date',
-        'account_name',
         'currency',
         'cost_usd',
         'amount_usd',
@@ -319,7 +319,6 @@ const PROFILE_SPECS = {
         'ref_no',
         'direction',
         'trans_date',
-        'account_name',
         'driver_name',
         'vehicle_plate',
         'good_type',
@@ -331,13 +330,11 @@ const PROFILE_SPECS = {
         'direction',
         'trans_date',
         'currency',
-        'cost_usd',
         'amount_usd',
-        'cost_iqd',
         'amount_iqd',
       ], { filenameSuffix: 'مالي' }),
     ],
-    statement: buildSaudiStatementProfiles(),
+    statement: buildSaudiStatementProfiles({ includeMeters: false }),
   },
   'partnership-1': {
     list: [

@@ -8,19 +8,19 @@ const REPORT_ACTIONS = [
     key: 'add-trader',
     label: 'إضافة تاجر',
     icon: Users,
-    iconClassName: 'bg-[#9ab6ca]/12 text-[#d8e4ee]',
+    iconClassName: 'bg-utility-accent-bg text-utility-accent-text',
   },
   {
     key: 'expenses',
     label: 'المصاريف',
     icon: Receipt,
-    iconClassName: 'bg-[#c8d4df]/10 text-[#dbe5ed]',
+    iconClassName: 'bg-utility-soft-bg text-utility-strong',
   },
   {
     key: 'profits',
     label: 'الأرباح',
     icon: TrendingUp,
-    iconClassName: 'bg-[#8eb8ad]/12 text-[#b9d4cc]',
+    iconClassName: 'bg-utility-success-bg text-utility-success-text',
   },
 ];
 
@@ -29,15 +29,15 @@ const SPECIAL_ACCOUNT_ACTIONS = [
     key: 'profits',
     label: 'الأرباح',
     icon: TrendingUp,
-    iconClassName: 'bg-[#8eb8ad]/12 text-[#b9d4cc]',
+    iconClassName: 'bg-utility-success-bg text-utility-success-text',
   },
 ];
 
 const ACTION_BUTTON_CLASS = `
-  group flex items-center justify-between gap-3 rounded-[22px] bg-white/[0.05] px-4 py-3.5
-  text-sm font-semibold text-[#eef3f7] shadow-[0_14px_28px_rgba(0,0,0,0.16)]
-  ring-1 ring-white/[0.06] transition-all duration-200 hover:-translate-y-0.5
-  hover:bg-white/[0.08] hover:shadow-[0_18px_32px_rgba(0,0,0,0.2)]
+  group flex items-center justify-between gap-3 rounded-[22px] bg-utility-soft-bg px-4 py-3.5
+  text-sm font-semibold text-utility-strong shadow-sm
+  ring-1 ring-utility-soft-border transition-all duration-200 hover:-translate-y-0.5
+  hover:bg-utility-soft-bg-hover
 `;
 
 export default function ReportsLandingView({ onBack, onOpenAction, onOpenSpecialAction }) {
@@ -49,17 +49,17 @@ export default function ReportsLandingView({ onBack, onOpenAction, onOpenSpecial
         <div className="mx-auto max-w-4xl space-y-4">
           {REPORT_PORTS.map((port) => (
             <div key={port.id} className="surface-card overflow-hidden p-0">
-              <div className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.04] px-5 py-4">
+              <div className="flex items-center gap-3 border-b border-utility-soft-border bg-utility-soft-bg px-5 py-4">
                 <PortIconBadge
                   lines={port.iconLines}
-                  background="rgba(255,255,255,0.06)"
-                  textColor="#eef3f7"
-                  borderColor="rgba(255,255,255,0.08)"
+                  background="var(--utility-soft-bg)"
+                  textColor="var(--utility-strong)"
+                  borderColor="var(--utility-soft-border)"
                   className="h-10 min-w-[5.5rem] px-3 text-[9px]"
                 />
                 <div>
-                  <h3 className="text-lg font-extrabold tracking-tight text-[#eef3f7]">{port.name}</h3>
-                  <p className="mt-1 text-xs font-medium text-[#91a0ad]">إجراءات التقارير الخاصة بالمنفذ</p>
+                  <h3 className="text-lg font-extrabold tracking-tight text-utility-strong">{port.name}</h3>
+                  <p className="mt-1 text-xs font-medium text-utility-muted">إجراءات التقارير الخاصة بالمنفذ</p>
                 </div>
               </div>
 
@@ -80,7 +80,7 @@ export default function ReportsLandingView({ onBack, onOpenAction, onOpenSpecial
                         <span>{action.label}</span>
                       </div>
 
-                      <span className="text-xs font-bold tracking-[0.16em] text-[#778391] transition-colors duration-200 group-hover:text-[#c9d5df]">
+                      <span className="text-xs font-bold tracking-[0.16em] text-utility-muted transition-colors duration-200 group-hover:text-utility-strong">
                         GO
                       </span>
                     </button>
@@ -92,13 +92,13 @@ export default function ReportsLandingView({ onBack, onOpenAction, onOpenSpecial
 
           {REPORT_SPECIAL_ACCOUNTS.map((account) => (
             <div key={account.id} className="surface-card overflow-hidden p-0">
-              <div className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.04] px-5 py-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#648ea9]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <Building2 size={18} className="text-[#648ea9]" />
+              <div className="flex items-center gap-3 border-b border-utility-soft-border bg-utility-soft-bg px-5 py-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-utility-accent-bg shadow-sm">
+                  <Building2 size={18} className="text-utility-accent-text" />
                 </span>
                 <div>
-                  <h3 className="text-lg font-extrabold tracking-tight text-[#eef3f7]">{account.name}</h3>
-                  <p className="mt-1 text-xs font-medium text-[#91a0ad]">تقارير الحسابات الخاصة</p>
+                  <h3 className="text-lg font-extrabold tracking-tight text-utility-strong">{account.name}</h3>
+                  <p className="mt-1 text-xs font-medium text-utility-muted">تقارير الحسابات الخاصة</p>
                 </div>
               </div>
 
@@ -119,7 +119,7 @@ export default function ReportsLandingView({ onBack, onOpenAction, onOpenSpecial
                         <span>{action.label}</span>
                       </div>
 
-                      <span className="text-xs font-bold tracking-[0.16em] text-[#778391] transition-colors duration-200 group-hover:text-[#c9d5df]">
+                      <span className="text-xs font-bold tracking-[0.16em] text-utility-muted transition-colors duration-200 group-hover:text-utility-strong">
                         GO
                       </span>
                     </button>

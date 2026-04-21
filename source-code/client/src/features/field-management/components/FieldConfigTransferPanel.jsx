@@ -20,8 +20,8 @@ export default function FieldConfigTransferPanel({
           onClick={onToggle}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
             show
-              ? 'bg-amber-50 text-amber-700 border-amber-200'
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+              ? 'bg-[#d6b36b]/[0.16] text-[#f6e7c2] border-[#d6b36b]/[0.22]'
+              : 'bg-white/[0.06] text-[#dce8f2] border-white/[0.04] hover:bg-white/[0.1]'
           }`}
         >
           <ArrowLeftRight size={16} />
@@ -30,18 +30,18 @@ export default function FieldConfigTransferPanel({
       </div>
 
       {show && (
-        <div className="bg-white rounded-xl shadow-sm border border-amber-200 overflow-hidden">
-          <div className="px-4 py-3 bg-amber-50 border-b border-amber-100">
-            <h3 className="font-bold text-amber-800 flex items-center gap-2">
-              <ArrowLeftRight size={16} />
+        <div className="surface-card rounded-xl shadow-sm border border-white/[0.06] overflow-hidden p-0">
+          <div className="px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
+            <h3 className="font-bold text-[#eef3f7] flex items-center gap-2">
+              <ArrowLeftRight size={16} className="text-[#dce8f2]" />
               {'نسخ / استيراد إعدادات الحقول'}
             </h3>
           </div>
 
           <div className="p-4 space-y-4">
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Copy size={14} className="text-blue-500" />
+              <div className="flex items-center gap-2 text-sm font-medium text-[#eef3f7]">
+                <Copy size={14} className="text-[#7bd3eb]" />
                 <span>
                   {'نسخ إعدادات '}
                   <strong>{currentConfigLabel}</strong>
@@ -52,7 +52,7 @@ export default function FieldConfigTransferPanel({
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={onSelectAllTargetSections}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.06] text-[#c8d4df] hover:bg-white/[0.1] transition-all"
                 >
                   {targetSections.length === compatibleTargetSections.length
                     ? 'إلغاء الكل'
@@ -65,8 +65,8 @@ export default function FieldConfigTransferPanel({
                     onClick={() => onToggleTargetSection(section.key)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       targetSections.includes(section.key)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        ? 'bg-[#15467c] text-white'
+                        : 'bg-white/[0.04] text-[#91a0ad] hover:bg-white/[0.08]'
                     }`}
                   >
                     {section.label}
@@ -77,7 +77,7 @@ export default function FieldConfigTransferPanel({
               <button
                 onClick={onCopySettingsToSections}
                 disabled={saving || targetSections.length === 0}
-                className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                className="w-full btn-primary py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-sm disabled:opacity-50"
               >
                 <Download size={16} />
                 {saving
@@ -87,14 +87,14 @@ export default function FieldConfigTransferPanel({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 border-t border-gray-200" />
-              <span className="text-xs text-gray-400 font-medium">{'أو'}</span>
-              <div className="flex-1 border-t border-gray-200" />
+              <div className="flex-1 border-t border-white/[0.06]" />
+              <span className="text-xs text-[#91a0ad] font-medium">{'أو'}</span>
+              <div className="flex-1 border-t border-white/[0.06]" />
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Upload size={14} className="text-green-500" />
+              <div className="flex items-center gap-2 text-sm font-medium text-[#eef3f7]">
+                <Upload size={14} className="text-[#8eb8ad]" />
                 <span>
                   {'استيراد إعدادات من قسم آخر إلى '}
                   <strong>{currentConfigLabel}</strong>
@@ -112,7 +112,7 @@ export default function FieldConfigTransferPanel({
                       }
                     }}
                     disabled={saving}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition-all disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#8eb8ad]/[0.1] text-[#b9d8cf] hover:bg-[#8eb8ad]/[0.18] border border-[#8eb8ad]/[0.15] transition-all disabled:opacity-50 flex items-center gap-1"
                   >
                     <Upload size={12} />
                     {section.label}

@@ -58,8 +58,9 @@ export function buildSpecialPartnerTotals(rows) {
     totalTaxiWater: 0,
   });
 
-  totals.totalPartnerUSD = totals.totalPartnerBaseUSD;
-  totals.totalPartnerIQD = totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
+  totals.totalPartnerExtras = totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
+  totals.totalPartnerUSD = totals.totalPartnerBaseUSD + totals.totalPartnerExtras;
+  totals.totalPartnerIQD = totals.totalPartnerExtras;
   totals.totalNetUSD = totals.totalAmountUSD - totals.totalPartnerUSD;
   totals.totalNetIQD = totals.totalAmountIQD - totals.totalPartnerIQD;
   return totals;

@@ -1,7 +1,7 @@
 import { evaluateCustomFormula, sanitizeCustomFieldValue } from '../../../utils/customFields';
 import { normalizeStringOptions } from '../../../utils/optionLists';
 
-const LABEL_CLASS = 'mb-1 block text-sm font-medium text-[#b7c3ce]';
+const LABEL_CLASS = 'mb-1 block text-sm font-medium text-utility-muted';
 
 export default function PortDynamicFieldRenderer({ item, values, onChange, formatValue }) {
   if (item.kind === 'custom') {
@@ -50,12 +50,12 @@ export default function PortDynamicFieldRenderer({ item, values, onChange, forma
     return (
       <div
         key={item.key}
-        className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+        className="rounded-[24px] border border-utility-soft-border bg-utility-soft-bg p-4 shadow-sm"
       >
-        <span className="mb-1 block text-xs font-semibold text-[#91a0ad]">{item.field.label}</span>
+        <span className="mb-1 block text-xs font-semibold text-utility-muted">{item.field.label}</span>
         <p
           className={`text-lg font-bold ${
-            result === null ? 'text-[#91a0ad]' : result < 0 ? 'text-[#ef8f8f]' : 'text-[#9fd0c4]'
+            result === null ? 'text-utility-muted' : result < 0 ? 'text-utility-danger-text' : 'text-utility-success-text'
           }`}
         >
           {result === null ? '-' : formatValue(Math.round(result * 100) / 100)}

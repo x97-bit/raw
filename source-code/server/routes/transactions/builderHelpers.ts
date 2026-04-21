@@ -1,6 +1,6 @@
 import type { AppDb } from "../../dbTypes";
 import { eq } from "drizzle-orm";
-import { companies, drivers, goodsTypes, vehicles } from "../../../drizzle/schema";
+import { companies, drivers, goodsTypes, governorates, vehicles } from "../../../drizzle/schema";
 
 type LookupInsertTable = typeof drivers | typeof vehicles | typeof goodsTypes;
 
@@ -66,4 +66,25 @@ export async function resolveCompanySelection(db: AppDb, companyIdValue: unknown
   }
 
   return { companyId, companyName };
+}
+
+export async function resolveGovernorateId(db: AppDb, govIdValue: unknown, govNameValue: unknown): Promise<number | null> {
+  if (govIdValue !== undefined && govIdValue !== null && govIdValue !== "") {
+    const parsed = Number.parseInt(String(govIdValue), 10);
+    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+  }
+
+  const normalizedName = getTrimmedText(govNameValue);
+  if (!normalizedName) return null;
+
+  const [existing] = await db
+    .select()
+    .from(governorates)
+    .where(eq(governorates.name, normalizedName))
+    .limit(1);
+
+  if (existing) return existing.id;
+
+  const result = await db.insert(governorates).values({ name: normalizedName });
+  return Number(result[0].insertId);
 }

@@ -10,7 +10,7 @@ import {
 } from "../../utils/bodyFields";
 import { transactionUpdateSchema } from "../../utils/financialValidation";
 import { TRANSACTION_UPDATE_VALIDATION_MESSAGE } from "./shared";
-import { resolveCompanySelection } from "./builderHelpers";
+import { resolveCompanySelection, resolveGovernorateId } from "./builderHelpers";
 
 type TransactionMutationBody = Record<string, unknown>;
 type TransactionUpdatePayload = z.infer<typeof transactionUpdateSchema>;
@@ -57,8 +57,12 @@ export async function buildTransactionUpdateInput(db: AppDb, body: TransactionMu
   if (hasBodyKey(body, "goodTypeId", "GoodTypeID", "good_type_id")) {
     updates.goodTypeId = parseOptionalInt(pickBodyField(body, "goodTypeId", "GoodTypeID", "good_type_id")) ?? null;
   }
-  if (hasBodyKey(body, "govId", "GovID", "gov_id")) {
-    updates.govId = parseOptionalInt(pickBodyField(body, "govId", "GovID", "gov_id")) ?? null;
+  if (hasBodyKey(body, "govId", "GovID", "gov_id", "govName", "GovName", "gov_name", "_govText")) {
+    updates.govId = await resolveGovernorateId(
+      db,
+      pickBodyField(body, "govId", "GovID", "gov_id"),
+      pickBodyField(body, "govName", "GovName", "gov_name", "_govText"),
+    );
   }
   if (hasBodyKey(body, "syrCus", "SyrCus", "syr_cus")) {
     updates.syrCus = parseOptionalDecimal(pickBodyField(body, "syrCus", "SyrCus", "syr_cus")) ?? "0";

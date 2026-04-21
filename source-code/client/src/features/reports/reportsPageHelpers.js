@@ -56,5 +56,5 @@ export function formatReportDate(value) {
 }
 
 export function getProfitTone(value) {
-  return (Number(value) || 0) >= 0 ? 'text-[#8eb8ad]' : 'text-[#c697a1]';
+  return (Number(value) || 0) >= 0 ? 'text-utility-success-text' : 'text-utility-danger-text';
 }

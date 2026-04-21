@@ -5,7 +5,6 @@ import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
 import { assertPositiveIntegerParam } from "../../_core/requestValidation";
 import { getDb } from "../../db";
-import { safeWriteAuditLog } from "../../utils/safeAuditLog";
 import {
   CUSTOM_FIELD_VALUES_SAVED_MESSAGE,
   CUSTOM_FIELD_VALUE_ENTITY_ID_LABEL,
@@ -70,17 +69,6 @@ export function registerCustomFieldValueRoutes(router: Router) {
         .select()
         .from(customFieldValues)
         .where(and(eq(customFieldValues.entityType, entityType), eq(customFieldValues.entityId, entityId)));
-
-      await safeWriteAuditLog(db, {
-        entityType: "custom_field_values",
-        entityId,
-        action: "update",
-        summary: `طھط­ط¯ظٹط« ظ‚ظٹظ… ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ظ…ط®طµطµط© ظ„ظ„ظƒظٹط§ظ† ${entityType}#${entityId}`,
-        before: { entityType, entityId, values: beforeValues },
-        after: { entityType, entityId, values: afterValues },
-        appUser: req.appUser,
-        metadata: { entityType, entityId, valueCount: afterValues.length },
-      });
 
       return res.json({ message: CUSTOM_FIELD_VALUES_SAVED_MESSAGE });
     } catch (error: any) {
