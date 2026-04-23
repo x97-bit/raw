@@ -453,7 +453,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       overflow: hidden;
       border: 1px solid #bfc6d3;
       border-radius: 10px;
-      background: rgba(255, 255, 255, 0.98);
+      background: transparent;
     }
     .tay-table {
       width: 100%;
@@ -463,13 +463,15 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     .tay-table th,
     .tay-table td {
       border: 1px solid #d7dbe4;
-      padding: 4px 6px;
+      padding: 6px 8px;
       text-align: center;
       vertical-align: middle;
       color: #1f2937;
-      font-size: ${isPortrait ? '48px' : '44px'};
-      line-height: 1.15;
+      line-height: 1.25;
       word-break: break-word;
+    }
+    .tay-table td {
+      font-size: ${isPortrait ? '40px' : '36px'};
     }
     .tay-table .tay-date-cell {
       white-space: nowrap;
@@ -481,24 +483,22 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       font-weight: 800;
       white-space: nowrap;
       word-break: normal;
-      padding: 6px 6px;
-      font-size: ${isPortrait ? '52px' : '48px'};
+      padding: 8px 6px;
+      font-size: ${isPortrait ? '54px' : '50px'};
     }
     .tay-table tbody tr:nth-child(even) td {
-      background: ${TAY_ALRAWI_BRAND_COLORS.rowTint};
+      background: transparent;
     }
     ${highlightRows ? `
       .tay-table tr.tay-row-invoice td {
-        background-color: rgba(249, 115, 22, 0.08) !important;
-        border-right: 4px solid rgba(249, 115, 22, 0.8) !important;
+        border-right: 4px solid rgba(55, 65, 81, 0.8) !important;
       }
       .tay-table tr.tay-row-payment td {
-        background-color: rgba(16, 185, 129, 0.08) !important;
-        border-right: 4px solid rgba(16, 185, 129, 0.8) !important;
+        background-color: rgba(220, 38, 38, 0.05) !important;
+        border-right: 4px solid rgba(220, 38, 38, 0.8) !important;
       }
       .tay-table tr.tay-row-debit td {
-        background-color: rgba(225, 29, 72, 0.08) !important;
-        border-right: 4px solid rgba(225, 29, 72, 0.8) !important;
+        border-right: 4px solid rgba(22, 163, 74, 0.8) !important;
       }
     ` : ''}
     .tay-table tfoot td {
@@ -673,23 +673,45 @@ export function printSaudiStatementTemplate({
     totalsLines.push({ label: 'مبلغ المحدد دينار', value: balanceIqd });
   }
 
+  const rightLines = totalsLines.filter((line) => !line.label.includes('محدد') && !line.label.includes('متبقي'));
+  const centerLines = totalsLines.filter((line) => line.label.includes('محدد') || line.label.includes('متبقي'));
+
   const metaHtml = `
-    <div class="tay-meta-stack">
-      <div class="tay-meta-inline">
-        <span class="tay-meta-label">اسم التاجر:</span>
-        <span>${escapeHtml(accountName || '---')}</span>
-      </div>
-      <div class="tay-meta-inline">
-        <span class="tay-meta-label">من تاريخ:</span>
-        <span>${escapeHtml(fromDate || '---')}</span>
-        <span class="tay-meta-label">إلى تاريخ:</span>
-        <span>${escapeHtml(toDate || '---')}</span>
-      </div>
-      <div class="tay-meta-inline">
-        ${totalsLines.map((line) => `
-          <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-          <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+      <!-- Right Side -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="tay-meta-inline">
+          <span class="tay-meta-label">اسم التاجر:</span>
+          <span>${escapeHtml(accountName || '---')}</span>
+        </div>
+        ${rightLines.map((line) => `
+          <div class="tay-meta-inline">
+            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
+            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+          </div>
         `).join('')}
+      </div>
+
+      <!-- Center Side -->
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; height: 100%;">
+        ${centerLines.map((line) => `
+          <div class="tay-meta-inline">
+            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
+            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Left Side -->
+      <div style="display: flex; flex-direction: column; gap: 8px; direction: rtl;">
+        <div class="tay-meta-inline">
+          <span class="tay-meta-label">من تاريخ:</span>
+          <span>${escapeHtml(fromDate || '---')}</span>
+        </div>
+        <div class="tay-meta-inline">
+          <span class="tay-meta-label">إلى تاريخ:</span>
+          <span>${escapeHtml(toDate || '---')}</span>
+        </div>
       </div>
     </div>
   `;

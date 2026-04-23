@@ -136,16 +136,16 @@ export default function PortStatementView({
 
                   return (
                     <tr
-                      key={index}
+                      key={transaction.TransID || index}
                       onClick={() => onSelectTransaction(transaction)}
                       className={`cursor-pointer border-b border-panel-border transition-colors ${
                         typeId === 1
-                          ? 'border-r-4 border-r-utility-warning-text !bg-utility-warning-bg hover:!bg-utility-warning-bg-strong'
+                          ? 'border-r-4 border-r-slate-500 hover:bg-utility-soft-bg-hover'
                           : typeId === 2
-                            ? 'border-r-4 border-r-utility-success-text !bg-utility-success-bg hover:!bg-utility-success-bg-strong'
+                            ? 'border-r-4 border-r-red-500 !bg-red-50 hover:!bg-red-100 dark:!bg-red-900/20 dark:hover:!bg-red-900/40'
                             : typeId === 3
-                              ? 'border-r-4 border-r-utility-danger-text !bg-utility-danger-bg hover:!bg-utility-danger-bg-strong'
-                              : 'hover:bg-row-hover'
+                              ? 'border-r-4 border-r-green-600 hover:bg-utility-soft-bg-hover'
+                              : 'hover:bg-utility-soft-bg-hover'
                       }`}
                     >
                     {activeStatementColumns.map((column) => (

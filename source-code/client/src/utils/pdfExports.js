@@ -128,7 +128,7 @@ function drawRoundedRect(ctx, x, y, width, height, radius, fillStyle, strokeStyl
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
 
-  if (fillStyle) {
+  if (fillStyle && fillStyle !== 'transparent') {
     ctx.fillStyle = fillStyle;
     ctx.fill();
   }
@@ -505,11 +505,11 @@ function drawTable(ctx, { x, y, width, columns, rows, totalsRow, orientation }) 
     if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) rowClass = 'debit';
 
     let rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
-    if (rowClass === 'invoice') rowFill = '#fff7ed';
-    if (rowClass === 'payment') rowFill = '#ecfdf5';
-    if (rowClass === 'debit') rowFill = '#fff1f2';
+    if (rowClass === 'invoice') rowFill = '#374151';
+    if (rowClass === 'payment') rowFill = '#fee2e2';
+    if (rowClass === 'debit') rowFill = '#dcfce7';
 
-    const textColor = rowClass === 'invoice' ? '#ea580c' : rowClass === 'payment' ? '#0f7a3c' : rowClass === 'debit' ? '#e11d48' : '#1f2937';
+    const textColor = rowClass === 'invoice' ? '#ffffff' : rowClass === 'payment' ? '#b91c1c' : rowClass === 'debit' ? '#15803d' : '#1f2937';
     const textWeight = rowClass !== 'default' ? '700' : '500';
     let currentX = x + width;
     columns.forEach((column, index) => {
@@ -655,17 +655,17 @@ function getAdaptiveTableMetrics(orientation, columnCount) {
 
   return {
     headerFontSize: orientation === 'portrait'
-      ? (dense ? 48 : compact ? 56 : 64)
-      : (dense ? 44 : compact ? 52 : 60),
+      ? (dense ? 40 : compact ? 50 : 64)
+      : (dense ? 36 : compact ? 46 : 60),
     cellFontSize: orientation === 'portrait'
-      ? (dense ? 46 : compact ? 54 : 60)
-      : (dense ? 42 : compact ? 48 : 56),
-    headerLineHeight: orientation === 'portrait' ? 66 : 60,
-    cellLineHeight: orientation === 'portrait' ? 64 : 56,
+      ? (dense ? 32 : compact ? 38 : 44)
+      : (dense ? 28 : compact ? 36 : 42),
+    headerLineHeight: orientation === 'portrait' ? 64 : 58,
+    cellLineHeight: orientation === 'portrait' ? 52 : 46,
     maxHeaderLines: 1,
-    maxCellLines: dense ? 3 : 2,
-    paddingX: dense ? 16 : 20,
-    paddingY: dense ? 16 : 18,
+    maxCellLines: 1,
+    paddingX: dense ? 4 : 8,
+    paddingY: dense ? 10 : 12,
     minHeaderHeight: orientation === 'portrait' ? 100 : 88,
     minRowHeight: orientation === 'portrait' ? 120 : 100,
     summaryLabelSize: orientation === 'portrait' ? 44 : 48,
@@ -718,11 +718,19 @@ function fitColumnsForHeaders(ctx, columns, tableWidth, orientation, metrics) {
   const paddingTotal = metrics.paddingX * 2;
   const baseWidths = computeAdaptiveColumnLayouts(columns, tableWidth, orientation);
   let fontSize = metrics.headerFontSize;
-  const minFontSize = 16;
+  const minFontSize = 24;
 
   while (fontSize >= minFontSize) {
     setFont(ctx, '700', fontSize);
-    const requiredWidths = columns.map((column) => ctx.measureText(String(column.label ?? '')).width + paddingTotal);
+    const requiredWidths = columns.map((column) => {
+      const text = String(column.label ?? '');
+      if (metrics.maxHeaderLines > 1) {
+        const words = text.split(/\s+/).filter(Boolean);
+        const maxWordWidth = words.length > 0 ? Math.max(...words.map(w => ctx.measureText(w).width)) : 0;
+        return maxWordWidth + paddingTotal;
+      }
+      return ctx.measureText(text).width + paddingTotal;
+    });
     const targetWidths = columns.map((_, i) => Math.max(baseWidths[i], requiredWidths[i]));
     const totalTarget = targetWidths.reduce((s, w) => s + w, 0);
 
@@ -735,7 +743,10 @@ function fitColumnsForHeaders(ctx, columns, tableWidth, orientation, metrics) {
     const scaled = targetWidths.map((w) => (w / totalTarget) * tableWidth);
     const allFit = columns.every((column, i) => {
       const innerWidth = scaled[i] - paddingTotal;
-      return ctx.measureText(String(column.label ?? '')).width <= innerWidth;
+      const text = String(column.label ?? '');
+      if (ctx.measureText(text).width <= innerWidth) return true;
+      const lines = wrapTextLines(ctx, text, Math.max(20, innerWidth));
+      return lines.length <= metrics.maxHeaderLines;
     });
 
     if (allFit) {
@@ -746,7 +757,15 @@ function fitColumnsForHeaders(ctx, columns, tableWidth, orientation, metrics) {
   }
 
   setFont(ctx, '700', minFontSize);
-  const requiredWidths = columns.map((column) => ctx.measureText(String(column.label ?? '')).width + paddingTotal);
+  const requiredWidths = columns.map((column) => {
+    const text = String(column.label ?? '');
+    if (metrics.maxHeaderLines > 1) {
+      const words = text.split(/\s+/).filter(Boolean);
+      const maxWordWidth = words.length > 0 ? Math.max(...words.map(w => ctx.measureText(w).width)) : 0;
+      return maxWordWidth + paddingTotal;
+    }
+    return ctx.measureText(text).width + paddingTotal;
+  });
   const targetWidths = columns.map((_, i) => Math.max(baseWidths[i], requiredWidths[i]));
   const totalTarget = targetWidths.reduce((s, w) => s + w, 0);
   const finalWidths = targetWidths.map((w) => (w / totalTarget) * tableWidth);
@@ -755,9 +774,16 @@ function fitColumnsForHeaders(ctx, columns, tableWidth, orientation, metrics) {
 
 function measureAdaptiveTableLayout(ctx, { columns, rows, totalsRow, width, orientation }) {
   const metrics = getAdaptiveTableMetrics(orientation, columns.length);
+  const originalHeaderFontSize = metrics.headerFontSize;
   const fitted = fitColumnsForHeaders(ctx, columns, width, orientation, metrics);
   const columnWidths = fitted.columnWidths;
   metrics.headerFontSize = fitted.headerFontSize;
+
+  if (metrics.headerFontSize < originalHeaderFontSize) {
+    metrics.cellFontSize = Math.max(20, metrics.headerFontSize - 6);
+    metrics.headerLineHeight = metrics.headerFontSize + 16;
+    metrics.cellLineHeight = metrics.cellFontSize + 16;
+  }
 
   const headerHeight = columns.reduce((maxHeight, column, index) => {
     const innerWidth = Math.max(18, columnWidths[index] - (metrics.paddingX * 2));
@@ -951,13 +977,11 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
     if (transTypeId === 2 || direction === 'OUT' || direction === 'CR' || rt === 'payment' || tn.includes('قبض') || tn.includes('دفع')) rowClass = 'payment';
     if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) rowClass = 'debit';
 
-    let rowFill = rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : '#ffffff';
-    if (rowClass === 'invoice') rowFill = '#fff7ed';
-    if (rowClass === 'payment') rowFill = '#ecfdf5';
-    if (rowClass === 'debit') rowFill = '#fff1f2';
+    let rowFill = 'transparent';
+    if (rowClass === 'payment') rowFill = '#fef2f2'; // Light red shade for receipts
 
-    const textColor = rowClass === 'invoice' ? '#ea580c' : rowClass === 'payment' ? '#0f7a3c' : rowClass === 'debit' ? '#e11d48' : '#1f2937';
-    const textWeight = rowClass !== 'default' ? '700' : '500';
+    const textColor = rowClass === 'payment' ? '#b91c1c' : '#1f2937';
+    const textWeight = rowClass === 'payment' ? '700' : '500';
     const rowHeight = rowHeights?.[rowIndex] || metrics.minRowHeight;
 
     let currentX = x + width;
@@ -1022,21 +1046,21 @@ function drawAdaptiveTable(ctx, { x, y, width, columns, rows, rowHeights, totals
 function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
   if (!grid) return startY;
 
-  const fontSize = 30;
-  const lineHeight = 44;
+  const fontSize = 44;
+  const lineHeight = 56;
   const marginLeft = 60;
   const marginRight = 60;
   const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
   const red = '#d82534';
 
-  const rightX = spec.width - marginRight - 80;
-  const leftX = marginLeft + 420 - 10;
-  const centerX = spec.width / 2 + 140;
+  const rightColX = spec.width - marginRight - 20;
+  const centerColX = spec.width / 2;
+  const leftColX = marginLeft + 20;
 
-  let cursorY = startY + 18;
+  let cursorY = startY + 48;
 
   if (grid.accountName) {
-    drawText(ctx, `${grid.accountLabel || 'اسم التاجر'} : ${grid.accountName}`, rightX, cursorY, {
+    drawText(ctx, `${grid.accountLabel || 'اسم التاجر'} : ${grid.accountName}`, rightColX, cursorY, {
       align: 'right',
       size: fontSize,
       weight: '700',
@@ -1045,8 +1069,18 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
     });
   }
 
-  drawText(ctx, `${grid.fromLabel || 'من تاريخ'} : ${grid.fromDate || '---'}`, leftX, cursorY, {
-    align: 'right',
+  if (grid.selectedLabel) {
+    drawText(ctx, `${grid.selectedLabel}: ${grid.selectedValue || '---'}`, centerColX, cursorY, {
+      align: 'center',
+      size: fontSize,
+      weight: '700',
+      color: navy,
+      family: PDF_BODY_FONT_FAMILY,
+    });
+  }
+
+  drawText(ctx, `${grid.fromLabel || 'من تاريخ'} : ${grid.fromDate || '---'}`, leftColX, cursorY, {
+    align: 'left',
     size: fontSize,
     weight: '700',
     color: navy,
@@ -1056,7 +1090,7 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
   cursorY += lineHeight;
 
   if (grid.totalLabel) {
-    drawText(ctx, `${grid.totalLabel}: ${grid.totalValue || '---'}`, rightX, cursorY, {
+    drawText(ctx, `${grid.totalLabel}: ${grid.totalValue || '---'}`, rightColX, cursorY, {
       align: 'right',
       size: fontSize,
       weight: '700',
@@ -1065,18 +1099,8 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
     });
   }
 
-  if (grid.selectedLabel) {
-    drawText(ctx, `${grid.selectedLabel}: ${grid.selectedValue || '---'}`, centerX, cursorY, {
-      align: 'right',
-      size: fontSize,
-      weight: '700',
-      color: navy,
-      family: PDF_BODY_FONT_FAMILY,
-    });
-  }
-
-  drawText(ctx, `${grid.toLabel || 'الى تاريخ'} : ${grid.toDate || '---'}`, leftX, cursorY, {
-    align: 'right',
+  drawText(ctx, `${grid.toLabel || 'الى تاريخ'} : ${grid.toDate || '---'}`, leftColX, cursorY, {
+    align: 'left',
     size: fontSize,
     weight: '700',
     color: navy,
@@ -1090,20 +1114,20 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
 function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
   if (!grid) return startY;
 
-  const fontSize = 30;
-  const lineHeight = 46;
+  const fontSize = 44;
+  const lineHeight = 56;
   const marginLeft = 60;
   const marginRight = 60;
   const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
   const red = '#d82534';
 
-  const rightX = spec.width - marginRight - 40;
-  const leftX = marginLeft + 300;
-  const centerX = rightX - 500;
+  const rightColX = spec.width - marginRight - 20;
+  const centerColX = spec.width / 2;
+  const leftColX = marginLeft + 20;
 
-  let cursorY = startY + 18;
+  let cursorY = startY + 48;
 
-  drawText(ctx, `اسم التاجر : ${grid.accountName || '---'}`, rightX, cursorY, {
+  drawText(ctx, `اسم التاجر : ${grid.accountName || '---'}`, rightColX, cursorY, {
     align: 'right',
     size: fontSize,
     weight: '700',
@@ -1111,16 +1135,16 @@ function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
     family: PDF_BODY_FONT_FAMILY,
   });
 
-  drawText(ctx, `المبلغ الصافي: ${grid.netValue || '---'}`, centerX, cursorY, {
-    align: 'right',
+  drawText(ctx, `المبلغ الصافي: ${grid.netValue || '---'}`, centerColX, cursorY, {
+    align: 'center',
     size: fontSize,
     weight: '700',
     color: red,
     family: PDF_BODY_FONT_FAMILY,
   });
 
-  drawText(ctx, `من تاريخ : ${grid.fromDate || '---'}`, leftX, cursorY, {
-    align: 'right',
+  drawText(ctx, `من تاريخ : ${grid.fromDate || '---'}`, leftColX, cursorY, {
+    align: 'left',
     size: fontSize,
     weight: '700',
     color: navy,
@@ -1129,7 +1153,7 @@ function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
 
   cursorY += lineHeight;
 
-  drawText(ctx, `المبلغ عليه: ${grid.amountOnValue || '---'}`, rightX, cursorY, {
+  drawText(ctx, `المبلغ عليه: ${grid.amountOnValue || '---'}`, rightColX, cursorY, {
     align: 'right',
     size: fontSize,
     weight: '700',
@@ -1137,16 +1161,16 @@ function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
     family: PDF_BODY_FONT_FAMILY,
   });
 
-  drawText(ctx, `المبلغ له: ${grid.amountForValue || '---'}`, centerX, cursorY, {
-    align: 'right',
+  drawText(ctx, `المبلغ له: ${grid.amountForValue || '---'}`, centerColX, cursorY, {
+    align: 'center',
     size: fontSize,
     weight: '700',
     color: navy,
     family: PDF_BODY_FONT_FAMILY,
   });
 
-  drawText(ctx, `الى تاريخ : ${grid.toDate || '---'}`, leftX, cursorY, {
-    align: 'right',
+  drawText(ctx, `الى تاريخ : ${grid.toDate || '---'}`, leftColX, cursorY, {
+    align: 'left',
     size: fontSize,
     weight: '700',
     color: navy,
@@ -1160,54 +1184,74 @@ function drawPartnershipHeaderGrid(ctx, spec, startY, grid) {
 function drawTextLineSummary(ctx, spec, startY, summaryCards) {
   if (!summaryCards?.length) return startY;
 
-  const fontSize = 30;
-  const lineHeight = 42;
+  const fontSize = 44;
+  const lineHeight = 56;
   const marginLeft = 60;
   const marginRight = 60;
 
-  let cursorY = startY + 18;
+  // Added padding to prevent text from overlapping the blue header line
+  let cursorY = startY + 48;
 
-  const firstCard = summaryCards[0];
-  const restCards = summaryCards.slice(1);
+  const rightCards = [];
+  const centerCards = [];
+  const leftCards = [];
 
-  drawText(ctx, `${firstCard.label} :  ${firstCard.value}`, spec.width - marginRight - 80, cursorY, {
-    align: 'right',
-    size: fontSize,
-    weight: '700',
-    color: firstCard.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
-    family: PDF_BODY_FONT_FAMILY,
+  summaryCards.forEach((card) => {
+    const lbl = String(card.label || '');
+    if (lbl.includes('تاريخ') || lbl.includes('فترة') || lbl.includes('وزن')) {
+      leftCards.push(card);
+    } else if (lbl.includes('محدد') || lbl.includes('متبقي')) {
+      centerCards.push(card);
+    } else {
+      rightCards.push(card);
+    }
   });
 
-  const leftColWidth = 420;
-  const leftGroupX = marginLeft + leftColWidth * 2 + 20;
+  const maxRows = Math.max(rightCards.length, centerCards.length, leftCards.length);
 
-  for (let i = 0; i < restCards.length; i += 2) {
-    const rowY = cursorY + Math.floor(i / 2) * lineHeight;
-    const card1 = restCards[i];
-    const card2 = restCards[i + 1];
+  const rightColX = spec.width - marginRight - 20;
+  const centerColX = spec.width / 2;
+  const leftColX = marginLeft + 20;
 
-    if (card2) {
-      drawText(ctx, `${card2.label} :  ${card2.value}`, marginLeft + leftColWidth - 10, rowY, {
+  for (let i = 0; i < maxRows; i++) {
+    const rowY = cursorY + (i * lineHeight);
+
+    const rCard = rightCards[i];
+    const cCard = centerCards[i];
+    const lCard = leftCards[i];
+
+    if (rCard) {
+      drawText(ctx, `${rCard.label} :  ${rCard.value}`, rightColX, rowY, {
         align: 'right',
         size: fontSize,
         weight: '700',
-        color: card2.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+        color: rCard.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
         family: PDF_BODY_FONT_FAMILY,
       });
     }
 
-    drawText(ctx, `${card1.label} :  ${card1.value}`, leftGroupX, rowY, {
-      align: 'right',
-      size: fontSize,
-      weight: '700',
-      color: card1.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
-      family: PDF_BODY_FONT_FAMILY,
-    });
+    if (cCard) {
+      drawText(ctx, `${cCard.label} :  ${cCard.value}`, centerColX, rowY, {
+        align: 'center',
+        size: fontSize,
+        weight: '700',
+        color: cCard.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+        family: PDF_BODY_FONT_FAMILY,
+      });
+    }
+
+    if (lCard) {
+      drawText(ctx, `${lCard.label} :  ${lCard.value}`, leftColX, rowY, {
+        align: 'left',
+        size: fontSize,
+        weight: '700',
+        color: lCard.color || TAY_ALRAWI_BRAND_COLORS.headerNavy,
+        family: PDF_BODY_FONT_FAMILY,
+      });
+    }
   }
 
-  const totalDataRows = Math.ceil(restCards.length / 2);
-  cursorY += totalDataRows * lineHeight;
-
+  cursorY += maxRows * lineHeight;
   return cursorY + 8;
 }
 
@@ -1940,17 +1984,20 @@ export async function exportToPDF({
     return;
   }
 
+  const finalSummaryCards = summaryCards || (printContext ? buildPortStatementSummaryCards(printContext) : undefined);
+  const finalSummaryStyle = summaryStyle || (finalSummaryCards?.length ? 'text-lines' : undefined);
+
   await exportReportAsCanvasPdf({
     rows,
     columns,
     title,
     subtitle,
     filename,
-    summaryCards,
+    summaryCards: finalSummaryCards,
     totalsRow,
     orientation,
     branded,
-    summaryStyle,
+    summaryStyle: finalSummaryStyle,
     sectionKey,
   });
 }
