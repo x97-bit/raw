@@ -61,7 +61,7 @@ const ACCOUNT_TYPES = [
 ];
 
 function arg(name) {
-  const exact = process.argv.find((value) => value.startsWith(`${name}=`));
+  const exact = process.argv.find(value => value.startsWith(`${name}=`));
   if (exact) return exact.slice(name.length + 1);
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] || null : null;
@@ -97,7 +97,7 @@ function toStatements(sqlText) {
     .replace(/CREATE DATABASE IF NOT EXISTS[\s\S]*?;/i, "")
     .replace(/USE\s+`?[\w-]+`?\s*;/gi, "")
     .split(/;\s*\n/)
-    .map((statement) => statement.trim())
+    .map(statement => statement.trim())
     .filter(Boolean);
 }
 
@@ -111,15 +111,30 @@ async function runSqlFile(connection, filePath) {
 }
 
 async function ensureColumn(connection, tableName, columnName, definitionSql) {
-  const [rows] = await connection.query(`SHOW COLUMNS FROM \`${tableName}\` LIKE ?`, [columnName]);
+  const [rows] = await connection.query(
+    `SHOW COLUMNS FROM \`${tableName}\` LIKE ?`,
+    [columnName]
+  );
   if (Array.isArray(rows) && rows.length === 0) {
-    await connection.query(`ALTER TABLE \`${tableName}\` ADD COLUMN ${definitionSql}`);
+    await connection.query(
+      `ALTER TABLE \`${tableName}\` ADD COLUMN ${definitionSql}`
+    );
   }
 }
 
 async function ensureRuntimeSupportTables(connection) {
-  await ensureColumn(connection, "field_config", "display_label", "`display_label` VARCHAR(255) NULL AFTER `sort_order`");
-  await ensureColumn(connection, "app_users", "profile_image", "`profile_image` LONGTEXT NULL AFTER `name`");
+  await ensureColumn(
+    connection,
+    "field_config",
+    "display_label",
+    "`display_label` VARCHAR(255) NULL AFTER `sort_order`"
+  );
+  await ensureColumn(
+    connection,
+    "app_users",
+    "profile_image",
+    "`profile_image` LONGTEXT NULL AFTER `name`"
+  );
 
   await connection.query(`
     CREATE TABLE IF NOT EXISTS companies (
@@ -194,12 +209,19 @@ async function ensureRuntimeSupportTables(connection) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  await ensureColumn(connection, "transactions", "company_id", "`company_id` INT NULL AFTER `company_name`");
+  await ensureColumn(
+    connection,
+    "transactions",
+    "company_id",
+    "`company_id` INT NULL AFTER `company_name`"
+  );
 }
 
 async function seedBaseLookups(connection) {
   await connection.query("INSERT IGNORE INTO `app_users` SET ?", ADMIN_USER);
-  await connection.query("INSERT IGNORE INTO `users` (`openId`, `name`, `role`) VALUES ('system', 'System', 'admin')");
+  await connection.query(
+    "INSERT IGNORE INTO `users` (`openId`, `name`, `role`) VALUES ('system', 'System', 'admin')"
+  );
 
   for (const row of PORTS) {
     await connection.query("INSERT IGNORE INTO `ports` SET ?", row);
@@ -212,17 +234,23 @@ async function seedBaseLookups(connection) {
 
 async function main() {
   if (!DATABASE_URL) {
-    throw new Error("DATABASE_URL is missing. Set it in source-code/.env or pass --database-url");
+    throw new Error(
+      "DATABASE_URL is missing. Set it in source-code/.env or pass --database-url"
+    );
   }
 
   const admin = await mysql.createConnection(cfg(DATABASE_URL, false));
 
   try {
-    const [existing] = await admin.query("SHOW DATABASES LIKE ?", [TARGET_DB_NAME]);
+    const [existing] = await admin.query("SHOW DATABASES LIKE ?", [
+      TARGET_DB_NAME,
+    ]);
     const exists = Array.isArray(existing) && existing.length > 0;
 
     if (exists && !RESET) {
-      throw new Error(`Database '${TARGET_DB_NAME}' already exists. Re-run with --reset to rebuild it.`);
+      throw new Error(
+        `Database '${TARGET_DB_NAME}' already exists. Re-run with --reset to rebuild it.`
+      );
     }
 
     if (exists) {
@@ -236,7 +264,9 @@ async function main() {
     await admin.end();
   }
 
-  const target = await mysql.createConnection(cfg(DATABASE_URL, TARGET_DB_NAME));
+  const target = await mysql.createConnection(
+    cfg(DATABASE_URL, TARGET_DB_NAME)
+  );
 
   try {
     await runSqlFile(target, SCHEMA_FILE);
@@ -275,7 +305,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error);
   process.exit(1);
 });

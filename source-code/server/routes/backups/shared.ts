@@ -1,37 +1,70 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 import mysql from "mysql2/promise";
 import { z } from "zod";
+import * as drizzleSchema from "../../../drizzle/schema";
+import { getTableName, getTableColumns } from "drizzle-orm";
+import { MySqlTable } from "drizzle-orm/mysql-core";
 import { buildMySqlConnectionOptions } from "../../_core/mysqlConfig";
-import { RequestValidationError, validateInput } from "../../_core/requestValidation";
+import {
+  RequestValidationError,
+  validateInput,
+} from "../../_core/requestValidation";
 
 export const BACKUP_FORMAT = "alrawi-backup-v1";
 export const BACKUP_IMPORT_CONFIRM_PHRASE = "IMPORT_BACKUP";
 const BACKUP_TABLE_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
-const BACKUP_IMPORT_MAX_TABLES = Number.parseInt(process.env.BACKUP_IMPORT_MAX_TABLES || "80", 10) || 80;
-const BACKUP_IMPORT_MAX_ROWS_PER_TABLE = Number.parseInt(process.env.BACKUP_IMPORT_MAX_ROWS_PER_TABLE || "50000", 10) || 50_000;
-const BACKUP_IMPORT_MAX_TOTAL_ROWS = Number.parseInt(process.env.BACKUP_IMPORT_MAX_TOTAL_ROWS || "250000", 10) || 250_000;
+const BACKUP_IMPORT_MAX_TABLES =
+  Number.parseInt(process.env.BACKUP_IMPORT_MAX_TABLES || "80", 10) || 80;
+const BACKUP_IMPORT_MAX_ROWS_PER_TABLE =
+  Number.parseInt(
+    process.env.BACKUP_IMPORT_MAX_ROWS_PER_TABLE || "50000",
+    10
+  ) || 50_000;
+const BACKUP_IMPORT_MAX_TOTAL_ROWS =
+  Number.parseInt(process.env.BACKUP_IMPORT_MAX_TOTAL_ROWS || "250000", 10) ||
+  250_000;
 
 const HIDDEN_TABLES = new Set(["__drizzle_migrations"]);
 const SKIP_IMPORT_BY_DEFAULT = new Set(["__drizzle_migrations", "app_users"]);
 const JSON_DATA_TYPES = new Set(["json"]);
 const DATE_LIKE_TYPES = new Set(["date", "datetime", "timestamp"]);
-const DEFAULT_APP_BACKUP_DIR = path.resolve(process.cwd(), "database", "backups", "app-backups");
-const DEFAULT_IMPORT_REPORT_DIR = path.resolve(process.cwd(), "database", "import-reports", "backups");
-const DEFAULT_SQL_BACKUP_DIR = process.platform === "win32"
-  ? path.resolve(process.cwd(), "database", "backups", "daily-sql")
-  : "/var/backups/alrawi/mysql";
-const DEFAULT_DAILY_SCRIPT_PATH = process.platform === "win32"
-  ? path.resolve(process.cwd(), "deploy", "vps", "backup-db.sh")
-  : path.resolve(process.cwd(), "deploy", "vps", "backup-db.sh");
+const DEFAULT_APP_BACKUP_DIR = path.resolve(
+  process.cwd(),
+  "database",
+  "backups",
+  "app-backups"
+);
+const DEFAULT_IMPORT_REPORT_DIR = path.resolve(
+  process.cwd(),
+  "database",
+  "import-reports",
+  "backups"
+);
+const DEFAULT_SQL_BACKUP_DIR =
+  process.platform === "win32"
+    ? path.resolve(process.cwd(), "database", "backups", "daily-sql")
+    : "/var/backups/alrawi/mysql";
+const DEFAULT_DAILY_SCRIPT_PATH =
+  process.platform === "win32"
+    ? path.resolve(process.cwd(), "deploy", "vps", "backup-db.sh")
+    : path.resolve(process.cwd(), "deploy", "vps", "backup-db.sh");
 const DEFAULT_RECOMMENDED_CRON = `${DEFAULT_DAILY_SCRIPT_PATH} >> /var/log/alrawi-db-backup.log 2>&1`;
-const DEFAULT_DAILY_RETENTION_DAYS = Number.parseInt(process.env.DAILY_BACKUP_RETENTION_DAYS || "14", 10) || 14;
+const DEFAULT_DAILY_RETENTION_DAYS =
+  Number.parseInt(process.env.DAILY_BACKUP_RETENTION_DAYS || "14", 10) || 14;
 
-export const APP_BACKUP_DIR = process.env.APP_BACKUP_DIR || DEFAULT_APP_BACKUP_DIR;
-export const IMPORT_REPORT_DIR = process.env.IMPORT_REPORT_DIR || DEFAULT_IMPORT_REPORT_DIR;
-export const SQL_BACKUP_DIR = process.env.SQL_BACKUP_DIR || DEFAULT_SQL_BACKUP_DIR;
-export const DAILY_BACKUP_SCRIPT_PATH = process.env.DAILY_BACKUP_SCRIPT_PATH || DEFAULT_DAILY_SCRIPT_PATH;
-export const DAILY_BACKUP_RECOMMENDED_CRON = process.env.DAILY_BACKUP_RECOMMENDED_CRON || `0 3 * * * ${DEFAULT_RECOMMENDED_CRON}`;
+export const APP_BACKUP_DIR =
+  process.env.APP_BACKUP_DIR || DEFAULT_APP_BACKUP_DIR;
+export const IMPORT_REPORT_DIR =
+  process.env.IMPORT_REPORT_DIR || DEFAULT_IMPORT_REPORT_DIR;
+export const SQL_BACKUP_DIR =
+  process.env.SQL_BACKUP_DIR || DEFAULT_SQL_BACKUP_DIR;
+export const DAILY_BACKUP_SCRIPT_PATH =
+  process.env.DAILY_BACKUP_SCRIPT_PATH || DEFAULT_DAILY_SCRIPT_PATH;
+export const DAILY_BACKUP_RECOMMENDED_CRON =
+  process.env.DAILY_BACKUP_RECOMMENDED_CRON ||
+  `0 3 * * * ${DEFAULT_RECOMMENDED_CRON}`;
 export const DAILY_BACKUP_RETENTION_DAYS = DEFAULT_DAILY_RETENTION_DAYS;
 
 const tablePriorityOrder = [
@@ -60,7 +93,10 @@ const tablePriorityOrder = [
   "entity_aliases",
 ];
 
-const backupDataSchema = z.record(z.string(), z.array(z.record(z.string(), z.unknown())));
+const backupDataSchema = z.record(
+  z.string(),
+  z.array(z.record(z.string(), z.unknown()))
+);
 const structuredBackupPayloadSchema = z.object({
   meta: z.record(z.string(), z.unknown()).optional(),
   schema: z.record(z.string(), z.unknown()).optional(),
@@ -120,7 +156,12 @@ type BackupImportReport = {
   counts: Record<string, number>;
 };
 
-const structuredBackupPayloadKeys = new Set(["meta", "schema", "counts", "data"]);
+const structuredBackupPayloadKeys = new Set([
+  "meta",
+  "schema",
+  "counts",
+  "data",
+]);
 
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -166,49 +207,70 @@ function normalizeBackupSection(value: unknown): Record<string, unknown> {
   return isRecord(value) ? { ...value } : {};
 }
 
-function isStructuredBackupPayload(payload: unknown): payload is StructuredBackupPayload {
-  if (!isRecord(payload) || !Object.prototype.hasOwnProperty.call(payload, "data")) {
+function isStructuredBackupPayload(
+  payload: unknown
+): payload is StructuredBackupPayload {
+  if (
+    !isRecord(payload) ||
+    !Object.prototype.hasOwnProperty.call(payload, "data")
+  ) {
     return false;
   }
 
-  return Object.keys(payload).every((key) => structuredBackupPayloadKeys.has(key));
+  return Object.keys(payload).every(key =>
+    structuredBackupPayloadKeys.has(key)
+  );
 }
 
 function validateBackupDataShape(data: BackupData) {
   const tableNames = Object.keys(data || {});
 
   if (tableNames.length === 0) {
-    throw new RequestValidationError("ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظ„ط§ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯.");
+    throw new RequestValidationError(
+      "ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظ„ط§ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯."
+    );
   }
 
   if (tableNames.length > BACKUP_IMPORT_MAX_TABLES) {
-    throw new RequestValidationError(`ط¹ط¯ط¯ ط§ظ„ط¬ط¯ط§ظˆظ„ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TABLES}).`);
+    throw new RequestValidationError(
+      `ط¹ط¯ط¯ ط§ظ„ط¬ط¯ط§ظˆظ„ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TABLES}).`
+    );
   }
 
   let totalRows = 0;
 
   for (const tableName of tableNames) {
     if (!BACKUP_TABLE_NAME_PATTERN.test(tableName)) {
-      throw new RequestValidationError(`ط§ط³ظ… ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ ط¯ط§ط®ظ„ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط©.`);
+      throw new RequestValidationError(
+        `ط§ط³ظ… ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ ط¯ط§ط®ظ„ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط©.`
+      );
     }
 
     const rows = data[tableName];
     if (!Array.isArray(rows)) {
-      throw new RequestValidationError(`ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ط©.`);
+      throw new RequestValidationError(
+        `ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­ط©.`
+      );
     }
 
     if (rows.length > BACKUP_IMPORT_MAX_ROWS_PER_TABLE) {
-      throw new RequestValidationError(`ط¹ط¯ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_ROWS_PER_TABLE}).`);
+      throw new RequestValidationError(
+        `ط¹ط¯ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_ROWS_PER_TABLE}).`
+      );
     }
 
     totalRows += rows.length;
     if (totalRows > BACKUP_IMPORT_MAX_TOTAL_ROWS) {
-      throw new RequestValidationError(`ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TOTAL_ROWS}).`);
+      throw new RequestValidationError(
+        `ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط³ط¬ظ„ط§طھ ظپظٹ ظ…ظ„ظپ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ظٹطھط¬ط§ظˆط² ط§ظ„ط­ط¯ ط§ظ„ظ…ط³ظ…ظˆط­ (${BACKUP_IMPORT_MAX_TOTAL_ROWS}).`
+      );
     }
 
     for (const row of rows) {
       if (!row || typeof row !== "object" || Array.isArray(row)) {
-        throw new RequestValidationError(`ط£ط­ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ط¯ط§ط®ظ„ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­.`);
+        throw new RequestValidationError(
+          `ط£ط­ط¯ ط§ظ„ط³ط¬ظ„ط§طھ ط¯ط§ط®ظ„ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ط؛ظٹط± طµط§ظ„ط­.`
+        );
       }
     }
   }
@@ -226,7 +288,9 @@ function isTemplateOnlyBackup(meta: BackupMeta) {
   return meta.templateOnly === true;
 }
 
-export function normalizeBackupPayload(payload: unknown): NormalizedBackupPayload {
+export function normalizeBackupPayload(
+  payload: unknown
+): NormalizedBackupPayload {
   if (isStructuredBackupPayload(payload)) {
     if (!isRecord(payload.data)) {
       throw new RequestValidationError("ملف النسخة الاحتياطية غير صالح.");
@@ -260,7 +324,9 @@ export function normalizeBackupPayload(payload: unknown): NormalizedBackupPayloa
 
 export function assertImportableBackupPayload(backup: NormalizedBackupPayload) {
   if (isTemplateOnlyBackup(backup.meta)) {
-    throw new RequestValidationError("لا يمكن استيراد قالب القاعدة. استخدم نسخة احتياطية فعلية فقط.");
+    throw new RequestValidationError(
+      "لا يمكن استيراد قالب القاعدة. استخدم نسخة احتياطية فعلية فقط."
+    );
   }
 
   const backupFormat = resolveBackupFormat(backup.meta);
@@ -284,17 +350,17 @@ async function listExportableTables(connection: mysql.Connection) {
   const tableRows = rows as Array<Record<string, unknown>>;
 
   return tableRows
-    .map((row) => {
+    .map(row => {
       const firstKey = Object.keys(row)[0];
       return String((row as Record<string, unknown>)[firstKey] || "");
     })
-    .filter((tableName) => tableName && !HIDDEN_TABLES.has(tableName));
+    .filter(tableName => tableName && !HIDDEN_TABLES.has(tableName));
 }
 
 async function getTableSchemas(
   connection: mysql.Connection,
   databaseName: string,
-  tableNames: string[],
+  tableNames: string[]
 ) {
   if (tableNames.length === 0) {
     return {} as Record<string, BackupColumn[]>;
@@ -317,7 +383,7 @@ async function getTableSchemas(
         AND TABLE_NAME IN (${placeholders})
       ORDER BY TABLE_NAME, ORDINAL_POSITION
     `,
-    [databaseName, ...tableNames],
+    [databaseName, ...tableNames]
   );
 
   const result: Record<string, BackupColumn[]> = {};
@@ -333,7 +399,8 @@ async function getTableSchemas(
       type: String(row.columnType || ""),
       dataType: String(row.dataType || ""),
       nullable: String(row.isNullable || "").toUpperCase() === "YES",
-      defaultValue: (row.columnDefault as string | number | null | undefined) ?? null,
+      defaultValue:
+        (row.columnDefault as string | number | null | undefined) ?? null,
       key: String(row.columnKey || ""),
       extra: String(row.extra || ""),
     });
@@ -347,13 +414,17 @@ async function readTableRows(connection: mysql.Connection, tableName: string) {
   return rows as Array<Record<string, unknown>>;
 }
 
-async function readBackupFiles(directory: string, pattern: RegExp, limit = 8): Promise<BackupFileInfo[]> {
+async function readBackupFiles(
+  directory: string,
+  pattern: RegExp,
+  limit = 8
+): Promise<BackupFileInfo[]> {
   try {
     const entries = await fs.readdir(directory, { withFileTypes: true });
     const files = await Promise.all(
       entries
-        .filter((entry) => entry.isFile() && pattern.test(entry.name))
-        .map(async (entry) => {
+        .filter(entry => entry.isFile() && pattern.test(entry.name))
+        .map(async entry => {
           const filePath = path.join(directory, entry.name);
           const stats = await fs.stat(filePath);
           return {
@@ -362,11 +433,14 @@ async function readBackupFiles(directory: string, pattern: RegExp, limit = 8): P
             sizeBytes: stats.size,
             modifiedAt: stats.mtime.toISOString(),
           };
-        }),
+        })
     );
 
     return files
-      .sort((left, right) => Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt))
+      .sort(
+        (left, right) =>
+          Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt)
+      )
       .slice(0, limit);
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
@@ -387,7 +461,9 @@ async function pathExists(targetPath: string) {
 }
 
 function sortTablesByPriority(tableNames: string[]) {
-  const priorityMap = new Map(tablePriorityOrder.map((tableName, index) => [tableName, index]));
+  const priorityMap = new Map(
+    tablePriorityOrder.map((tableName, index) => [tableName, index])
+  );
 
   return [...tableNames].sort((left, right) => {
     const leftPriority = priorityMap.get(left) ?? Number.MAX_SAFE_INTEGER;
@@ -401,7 +477,11 @@ function sortTablesByPriority(tableNames: string[]) {
   });
 }
 
-function normalizeValueForInsert(tableName: string, column: BackupColumn, value: unknown) {
+function normalizeValueForInsert(
+  tableName: string,
+  column: BackupColumn,
+  value: unknown
+) {
   if (value === undefined) {
     return null;
   }
@@ -412,13 +492,19 @@ function normalizeValueForInsert(tableName: string, column: BackupColumn, value:
 
   if (value === "" && DATE_LIKE_TYPES.has(column.dataType)) {
     if (!column.nullable) {
-      throw new RequestValidationError(`ط§ظ„ط­ظ‚ظ„ ${column.name} ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹط­طھظˆظٹ طھط§ط±ظٹط®ط§ظ‹ ظپط§ط±ط؛ط§ظ‹ ط؛ظٹط± طµط§ظ„ط­.`);
+      throw new RequestValidationError(
+        `ط§ظ„ط­ظ‚ظ„ ${column.name} ظپظٹ ط§ظ„ط¬ط¯ظˆظ„ ${tableName} ظٹط­طھظˆظٹ طھط§ط±ظٹط®ط§ظ‹ ظپط§ط±ط؛ط§ظ‹ ط؛ظٹط± طµط§ظ„ط­.`
+      );
     }
 
     return null;
   }
 
-  if (value !== null && JSON_DATA_TYPES.has(column.dataType) && typeof value !== "string") {
+  if (
+    value !== null &&
+    JSON_DATA_TYPES.has(column.dataType) &&
+    typeof value !== "string"
+  ) {
     return JSON.stringify(value);
   }
 
@@ -429,27 +515,31 @@ async function insertRowsInChunks(
   connection: mysql.Connection,
   tableName: string,
   columns: BackupColumn[],
-  rows: Array<Record<string, unknown>>,
+  rows: Array<Record<string, unknown>>
 ) {
   if (rows.length === 0 || columns.length === 0) {
     return;
   }
 
   const chunkSize = 200;
-  const columnNames = columns.map((column) => column.name);
-  const escapedColumnList = columnNames.map((columnName) => `\`${columnName}\``).join(", ");
+  const columnNames = columns.map(column => column.name);
+  const escapedColumnList = columnNames
+    .map(columnName => `\`${columnName}\``)
+    .join(", ");
   const rowPlaceholder = `(${columnNames.map(() => "?").join(", ")})`;
 
   for (let start = 0; start < rows.length; start += chunkSize) {
     const chunk = rows.slice(start, start + chunkSize);
     const placeholders = chunk.map(() => rowPlaceholder).join(", ");
-    const values = chunk.flatMap((row) => (
-      columns.map((column) => normalizeValueForInsert(tableName, column, row[column.name]))
-    ));
+    const values = chunk.flatMap(row =>
+      columns.map(column =>
+        normalizeValueForInsert(tableName, column, row[column.name])
+      )
+    );
 
     await connection.query(
       `INSERT INTO \`${tableName}\` (${escapedColumnList}) VALUES ${placeholders}`,
-      values,
+      values
     );
   }
 }
@@ -457,6 +547,39 @@ async function insertRowsInChunks(
 async function writeJsonFile(filePath: string, payload: unknown) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+}
+
+export async function validateSchemaDrift(liveSchema: Record<string, BackupColumn[]>) {
+  const drizzleTables = Object.values(drizzleSchema).filter(
+    (obj) => obj instanceof MySqlTable
+  );
+
+  const drizzleTableNames = drizzleTables.map((t) => getTableName(t));
+  const liveTableNames = Object.keys(liveSchema);
+
+  const missingInDb = drizzleTableNames.filter((t) => !liveTableNames.includes(t));
+  if (missingInDb.length > 0) {
+    throw new RequestValidationError(
+      `تم اكتشاف عدم تطابق في المخطط: الجداول التالية مفقودة في قاعدة البيانات: ${missingInDb.join(", ")}`
+    );
+  }
+
+  for (const table of drizzleTables) {
+    const tableName = getTableName(table);
+    const liveColumns = liveSchema[tableName] || [];
+    const liveColNames = new Set(liveColumns.map(c => c.name));
+
+    const drizzleCols = getTableColumns(table);
+    const missingCols = Object.keys(drizzleCols).filter(
+      (cKey) => !liveColNames.has(drizzleCols[cKey].name)
+    );
+
+    if (missingCols.length > 0) {
+      throw new RequestValidationError(
+        `تم اكتشاف عدم تطابق في المخطط: الجدول '${tableName}' يفتقد للأعمدة التالية: ${missingCols.map(c => drizzleCols[c].name).join(", ")}`
+      );
+    }
+  }
 }
 
 export async function buildBackupPayload({
@@ -471,23 +594,57 @@ export async function buildBackupPayload({
   const connection = await openBackupConnection();
 
   try {
-    const tableNames = sortTablesByPriority(await listExportableTables(connection));
-    const schema = await getTableSchemas(connection, databaseInfo.database, tableNames);
+    const drizzleTables = Object.values(drizzleSchema).filter(
+      (obj) => obj instanceof MySqlTable
+    ).map(t => getTableName(t));
+
+    // Combine derived tables with prioritized sorting.
+    const allKnownTables = Array.from(new Set([...tablePriorityOrder, ...drizzleTables]));
+    const tableNames = sortTablesByPriority(
+      (await listExportableTables(connection)).filter(t => allKnownTables.includes(t))
+    );
+
+    const schema = await getTableSchemas(
+      connection,
+      databaseInfo.database,
+      tableNames
+    );
+
+    await validateSchemaDrift(schema);
+
     const data: Record<string, Array<Record<string, unknown>>> = {};
     const counts: Record<string, number> = {};
 
     for (const tableName of tableNames) {
-      const rows = templateOnly ? [] : await readTableRows(connection, tableName);
+      let rows = templateOnly
+        ? []
+        : await readTableRows(connection, tableName);
+
+      if (tableName === "app_users" || tableName === "users") {
+        rows = rows.map(row => {
+          const safeRow = { ...row };
+          if ("password" in safeRow) safeRow.password = "***MASKED***";
+          return safeRow;
+        });
+      }
+
       data[tableName] = rows;
       counts[tableName] = rows.length;
     }
 
+    const payloadChecksum = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(data))
+      .digest("hex");
+
     return {
       meta: {
         format: BACKUP_FORMAT,
+        version: "1.1",
         templateOnly,
         createdAt: new Date().toISOString(),
         generatedBy: generatedBy || null,
+        checksum: payloadChecksum,
         database: {
           host: databaseInfo.host,
           port: databaseInfo.port,
@@ -497,13 +654,13 @@ export async function buildBackupPayload({
         databaseUrlMasked: maskDatabaseUrl(databaseUrl),
         notes: templateOnly
           ? [
-            "ظ‡ط°ط§ ظ‚ط§ظ„ط¨ ظ‚ط§ط¹ط¯ط© ط¨ظٹط§ظ†ط§طھ ط¨ط¯ظˆظ† ط¨ظٹط§ظ†ط§طھ طھط´ط؛ظٹظ„ظٹط©.",
-            "ط§ظ„ط§ط³طھظٹط±ط§ط¯ ظ…ظ† ط§ظ„ظ‚ط§ظ„ط¨ ط؛ظٹط± ظ…ط³ظ…ظˆط­ ط­ظپط§ط¸ط§ظ‹ ط¹ظ„ظ‰ ط³ظ„ط§ظ…ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ.",
-          ]
+              "هذا قالب قاعدة بيانات بدون بيانات تشغيلية.",
+              "الاستيراد من القالب غير مسموح حفاظاً على سلامة البيانات.",
+            ]
           : [
-            "ظ‡ط°ظ‡ ظ†ط³ط®ط© ط§ط­طھظٹط§ط·ظٹط© ظƒط§ظ…ظ„ط© ط¨طµظٹط؛ط© JSON.",
-            "ط§ط³طھظٹط±ط§ط¯ ط§ظ„ظ†ط³ط®ط© ظٹط­ظپط¸ ظ…ط³طھط®ط¯ظ…ظٹ ط§ظ„ظ†ط¸ط§ظ… ط§ظ„ط­ط§ظ„ظٹظٹظ† ط¨ط´ظƒظ„ ط§ظپطھط±ط§ط¶ظٹ.",
-          ],
+              "هذه نسخة احتياطية كاملة بصيغة JSON.",
+              "استيراد النسخة يحفظ مستخدمي النظام الحاليين بشكل افتراضي.",
+            ],
       },
       schema,
       counts,
@@ -514,7 +671,10 @@ export async function buildBackupPayload({
   }
 }
 
-export async function saveBackupPayload(payload: unknown, prefix = "alrawi-backup") {
+export async function saveBackupPayload(
+  payload: unknown,
+  prefix = "alrawi-backup"
+) {
   const fileName = `${prefix}-${sanitizeTimestampForFile()}.json`;
   const filePath = path.join(APP_BACKUP_DIR, fileName);
 
@@ -544,12 +704,18 @@ export async function getBackupStatus() {
   const connection = await openBackupConnection();
 
   try {
-    const tableNames = sortTablesByPriority(await listExportableTables(connection));
+    const tableNames = sortTablesByPriority(
+      await listExportableTables(connection)
+    );
     const tableCounts: Record<string, number> = {};
 
     for (const tableName of tableNames) {
-      const [rows] = await connection.query(`SELECT COUNT(*) AS count FROM \`${tableName}\``);
-      tableCounts[tableName] = Number((rows as Array<Record<string, unknown>>)[0]?.count || 0);
+      const [rows] = await connection.query(
+        `SELECT COUNT(*) AS count FROM \`${tableName}\``
+      );
+      tableCounts[tableName] = Number(
+        (rows as Array<Record<string, unknown>>)[0]?.count || 0
+      );
     }
 
     const appGenerated = await readBackupFiles(APP_BACKUP_DIR, /\.json$/i);
@@ -585,7 +751,9 @@ export async function getBackupStatus() {
         recommendedCron: DAILY_BACKUP_RECOMMENDED_CRON,
         retentionDays: DAILY_BACKUP_RETENTION_DAYS,
         latestBackup: latestDailyBackup,
-        healthy: Boolean(latestDailyBackup) && latestDailyBackupAgeMs <= 36 * 60 * 60 * 1000,
+        healthy:
+          Boolean(latestDailyBackup) &&
+          latestDailyBackupAgeMs <= 36 * 60 * 60 * 1000,
       },
     };
   } finally {
@@ -598,7 +766,11 @@ export function buildDownloadFileName(prefix: string, extension = "json") {
 }
 
 export function parseImportRequest(payload: unknown): BackupImportRequest {
-  return validateInput(backupImportRequestSchema, payload, "ط·ظ„ط¨ ط§ظ„ط§ط³طھظٹط±ط§ط¯ ط؛ظٹط± طµط§ظ„ط­.");
+  return validateInput(
+    backupImportRequestSchema,
+    payload,
+    "ط·ظ„ط¨ ط§ظ„ط§ط³طھظٹط±ط§ط¯ ط؛ظٹط± طµط§ظ„ط­."
+  );
 }
 
 export async function importBackupPayload({
@@ -622,7 +794,10 @@ export async function importBackupPayload({
     templateOnly: false,
     generatedBy: generatedBy || "system",
   });
-  const preImportBackup = await saveBackupPayload(liveSnapshot, "alrawi-pre-import");
+  const preImportBackup = await saveBackupPayload(
+    liveSnapshot,
+    "alrawi-pre-import"
+  );
 
   const connection = await openBackupConnection();
 
@@ -633,7 +808,7 @@ export async function importBackupPayload({
     const skippedTables: string[] = [];
 
     const importableTables = sortTablesByPriority(
-      requestedTables.filter((tableName) => {
+      requestedTables.filter(tableName => {
         if (!availableTables.has(tableName)) {
           skippedTables.push(tableName);
           return false;
@@ -645,14 +820,20 @@ export async function importBackupPayload({
         }
 
         return true;
-      }),
+      })
     );
 
     if (importableTables.length === 0) {
-      throw new RequestValidationError("ظ„ط§ طھظˆط¬ط¯ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯ ط¯ط§ط®ظ„ ط§ظ„ظ…ظ„ظپ.");
+      throw new RequestValidationError(
+        "ظ„ط§ طھظˆط¬ط¯ ط¬ط¯ط§ظˆظ„ ظ‚ط§ط¨ظ„ط© ظ„ظ„ط§ط³طھظٹط±ط§ط¯ ط¯ط§ط®ظ„ ط§ظ„ظ…ظ„ظپ."
+      );
     }
 
-    const liveSchema = await getTableSchemas(connection, databaseInfo.database, importableTables);
+    const liveSchema = await getTableSchemas(
+      connection,
+      databaseInfo.database,
+      importableTables
+    );
     const tableImportCounts: Record<string, number> = {};
 
     await connection.beginTransaction();
@@ -666,8 +847,15 @@ export async function importBackupPayload({
 
       for (const tableName of importableTables) {
         const tableRows = normalizedBackup.data[tableName] || [];
-        const tableColumns = (liveSchema[tableName] || []).filter((column) => !column.extra.includes("VIRTUAL GENERATED"));
-        await insertRowsInChunks(connection, tableName, tableColumns, tableRows);
+        const tableColumns = (liveSchema[tableName] || []).filter(
+          column => !column.extra.includes("VIRTUAL GENERATED")
+        );
+        await insertRowsInChunks(
+          connection,
+          tableName,
+          tableColumns,
+          tableRows
+        );
         tableImportCounts[tableName] = tableRows.length;
       }
 
@@ -697,7 +885,8 @@ export async function importBackupPayload({
     const reportFile = await saveImportReport(report);
 
     return {
-      message: "طھظ… ط§ط³طھظٹط±ط§ط¯ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ط¨ظ†ط¬ط§ط­.",
+      message:
+        "طھظ… ط§ط³طھظٹط±ط§ط¯ ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھظٹط§ط·ظٹط© ط¨ظ†ط¬ط§ط­.",
       preImportBackup,
       reportFile,
       importedTables: importableTables,
@@ -708,5 +897,3 @@ export async function importBackupPayload({
     await connection.end();
   }
 }
-
-

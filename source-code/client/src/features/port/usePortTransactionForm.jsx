@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import PortBuiltInField from './components/PortBuiltInField';
-import PortDynamicFieldRenderer from './components/PortDynamicFieldRenderer';
+import { useCallback, useEffect, useRef, useState } from "react";
+import PortBuiltInField from "./components/PortBuiltInField";
+import PortDynamicFieldRenderer from "./components/PortDynamicFieldRenderer";
 import {
   buildCustomFieldValuePayload,
   getInitialCustomFieldValues,
-} from '../../utils/customFields';
+} from "../../utils/customFields";
 import {
   applySuggestedDefaultsToForm,
   buildAccountDefaultsPayload,
@@ -12,21 +12,22 @@ import {
   buildRouteDefaultsPayload,
   formatPortNumber,
   getPortFormTarget,
-} from './portPageHelpers';
+} from "./portPageHelpers";
 import {
   buildPortAccountPayload,
   sanitizePortTransactionPayload,
-} from './portTransactionFormHelpers';
+} from "./portTransactionFormHelpers";
 
-const ACCOUNT_REQUIRED_MESSAGE = 'يرجى إدخال اسم التاجر';
-const SAVE_SUCCESS_PREFIX = 'تم الحفظ بنجاح - ';
-const UPDATE_SUCCESS_MESSAGE = 'تم التحديث بنجاح';
-const DELETE_CONFIRM_MESSAGE = 'هل أنت متأكد من حذف هذه المعاملة؟';
-const DELETE_SUCCESS_MESSAGE = 'تم الحذف';
-const ACCOUNT_DEFAULTS_ACCOUNT_REQUIRED = 'اختر التاجر أولاً لحفظ افتراضيات التاجر';
-const ACCOUNT_DEFAULTS_SUCCESS_MESSAGE = 'تم حفظ افتراضيات التاجر';
-const ROUTE_DEFAULTS_GOV_REQUIRED = 'اختر المحافظة أولاً لحفظ افتراضيات المسار';
-const ROUTE_DEFAULTS_SUCCESS_MESSAGE = 'تم حفظ افتراضيات المسار';
+const ACCOUNT_REQUIRED_MESSAGE = "يرجى إدخال اسم التاجر";
+const SAVE_SUCCESS_PREFIX = "تم الحفظ بنجاح - ";
+const UPDATE_SUCCESS_MESSAGE = "تم التحديث بنجاح";
+const DELETE_CONFIRM_MESSAGE = "هل أنت متأكد من حذف هذه المعاملة؟";
+const DELETE_SUCCESS_MESSAGE = "تم الحذف";
+const ACCOUNT_DEFAULTS_ACCOUNT_REQUIRED =
+  "اختر التاجر أولاً لحفظ افتراضيات التاجر";
+const ACCOUNT_DEFAULTS_SUCCESS_MESSAGE = "تم حفظ افتراضيات التاجر";
+const ROUTE_DEFAULTS_GOV_REQUIRED = "اختر المحافظة أولاً لحفظ افتراضيات المسار";
+const ROUTE_DEFAULTS_SUCCESS_MESSAGE = "تم حفظ افتراضيات المسار";
 
 export default function usePortTransactionForm({
   api,
@@ -59,49 +60,64 @@ export default function usePortTransactionForm({
 }) {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [traderText, setTraderText] = useState('');
+  const [message, setMessage] = useState("");
+  const [traderText, setTraderText] = useState("");
   const [savingAccountDefaults, setSavingAccountDefaults] = useState(false);
   const [savingRouteDefaults, setSavingRouteDefaults] = useState(false);
   const initialFormOpenedRef = useRef(false);
 
   useEffect(() => {
-    if (view !== 'form' || editableCustomFields.length === 0) return;
-    setForm((current) => ({ ...getInitialCustomFieldValues(editableCustomFields), ...current }));
+    if (view !== "form" || editableCustomFields.length === 0) return;
+    setForm(current => ({
+      ...getInitialCustomFieldValues(editableCustomFields),
+      ...current,
+    }));
   }, [editableCustomFields, view]);
 
-  const applySuggestedDefaults = useCallback((defaults) => {
-    setForm((current) => applySuggestedDefaultsToForm({
-      currentForm: current,
-      defaults,
-      visibleBuiltInFieldKeys,
-    }));
-  }, [visibleBuiltInFieldKeys]);
+  const applySuggestedDefaults = useCallback(
+    defaults => {
+      setForm(current =>
+        applySuggestedDefaultsToForm({
+          currentForm: current,
+          defaults,
+          visibleBuiltInFieldKeys,
+        })
+      );
+    },
+    [visibleBuiltInFieldKeys]
+  );
 
-  const openForm = useCallback((type) => {
-    const formTarget = getPortFormTarget(type);
-    setFormType(type);
-    setMessage('');
-    setTraderText('');
-    setForm(buildInitialPortForm({
-      formType: type,
-      portId,
-      customFieldValues: getInitialCustomFieldValues(getVisibleCustomFieldsForTarget(formTarget)),
-    }));
-    loadDriversVehicles();
-    setView('form');
-  }, [getVisibleCustomFieldsForTarget, loadDriversVehicles, portId, setView]);
+  const openForm = useCallback(
+    type => {
+      const formTarget = getPortFormTarget(type);
+      setFormType(type);
+      setMessage("");
+      setTraderText("");
+      setForm(
+        buildInitialPortForm({
+          formType: type,
+          portId,
+          customFieldValues: getInitialCustomFieldValues(
+            getVisibleCustomFieldsForTarget(formTarget)
+          ),
+        })
+      );
+      loadDriversVehicles();
+      setView("form");
+    },
+    [getVisibleCustomFieldsForTarget, loadDriversVehicles, portId, setView]
+  );
 
   useEffect(() => {
     if (initialFormOpenedRef.current) return;
-    if (initialView === 'form' && initialFormType) {
+    if (initialView === "form" && initialFormType) {
       initialFormOpenedRef.current = true;
       openForm(initialFormType);
     }
   }, [initialFormType, initialView, openForm]);
 
   useEffect(() => {
-    if (view !== 'form' || !form.AccountID) return;
+    if (view !== "form" || !form.AccountID) return;
 
     let cancelled = false;
 
@@ -113,13 +129,15 @@ export default function usePortTransactionForm({
           formType: getPortFormTarget(formType),
         });
 
-        if (form.GovID) params.set('govId', String(form.GovID));
-        if (form.Currency) params.set('currency', String(form.Currency));
+        if (form.GovID) params.set("govId", String(form.GovID));
+        if (form.Currency) params.set("currency", String(form.Currency));
 
-        const defaults = await api(`/defaults/transaction-form?${params.toString()}`);
+        const defaults = await api(
+          `/defaults/transaction-form?${params.toString()}`
+        );
         if (!cancelled) applySuggestedDefaults(defaults);
       } catch (error) {
-        console.error('Failed to load transaction form defaults:', error);
+        console.error("Failed to load transaction form defaults:", error);
       }
     };
 
@@ -127,63 +145,80 @@ export default function usePortTransactionForm({
     return () => {
       cancelled = true;
     };
-  }, [api, applySuggestedDefaults, form.AccountID, form.Currency, form.GovID, formType, sectionKey, view]);
+  }, [
+    api,
+    applySuggestedDefaults,
+    form.AccountID,
+    form.Currency,
+    form.GovID,
+    formType,
+    sectionKey,
+    view,
+  ]);
 
-  const saveCustomFieldValues = useCallback(async (transactionId, source, fields = editableCustomFields) => {
-    if (!transactionId) return;
-    const values = buildCustomFieldValuePayload(fields, source);
-    await api(`/custom-field-values/transaction/${transactionId}`, {
-      method: 'POST',
-      body: JSON.stringify({ values }),
-    });
-  }, [api, editableCustomFields]);
-
-  const createMissingLookups = useCallback(async (draft) => {
-    const nextForm = { ...draft };
-
-    if (!nextForm.DriverID && nextForm._newDriverName?.trim()) {
-      const response = await api('/lookups/drivers', {
-        method: 'POST',
-        body: JSON.stringify({ DriverName: nextForm._newDriverName.trim() }),
+  const saveCustomFieldValues = useCallback(
+    async (transactionId, source, fields = editableCustomFields) => {
+      if (!transactionId) return;
+      const values = buildCustomFieldValuePayload(fields, source);
+      await api(`/custom-field-values/transaction/${transactionId}`, {
+        method: "POST",
+        body: JSON.stringify({ values }),
       });
-      nextForm.DriverID = response.id;
-    }
+    },
+    [api, editableCustomFields]
+  );
 
-    if (!nextForm.VehicleID && nextForm._newPlateNumber?.trim()) {
-      const response = await api('/lookups/vehicles', {
-        method: 'POST',
-        body: JSON.stringify({ PlateNumber: nextForm._newPlateNumber.trim() }),
-      });
-      nextForm.VehicleID = response.id;
-    }
+  const createMissingLookups = useCallback(
+    async draft => {
+      const nextForm = { ...draft };
 
-    if (!nextForm.GoodTypeID && nextForm._newGoodType?.trim()) {
-      const response = await api('/lookups/goods-types', {
-        method: 'POST',
-        body: JSON.stringify({ TypeName: nextForm._newGoodType.trim() }),
-      });
-      nextForm.GoodTypeID = response.id;
-    }
+      if (!nextForm.DriverID && nextForm._newDriverName?.trim()) {
+        const response = await api("/lookups/drivers", {
+          method: "POST",
+          body: JSON.stringify({ DriverName: nextForm._newDriverName.trim() }),
+        });
+        nextForm.DriverID = response.id;
+      }
 
-    if (!nextForm.GovID && nextForm._newGovName?.trim()) {
-      const response = await api('/lookups/governorates', {
-        method: 'POST',
-        body: JSON.stringify({ GovName: nextForm._newGovName.trim() }),
-      });
-      nextForm.GovID = response.id;
-    }
+      if (!nextForm.VehicleID && nextForm._newPlateNumber?.trim()) {
+        const response = await api("/lookups/vehicles", {
+          method: "POST",
+          body: JSON.stringify({
+            PlateNumber: nextForm._newPlateNumber.trim(),
+          }),
+        });
+        nextForm.VehicleID = response.id;
+      }
 
-    if (!nextForm.CompanyID && nextForm._companyText?.trim()) {
-      const response = await api('/lookups/companies', {
-        method: 'POST',
-        body: JSON.stringify({ CompanyName: nextForm._companyText.trim() }),
-      });
-      nextForm.CompanyID = response.id;
-      nextForm.CompanyName = response.CompanyName;
-    }
+      if (!nextForm.GoodTypeID && nextForm._newGoodType?.trim()) {
+        const response = await api("/lookups/goods-types", {
+          method: "POST",
+          body: JSON.stringify({ TypeName: nextForm._newGoodType.trim() }),
+        });
+        nextForm.GoodTypeID = response.id;
+      }
 
-    return nextForm;
-  }, [api]);
+      if (!nextForm.GovID && nextForm._newGovName?.trim()) {
+        const response = await api("/lookups/governorates", {
+          method: "POST",
+          body: JSON.stringify({ GovName: nextForm._newGovName.trim() }),
+        });
+        nextForm.GovID = response.id;
+      }
+
+      if (!nextForm.CompanyID && nextForm._companyText?.trim()) {
+        const response = await api("/lookups/companies", {
+          method: "POST",
+          body: JSON.stringify({ CompanyName: nextForm._companyText.trim() }),
+        });
+        nextForm.CompanyID = response.id;
+        nextForm.CompanyName = response.CompanyName;
+      }
+
+      return nextForm;
+    },
+    [api]
+  );
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -191,9 +226,11 @@ export default function usePortTransactionForm({
       let draft = { ...form };
 
       if (!draft.AccountID && traderText.trim()) {
-        const newAccount = await api('/accounts', {
-          method: 'POST',
-          body: JSON.stringify(buildPortAccountPayload({ traderText, accountType, portId })),
+        const newAccount = await api("/accounts", {
+          method: "POST",
+          body: JSON.stringify(
+            buildPortAccountPayload({ traderText, accountType, portId })
+          ),
         });
         draft.AccountID = newAccount.id;
       }
@@ -206,14 +243,13 @@ export default function usePortTransactionForm({
       draft = await createMissingLookups(draft);
       const payload = sanitizePortTransactionPayload(draft);
       const selectedAccount = (accounts || []).find(
-        (account) => String(account.AccountID) === String(draft.AccountID),
+        account => String(account.AccountID) === String(draft.AccountID)
       );
-      const resolvedAccountType = accountType
-        ?? selectedAccount?.AccountTypeID
-        ?? '1';
+      const resolvedAccountType =
+        accountType ?? selectedAccount?.AccountTypeID ?? "1";
       payload.accountType = String(resolvedAccountType);
-      const result = await api('/transactions', {
-        method: 'POST',
+      const result = await api("/transactions", {
+        method: "POST",
         body: JSON.stringify(payload),
       });
       await saveCustomFieldValues(result.id, payload, editableCustomFields);
@@ -236,52 +272,71 @@ export default function usePortTransactionForm({
     traderText,
   ]);
 
-  const handleUpdate = useCallback(async (formData) => {
-    if (!formData) return false;
+  const handleUpdate = useCallback(
+    async formData => {
+      if (!formData) return false;
 
-    try {
-      const enriched = await createMissingLookups(formData);
-      const payload = sanitizePortTransactionPayload(enriched);
-      await api(`/transactions/${payload.TransID}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
-      await saveCustomFieldValues(payload.TransID, payload, editableCustomFields);
-      window.alert(UPDATE_SUCCESS_MESSAGE);
-      await loadData();
-      return true;
-    } catch (error) {
-      setMessage(error.message);
-      return false;
-    }
-  }, [api, createMissingLookups, editableCustomFields, loadData, saveCustomFieldValues]);
+      try {
+        const enriched = await createMissingLookups(formData);
+        const payload = sanitizePortTransactionPayload(enriched);
+        await api(`/transactions/${payload.TransID}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+        await saveCustomFieldValues(
+          payload.TransID,
+          payload,
+          editableCustomFields
+        );
+        window.alert(UPDATE_SUCCESS_MESSAGE);
+        await loadData();
+        return true;
+      } catch (error) {
+        setMessage(error.message);
+        return false;
+      }
+    },
+    [
+      api,
+      createMissingLookups,
+      editableCustomFields,
+      loadData,
+      saveCustomFieldValues,
+    ]
+  );
 
-  const handleDelete = useCallback(async (id) => {
-    if (!window.confirm(DELETE_CONFIRM_MESSAGE)) return false;
+  const handleDelete = useCallback(
+    async id => {
+      if (!window.confirm(DELETE_CONFIRM_MESSAGE)) return false;
 
-    try {
-      await api(`/transactions/${id}`, { method: 'DELETE' });
-      window.alert(DELETE_SUCCESS_MESSAGE);
-      await loadData();
-      return true;
-    } catch (error) {
-      setMessage(error.message);
-      return false;
-    }
-  }, [api, loadData]);
+      try {
+        await api(`/transactions/${id}`, { method: "DELETE" });
+        window.alert(DELETE_SUCCESS_MESSAGE);
+        await loadData();
+        return true;
+      } catch (error) {
+        setMessage(error.message);
+        return false;
+      }
+    },
+    [api, loadData]
+  );
 
   const setField = useCallback((key, value) => {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm(current => ({ ...current, [key]: value }));
   }, []);
 
-  const setNumericField = useCallback((fieldKey, rawValue, parser = parseFloat) => {
-    if (rawValue === '') {
-      setField(fieldKey, '');
-      return;
-    }
-    const parsed = parser(rawValue);
-    setField(fieldKey, Number.isNaN(parsed) ? '' : parsed);
-  }, [setField]);
+  const setNumericField = useCallback(
+    (fieldKey, rawValue, parser = parseFloat) => {
+      if (rawValue === "") {
+        setField(fieldKey, "");
+        return;
+      }
+      const parsed = parser(rawValue);
+      setField(fieldKey, Number.isNaN(parsed) ? "" : parsed);
+    },
+    [setField]
+  );
 
   const handleSaveAccountDefaults = useCallback(async () => {
     if (!form.AccountID) {
@@ -291,8 +346,8 @@ export default function usePortTransactionForm({
 
     setSavingAccountDefaults(true);
     try {
-      await api('/defaults/account', {
-        method: 'POST',
+      await api("/defaults/account", {
+        method: "POST",
         body: JSON.stringify(buildAccountDefaultsPayload({ form, sectionKey })),
       });
       window.alert(ACCOUNT_DEFAULTS_SUCCESS_MESSAGE);
@@ -311,8 +366,8 @@ export default function usePortTransactionForm({
 
     setSavingRouteDefaults(true);
     try {
-      await api('/defaults/route', {
-        method: 'POST',
+      await api("/defaults/route", {
+        method: "POST",
         body: JSON.stringify(buildRouteDefaultsPayload({ form, sectionKey })),
       });
       window.alert(ROUTE_DEFAULTS_SUCCESS_MESSAGE);
@@ -323,72 +378,79 @@ export default function usePortTransactionForm({
     }
   }, [api, form, sectionKey]);
 
-  const renderOrderedFormItem = useCallback((item) => {
-    if (item.kind === 'builtIn') {
-      return (
-        <PortBuiltInField
-          key={item.field.key}
-          field={item.field}
-          type={formType}
-          label={getBuiltInFormFieldLabel(item.field.key, item.field.label, formType)}
-          form={form}
-          setField={setField}
-          setNumericField={setNumericField}
-          traderText={traderText}
-          setTraderText={setTraderText}
-          accounts={accounts}
-          setAccounts={setAccounts}
-          merchants={merchants}
-          setMerchants={setMerchants}
-          accountType={accountType}
-          portId={portId}
-          drivers={drivers}
-          vehicles={vehicles}
-          goods={goods}
-          govs={govs}
-          companies={companies}
-          setCompanies={setCompanies}
-          api={api}
-          setMsg={setMessage}
-          sectionKey={sectionKey}
-        />
-      );
-    }
+  const renderOrderedFormItem = useCallback(
+    item => {
+      if (item.kind === "builtIn") {
+        return (
+          <PortBuiltInField
+            key={item.field.key}
+            field={item.field}
+            type={formType}
+            label={getBuiltInFormFieldLabel(
+              item.field.key,
+              item.field.label,
+              formType
+            )}
+            form={form}
+            setField={setField}
+            setNumericField={setNumericField}
+            traderText={traderText}
+            setTraderText={setTraderText}
+            accounts={accounts}
+            setAccounts={setAccounts}
+            merchants={merchants}
+            setMerchants={setMerchants}
+            accountType={accountType}
+            portId={portId}
+            drivers={drivers}
+            vehicles={vehicles}
+            goods={goods}
+            govs={govs}
+            companies={companies}
+            setCompanies={setCompanies}
+            api={api}
+            setMsg={setMessage}
+            sectionKey={sectionKey}
+          />
+        );
+      }
 
-    if (item.kind === 'custom' || item.kind === 'formula') {
-      return (
-        <PortDynamicFieldRenderer
-          key={item.key}
-          item={item}
-          values={form}
-          onChange={setField}
-          formatValue={formatPortNumber}
-        />
-      );
-    }
+      if (item.kind === "custom" || item.kind === "formula") {
+        return (
+          <PortDynamicFieldRenderer
+            key={item.key}
+            item={item}
+            values={form}
+            onChange={setField}
+            formatValue={formatPortNumber}
+          />
+        );
+      }
 
-    return null;
-  }, [
-    accountType,
-    accounts,
-    api,
-    companies,
-    drivers,
-    form,
-    formType,
-    getBuiltInFormFieldLabel,
-    goods,
-    govs,
-    merchants,
-    portId,
-    setAccounts,
-    setCompanies,
-    setField,
-    setMerchants,
-    setNumericField,
-    traderText,
-    vehicles,
-  ]);
+      return null;
+    },
+    [
+      accountType,
+      accounts,
+      api,
+      companies,
+      drivers,
+      form,
+      formType,
+      getBuiltInFormFieldLabel,
+      goods,
+      govs,
+      merchants,
+      portId,
+      setAccounts,
+      setCompanies,
+      setField,
+      setMerchants,
+      setNumericField,
+      traderText,
+      vehicles,
+    ]
+  );
 
   return {
     form,

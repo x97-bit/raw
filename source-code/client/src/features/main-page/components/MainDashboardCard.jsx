@@ -1,22 +1,25 @@
-import { ChevronLeft } from 'lucide-react';
-import PortIconBadge from '../../../components/PortIconBadge';
+import { ChevronLeft } from "lucide-react";
+import PortIconBadge from "../../../components/PortIconBadge";
 
 export default function MainDashboardCard({ item, onClick, index }) {
   const Icon = item.icon;
-  const hasIconLabel = Array.isArray(item.iconLines) && item.iconLines.length > 0;
+  const hasIconLabel =
+    Array.isArray(item.iconLines) && item.iconLines.length > 0;
 
   return (
     <button
       onClick={onClick}
-      className="surface-card surface-card-hover group w-full rounded-[22px] px-4 py-4 text-right"
+      className="card group w-full rounded-[22px] px-4 py-4 text-right transition-all duration-300 hover:shadow-md active:scale-[0.98]"
       style={{
-        animation: 'cardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both',
+        animation: "cardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both",
         animationDelay: `${index * 40}ms`,
       }}
     >
       <div
         className="mb-3 h-[3px] rounded-full opacity-80 transition-opacity duration-200 group-hover:opacity-100"
-        style={{ background: `linear-gradient(90deg, transparent 0%, ${item.accent} 100%)` }}
+        style={{
+          background: `linear-gradient(90deg, transparent 0%, ${item.accent} 100%)`,
+        }}
       />
 
       <div className="flex items-start justify-between gap-3">
@@ -48,8 +51,12 @@ export default function MainDashboardCard({ item, onClick, index }) {
       </div>
 
       <div className="mt-4 text-right">
-        <h3 className="text-[14px] font-black tracking-tight text-[#edf2f7]">{item.label}</h3>
-        <p className="mt-1 text-[11px] font-medium text-[#8f9daa]">فتح القسم</p>
+        <h3 className="text-[14px] font-black tracking-tight text-foreground">
+          {item.label}
+        </h3>
+        <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+          فتح القسم
+        </p>
       </div>
     </button>
   );

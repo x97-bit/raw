@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { ENV } from "./env";
-import { getAppAccessTokenSecret, getAppRefreshTokenSecret, getSessionSecret } from "./sessionSecret";
+import {
+  getAppAccessTokenSecret,
+  getAppRefreshTokenSecret,
+  getSessionSecret,
+} from "./sessionSecret";
 
 const originalSessionCookieSecret = ENV.sessionCookieSecret;
 const originalAppAccessTokenSecret = ENV.appAccessTokenSecret;
@@ -30,7 +34,9 @@ describe("session secret helpers", () => {
 
     expect(() => getSessionSecret()).toThrow("SESSION_COOKIE_SECRET");
     expect(() => getAppAccessTokenSecret()).toThrow("APP_ACCESS_TOKEN_SECRET");
-    expect(() => getAppRefreshTokenSecret()).toThrow("APP_REFRESH_TOKEN_SECRET");
+    expect(() => getAppRefreshTokenSecret()).toThrow(
+      "APP_REFRESH_TOKEN_SECRET"
+    );
   });
 
   it("throws when a configured secret is too short", () => {

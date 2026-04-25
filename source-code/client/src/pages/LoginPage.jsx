@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, Lock, User } from 'lucide-react';
-import BrandLogo from '../components/BrandLogo';
-import ThemeToggleButton from '../components/ThemeToggleButton';
-import { useAuth } from '../contexts/AuthContext';
-import { formatBaghdadDate, formatBaghdadTime } from '../features/main-page/baghdadTime';
+import { useEffect, useState } from "react";
+import { ArrowLeft, Eye, EyeOff, Lock, User } from "lucide-react";
+import BrandLogo from "../components/BrandLogo";
+import ThemeToggleButton from "../components/ThemeToggleButton";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  formatBaghdadDate,
+  formatBaghdadTime,
+} from "../features/main-page/baghdadTime";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -28,9 +31,9 @@ export default function LoginPage() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async event => {
     event.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -49,9 +52,9 @@ export default function LoginPage() {
     <div
       className="page-shell overflow-hidden"
       style={{
-        height: '100dvh',
+        height: "100dvh",
         opacity: mounted ? 1 : 0,
-        transition: 'opacity 0.35s ease',
+        transition: "opacity 0.35s ease",
       }}
     >
       <div className="absolute left-3 top-3 z-30 pointer-events-auto sm:left-4 sm:top-4">
@@ -68,13 +71,13 @@ export default function LoginPage() {
             <div
               className="text-[2rem] font-black tracking-[0.14em] tabular-nums sm:text-[3rem]"
               dir="ltr"
-              style={{ color: 'var(--hero-title)' }}
+              style={{ color: "var(--hero-title)" }}
             >
               {timeStr}
             </div>
             <div
               className="mt-2 text-[13px] font-semibold tracking-[0.14em] sm:text-[15px]"
-              style={{ color: 'var(--hero-muted)' }}
+              style={{ color: "var(--hero-muted)" }}
             >
               {dateStr}
             </div>
@@ -87,7 +90,7 @@ export default function LoginPage() {
           <div className="mb-4 text-center">
             <h1
               className="text-[1.7rem] font-black tracking-tight sm:text-[2rem]"
-              style={{ color: 'var(--hero-title)' }}
+              style={{ color: "var(--hero-title)" }}
             >
               تسجيل الدخول
             </h1>
@@ -98,9 +101,9 @@ export default function LoginPage() {
               <div
                 className="mb-3 rounded-[20px] px-4 py-3 text-sm font-medium"
                 style={{
-                  background: 'var(--error-soft-bg)',
-                  color: 'var(--error-soft-text)',
-                  boxShadow: 'var(--error-soft-ring)',
+                  background: "var(--error-soft-bg)",
+                  color: "var(--error-soft-text)",
+                  boxShadow: "var(--error-soft-ring)",
                 }}
               >
                 {error}
@@ -109,15 +112,22 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-3 text-right">
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide" style={{ color: 'var(--hero-muted)' }}>
+                <label
+                  className="mb-1.5 block text-[12.5px] font-semibold tracking-wide"
+                  style={{ color: "var(--hero-muted)" }}
+                >
                   اسم المستخدم
                 </label>
                 <div className="relative">
-                  <User size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--hero-muted)' }} />
+                  <User
+                    size={16}
+                    className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2"
+                    style={{ color: "var(--hero-muted)" }}
+                  />
                   <input
                     type="text"
                     value={username}
-                    onChange={(event) => setUsername(event.target.value)}
+                    onChange={event => setUsername(event.target.value)}
                     className="input-field pr-10"
                     placeholder="أدخل اسم المستخدم"
                     autoFocus
@@ -127,28 +137,35 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold tracking-wide" style={{ color: 'var(--hero-muted)' }}>
+                <label
+                  className="mb-1.5 block text-[12.5px] font-semibold tracking-wide"
+                  style={{ color: "var(--hero-muted)" }}
+                >
                   كلمة المرور
                 </label>
                 <div className="relative">
-                  <Lock size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--hero-muted)' }} />
+                  <Lock
+                    size={16}
+                    className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2"
+                    style={{ color: "var(--hero-muted)" }}
+                  />
                   <input
-                    type={showPass ? 'text' : 'password'}
+                    type={showPass ? "text" : "password"}
                     value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    onChange={event => setPassword(event.target.value)}
                     className="input-field pr-10 pl-12"
                     placeholder="أدخل كلمة المرور"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass((current) => !current)}
+                    onClick={() => setShowPass(current => !current)}
                     className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl transition-colors"
                     style={{
-                      background: 'var(--ghost-button-bg)',
-                      color: 'var(--ghost-button-text)',
+                      background: "var(--ghost-button-bg)",
+                      color: "var(--ghost-button-text)",
                     }}
-                    title={showPass ? 'إخفاء' : 'إظهار'}
+                    title={showPass ? "إخفاء" : "إظهار"}
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -174,7 +191,10 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-4 text-center text-[10.5px] tracking-[0.16em]" style={{ color: 'var(--page-header-subtitle)' }}>
+            <p
+              className="mt-4 text-center text-[10.5px] tracking-[0.16em]"
+              style={{ color: "var(--page-header-subtitle)" }}
+            >
               نظام الراوي © {new Date().getFullYear()}
             </p>
           </div>

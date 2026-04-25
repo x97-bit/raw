@@ -1,30 +1,30 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import XLSX from 'xlsx';
-import { buildMySqlConnectionOptions } from '../shared/scriptMysqlConfig.mjs';
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { fileURLToPath } from "url";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+import XLSX from "xlsx";
+import { buildMySqlConnectionOptions } from "../shared/scriptMysqlConfig.mjs";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const DATABASE_DIR = path.join(REPO_ROOT, 'database');
-const REPORT_DIR = path.join(DATABASE_DIR, 'import-reports');
-const BACKUP_DIR = path.join(DATABASE_DIR, 'backups');
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const DATABASE_DIR = path.join(REPO_ROOT, "database");
+const REPORT_DIR = path.join(DATABASE_DIR, "import-reports");
+const BACKUP_DIR = path.join(DATABASE_DIR, "backups");
 
-const SECTION_KEY = 'port-1';
-const WORKBOOK_SHEET = 'جميع الحركات';
-const GOV_SHEET = 'جدول المحافظات';
-const ACCOUNT_TYPE_FALLBACK = 'تاجر';
-const CUSTOM_CLEARANCE_FIELD_KEY = 'ksa_clearance';
-const CLEARANCE_FIELD_LABEL = 'التخليص';
+const SECTION_KEY = "port-1";
+const WORKBOOK_SHEET = "جميع الحركات";
+const GOV_SHEET = "جدول المحافظات";
+const ACCOUNT_TYPE_FALLBACK = "تاجر";
+const CUSTOM_CLEARANCE_FIELD_KEY = "ksa_clearance";
+const CLEARANCE_FIELD_LABEL = "التخليص";
 
 function getArgValue(flagName) {
-  const exact = process.argv.find((arg) => arg.startsWith(`${flagName}=`));
+  const exact = process.argv.find(arg => arg.startsWith(`${flagName}=`));
   if (exact) return exact.slice(flagName.length + 1);
   const index = process.argv.indexOf(flagName);
   if (index >= 0 && process.argv[index + 1]) return process.argv[index + 1];
@@ -36,37 +36,46 @@ function hasFlag(flagName) {
 }
 
 function normalizeSpaces(value) {
-  return String(value ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(value ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeLookupKey(value) {
   return normalizeSpaces(value)
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ؤ/g, 'و')
-    .replace(/ئ/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/[()\-_/\\.,]/g, ' ')
-    .replace(/[ً-ٟ]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/[()\-_/\\.,]/g, " ")
+    .replace(/[ً-ٟ]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
 
 function simplifyAccountLookupKey(value) {
-  const withoutParenthetical = normalizeSpaces(value).replace(/\([^)]*\)/g, ' ');
+  const withoutParenthetical = normalizeSpaces(value).replace(
+    /\([^)]*\)/g,
+    " "
+  );
   const normalized = normalizeLookupKey(withoutParenthetical);
   const filtered = normalized
-    .split(' ')
-    .filter((token) => token && !['شركه', 'قديم', 'جديد', 'دولار', 'دينار'].includes(token));
-  return filtered.join(' ').trim();
+    .split(" ")
+    .filter(
+      token =>
+        token && !["شركه", "قديم", "جديد", "دولار", "دينار"].includes(token)
+    );
+  return filtered.join(" ").trim();
 }
 
 function parseArabicNumber(value) {
-  if (value === null || value === undefined || value === '') return null;
+  if (value === null || value === undefined || value === "") return null;
   const normalized = String(value)
-    .replace(/,/g, '')
-    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/,/g, "")
+    .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
     .trim();
   if (!normalized) return null;
   const parsed = Number(normalized);
@@ -74,57 +83,68 @@ function parseArabicNumber(value) {
 }
 
 function parseWorkbookDate(value) {
-  if (value === null || value === undefined || value === '') return null;
+  if (value === null || value === undefined || value === "") return null;
 
-  if (typeof value === 'number' && value > 30000) {
+  if (typeof value === "number" && value > 30000) {
     const date = new Date(Math.round((value - 25569) * 86400 * 1000));
-    return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+    return Number.isNaN(date.getTime())
+      ? null
+      : date.toISOString().slice(0, 10);
   }
 
   const text = normalizeSpaces(value);
   const match = text.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
   if (!match) return null;
-  return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
 }
 
 function isMeaningfulTransactionRow(row) {
   return Boolean(
     row.traderName ||
-    row.driverName ||
-    row.vehiclePlate ||
-    row.goodType ||
-    row.transDate ||
-    row.amountUSD ||
-    row.amountIQD ||
-    row.costUSD ||
-    row.costIQD ||
-    row.transPrice ||
-    row.clearance ||
-    row.recordType ||
-    row.notes,
+      row.driverName ||
+      row.vehiclePlate ||
+      row.goodType ||
+      row.transDate ||
+      row.amountUSD ||
+      row.amountIQD ||
+      row.costUSD ||
+      row.costIQD ||
+      row.transPrice ||
+      row.clearance ||
+      row.recordType ||
+      row.notes
   );
 }
 
 function normalizeRecordType(value) {
   const text = normalizeSpaces(value);
-  if (!text) return 'فاتورة';
+  if (!text) return "فاتورة";
   return text;
 }
 
 function inferDirection(recordType) {
   const text = normalizeLookupKey(recordType);
-  if (!text) return 'IN';
-  const paymentHints = ['تسديد', 'سند', 'صرف', 'استلام', 'قبض'];
-  return paymentHints.some((hint) => text.includes(normalizeLookupKey(hint))) ? 'OUT' : 'IN';
+  if (!text) return "IN";
+  const paymentHints = ["تسديد", "سند", "صرف", "استلام", "قبض"];
+  return paymentHints.some(hint => text.includes(normalizeLookupKey(hint)))
+    ? "OUT"
+    : "IN";
 }
 
 function inferCurrency(row) {
-  const hasUsd = [row.costUSD, row.amountUSD, row.feeUSD].some((value) => Number(value || 0) !== 0);
-  const hasIqd = [row.costIQD, row.amountIQD, row.transPrice, row.clearance].some((value) => Number(value || 0) !== 0);
-  if (hasUsd && hasIqd) return 'BOTH';
-  if (hasIqd) return 'IQD';
-  if (hasUsd) return 'USD';
-  return 'USD';
+  const hasUsd = [row.costUSD, row.amountUSD, row.feeUSD].some(
+    value => Number(value || 0) !== 0
+  );
+  const hasIqd = [
+    row.costIQD,
+    row.amountIQD,
+    row.transPrice,
+    row.clearance,
+  ].some(value => Number(value || 0) !== 0);
+  if (hasUsd && hasIqd) return "BOTH";
+  if (hasIqd) return "IQD";
+  if (hasUsd) return "USD";
+  return "USD";
 }
 
 function ensureDir(dirPath) {
@@ -132,17 +152,26 @@ function ensureDir(dirPath) {
 }
 
 function resolveWorkbookPath() {
-  const explicit = getArgValue('--file') || process.env.WORKBOOK_PATH;
+  const explicit = getArgValue("--file") || process.env.WORKBOOK_PATH;
   if (explicit && fs.existsSync(explicit)) return explicit;
 
-  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  const downloadsDir = path.join(os.homedir(), "Downloads");
   if (!fs.existsSync(downloadsDir)) {
-    throw new Error('Downloads directory not found and no workbook path was provided');
+    throw new Error(
+      "Downloads directory not found and no workbook path was provided"
+    );
   }
 
-  const candidates = fs.readdirSync(downloadsDir)
-    .filter((name) => name.toLowerCase().endsWith('.xlsx') && normalizeLookupKey(name).includes(normalizeLookupKey('قاعدة بيانات طي الرواي')))
-    .map((name) => {
+  const candidates = fs
+    .readdirSync(downloadsDir)
+    .filter(
+      name =>
+        name.toLowerCase().endsWith(".xlsx") &&
+        normalizeLookupKey(name).includes(
+          normalizeLookupKey("قاعدة بيانات طي الرواي")
+        )
+    )
+    .map(name => {
       const fullPath = path.join(downloadsDir, name);
       const stats = fs.statSync(fullPath);
       return { name, fullPath, mtime: stats.mtimeMs };
@@ -150,15 +179,22 @@ function resolveWorkbookPath() {
     .sort((left, right) => right.mtime - left.mtime);
 
   if (candidates.length === 0) {
-    throw new Error('Workbook not found in Downloads. Use --file with the real Excel path.');
+    throw new Error(
+      "Workbook not found in Downloads. Use --file with the real Excel path."
+    );
   }
 
   return candidates[0].fullPath;
 }
 
 function loadSheetRows(workbook, sheetName) {
-  const matchedSheetName = workbook.SheetNames.find((name) => normalizeLookupKey(name) === normalizeLookupKey(sheetName))
-    || workbook.SheetNames.find((name) => normalizeLookupKey(name).includes(normalizeLookupKey(sheetName)));
+  const matchedSheetName =
+    workbook.SheetNames.find(
+      name => normalizeLookupKey(name) === normalizeLookupKey(sheetName)
+    ) ||
+    workbook.SheetNames.find(name =>
+      normalizeLookupKey(name).includes(normalizeLookupKey(sheetName))
+    );
   const worksheet = matchedSheetName ? workbook.Sheets[matchedSheetName] : null;
   if (!worksheet) return [];
   return XLSX.utils.sheet_to_json(worksheet, {
@@ -169,19 +205,25 @@ function loadSheetRows(workbook, sheetName) {
 }
 
 function findHeaderIndex(rows, requiredHeaders) {
-  return rows.findIndex((row) => {
-    const normalizedRow = (row || []).map((cell) => normalizeLookupKey(cell));
-    return requiredHeaders.every((header) => normalizedRow.includes(normalizeLookupKey(header)));
+  return rows.findIndex(row => {
+    const normalizedRow = (row || []).map(cell => normalizeLookupKey(cell));
+    return requiredHeaders.every(header =>
+      normalizedRow.includes(normalizeLookupKey(header))
+    );
   });
 }
 
 function mapTransactionSheet(rows) {
-  const headerIndex = findHeaderIndex(rows, ['اسم التاجر', 'نوع الحركة', 'التاريخ']);
+  const headerIndex = findHeaderIndex(rows, [
+    "اسم التاجر",
+    "نوع الحركة",
+    "التاريخ",
+  ]);
   if (headerIndex < 0) {
     throw new Error(`Could not find header row in sheet "${WORKBOOK_SHEET}"`);
   }
 
-  const headers = rows[headerIndex].map((cell) => normalizeLookupKey(cell));
+  const headers = rows[headerIndex].map(cell => normalizeLookupKey(cell));
   const getCell = (row, headerName) => {
     const index = headers.indexOf(normalizeLookupKey(headerName));
     return index >= 0 ? row[index] : null;
@@ -191,27 +233,29 @@ function mapTransactionSheet(rows) {
     .slice(headerIndex + 1)
     .map((row, rowOffset) => ({
       sourceRowNumber: headerIndex + rowOffset + 2,
-      traderName: normalizeSpaces(getCell(row, 'اسم التاجر')),
-      sequenceNo: normalizeSpaces(getCell(row, 'ت')),
-      driverName: normalizeSpaces(getCell(row, 'اسم السائق')),
-      vehiclePlate: normalizeSpaces(getCell(row, 'رقم السيارة')),
-      goodType: normalizeSpaces(getCell(row, 'نوع البضاعة')),
-      transDate: parseWorkbookDate(getCell(row, 'التاريخ')),
-      weight: parseArabicNumber(getCell(row, 'الوزن (كغ)')) ?? parseArabicNumber(getCell(row, 'الوزن')),
-      meters: parseArabicNumber(getCell(row, 'الامتار')),
-      costUSD: parseArabicNumber(getCell(row, 'الكلفة $')),
-      amountUSD: parseArabicNumber(getCell(row, 'المبلغ $')),
-      costIQD: parseArabicNumber(getCell(row, 'الكلفة دينار')),
-      amountIQD: parseArabicNumber(getCell(row, 'المبلغ دينار')),
-      feeUSD: parseArabicNumber(getCell(row, 'نقل سعودي $')),
-      transPrice: parseArabicNumber(getCell(row, 'نقل عراقي (دينار)')),
-      governorate: normalizeSpaces(getCell(row, 'المحافظة')),
-      clearance: parseArabicNumber(getCell(row, 'التخليص')),
-      recordType: normalizeRecordType(getCell(row, 'نوع الحركة')),
-      notes: normalizeSpaces(getCell(row, 'الملاحظات')),
+      traderName: normalizeSpaces(getCell(row, "اسم التاجر")),
+      sequenceNo: normalizeSpaces(getCell(row, "ت")),
+      driverName: normalizeSpaces(getCell(row, "اسم السائق")),
+      vehiclePlate: normalizeSpaces(getCell(row, "رقم السيارة")),
+      goodType: normalizeSpaces(getCell(row, "نوع البضاعة")),
+      transDate: parseWorkbookDate(getCell(row, "التاريخ")),
+      weight:
+        parseArabicNumber(getCell(row, "الوزن (كغ)")) ??
+        parseArabicNumber(getCell(row, "الوزن")),
+      meters: parseArabicNumber(getCell(row, "الامتار")),
+      costUSD: parseArabicNumber(getCell(row, "الكلفة $")),
+      amountUSD: parseArabicNumber(getCell(row, "المبلغ $")),
+      costIQD: parseArabicNumber(getCell(row, "الكلفة دينار")),
+      amountIQD: parseArabicNumber(getCell(row, "المبلغ دينار")),
+      feeUSD: parseArabicNumber(getCell(row, "نقل سعودي $")),
+      transPrice: parseArabicNumber(getCell(row, "نقل عراقي (دينار)")),
+      governorate: normalizeSpaces(getCell(row, "المحافظة")),
+      clearance: parseArabicNumber(getCell(row, "التخليص")),
+      recordType: normalizeRecordType(getCell(row, "نوع الحركة")),
+      notes: normalizeSpaces(getCell(row, "الملاحظات")),
     }))
     .filter(isMeaningfulTransactionRow)
-    .map((row) => ({
+    .map(row => ({
       ...row,
       direction: inferDirection(row.recordType),
       currency: inferCurrency(row),
@@ -219,17 +263,26 @@ function mapTransactionSheet(rows) {
 }
 
 function mapGovernorateSheet(rows) {
-  const governorateHeader = normalizeLookupKey('المحافظة');
-  const transportHeader = normalizeLookupKey('أجر النقل');
-  const headerIndex = rows.findIndex((row) => {
-    const normalizedRow = (row || []).map((cell) => normalizeLookupKey(cell));
-    return normalizedRow.includes(governorateHeader) && normalizedRow.some((cell) => cell.includes(transportHeader));
+  const governorateHeader = normalizeLookupKey("المحافظة");
+  const transportHeader = normalizeLookupKey("أجر النقل");
+  const headerIndex = rows.findIndex(row => {
+    const normalizedRow = (row || []).map(cell => normalizeLookupKey(cell));
+    return (
+      normalizedRow.includes(governorateHeader) &&
+      normalizedRow.some(cell => cell.includes(transportHeader))
+    );
   });
   if (headerIndex < 0) return [];
 
-  const headers = (rows[headerIndex] || []).map((cell) => normalizeLookupKey(cell));
-  const governorateIndex = headers.findIndex((cell) => cell === governorateHeader);
-  const transportIndex = headers.findIndex((cell) => cell.includes(transportHeader));
+  const headers = (rows[headerIndex] || []).map(cell =>
+    normalizeLookupKey(cell)
+  );
+  const governorateIndex = headers.findIndex(
+    cell => cell === governorateHeader
+  );
+  const transportIndex = headers.findIndex(cell =>
+    cell.includes(transportHeader)
+  );
 
   return rows
     .slice(headerIndex + 1)
@@ -238,7 +291,7 @@ function mapGovernorateSheet(rows) {
       governorate: normalizeSpaces(row[governorateIndex]),
       transPrice: parseArabicNumber(row[transportIndex]),
     }))
-    .filter((row) => row.governorate);
+    .filter(row => row.governorate);
 }
 
 function addLookupEntry(map, rawName, value) {
@@ -253,7 +306,7 @@ function createLookupMaps(rows, aliases = []) {
     addLookupEntry(byName, row.name, row);
   }
   for (const alias of aliases) {
-    const entity = rows.find((row) => row.id === alias.entityId);
+    const entity = rows.find(row => row.id === alias.entityId);
     if (!entity) continue;
     addLookupEntry(byName, alias.aliasName, entity);
   }
@@ -275,7 +328,7 @@ function createAccountLookupMap(rows, aliases = []) {
     addAccountEntry(row.name, row);
   }
   for (const alias of aliases) {
-    const entity = rows.find((row) => row.id === alias.entityId);
+    const entity = rows.find(row => row.id === alias.entityId);
     if (!entity) continue;
     addAccountEntry(alias.aliasName, entity);
   }
@@ -286,17 +339,19 @@ function createAccountLookupMap(rows, aliases = []) {
 function buildTransactionFingerprint(row) {
   return [
     row.accountId || 0,
-    row.transDate || '',
-    String(row.direction || '').trim().toUpperCase(),
-    normalizeLookupKey(row.recordType || ''),
+    row.transDate || "",
+    String(row.direction || "")
+      .trim()
+      .toUpperCase(),
+    normalizeLookupKey(row.recordType || ""),
     Number(row.costUSD || 0).toFixed(2),
     Number(row.amountUSD || 0).toFixed(2),
     Number(row.costIQD || 0).toFixed(0),
     Number(row.amountIQD || 0).toFixed(0),
-    normalizeLookupKey(row.driverName || ''),
-    normalizeLookupKey(row.vehiclePlate || ''),
-    normalizeLookupKey(row.goodType || ''),
-  ].join('|');
+    normalizeLookupKey(row.driverName || ""),
+    normalizeLookupKey(row.vehiclePlate || ""),
+    normalizeLookupKey(row.goodType || ""),
+  ].join("|");
 }
 
 function summarizeCounts(items, keyBuilder) {
@@ -308,7 +363,7 @@ function summarizeCounts(items, keyBuilder) {
 }
 
 function buildTimestampStamp() {
-  return new Date().toISOString().replace(/[:.]/g, '-');
+  return new Date().toISOString().replace(/[:.]/g, "-");
 }
 
 async function loadDatabaseContext(connection) {
@@ -322,19 +377,24 @@ async function loadDatabaseContext(connection) {
     [existingTransactions],
   ] = await Promise.all([
     connection.query(
-      'SELECT id, name, accountType, portId FROM accounts WHERE portId = ? ORDER BY name',
-      [SECTION_KEY],
+      "SELECT id, name, accountType, portId FROM accounts WHERE portId = ? ORDER BY name",
+      [SECTION_KEY]
     ),
-    connection.query('SELECT id, name FROM drivers ORDER BY name'),
-    connection.query('SELECT id, plateNumber FROM vehicles ORDER BY plateNumber'),
-    connection.query('SELECT id, name FROM goods_types ORDER BY name'),
-    connection.query('SELECT id, name, trance_price FROM governorates ORDER BY name'),
+    connection.query("SELECT id, name FROM drivers ORDER BY name"),
+    connection.query(
+      "SELECT id, plateNumber FROM vehicles ORDER BY plateNumber"
+    ),
+    connection.query("SELECT id, name FROM goods_types ORDER BY name"),
+    connection.query(
+      "SELECT id, name, trance_price FROM governorates ORDER BY name"
+    ),
     connection.query(`
       SELECT entity_type AS entityType, entity_id AS entityId, alias_name AS aliasName
       FROM entity_aliases
       WHERE entity_type IN ('account', 'driver', 'vehicle', 'good_type', 'governorate')
     `),
-    connection.query(`
+    connection.query(
+      `
       SELECT
         t.id,
         t.account_id AS accountId,
@@ -353,59 +413,89 @@ async function loadDatabaseContext(connection) {
       LEFT JOIN vehicles v ON v.id = t.vehicle_id
       LEFT JOIN goods_types g ON g.id = t.good_type_id
       WHERE t.port_id = ?
-    `, [SECTION_KEY]),
+    `,
+      [SECTION_KEY]
+    ),
   ]);
 
-  const portAccounts = accounts.map((row) => ({
+  const portAccounts = accounts.map(row => ({
     id: row.id,
     name: row.name,
     accountType: row.accountType || ACCOUNT_TYPE_FALLBACK,
   }));
-  const portAccountIds = new Set(portAccounts.map((row) => row.id));
+  const portAccountIds = new Set(portAccounts.map(row => row.id));
 
   return {
     accounts: portAccounts,
-    drivers: drivers.map((row) => ({ id: row.id, name: row.name })),
-    vehicles: vehicles.map((row) => ({ id: row.id, name: row.plateNumber })),
-    goods: goods.map((row) => ({ id: row.id, name: row.name })),
-    governorates: governorates.map((row) => ({ id: row.id, name: row.name, trancePrice: row.trance_price })),
-    accountAliases: aliases.filter((row) => row.entityType === 'account' && portAccountIds.has(row.entityId)),
-    driverAliases: aliases.filter((row) => row.entityType === 'driver'),
-    vehicleAliases: aliases.filter((row) => row.entityType === 'vehicle'),
-    goodAliases: aliases.filter((row) => row.entityType === 'good_type'),
-    governorateAliases: aliases.filter((row) => row.entityType === 'governorate'),
+    drivers: drivers.map(row => ({ id: row.id, name: row.name })),
+    vehicles: vehicles.map(row => ({ id: row.id, name: row.plateNumber })),
+    goods: goods.map(row => ({ id: row.id, name: row.name })),
+    governorates: governorates.map(row => ({
+      id: row.id,
+      name: row.name,
+      trancePrice: row.trance_price,
+    })),
+    accountAliases: aliases.filter(
+      row => row.entityType === "account" && portAccountIds.has(row.entityId)
+    ),
+    driverAliases: aliases.filter(row => row.entityType === "driver"),
+    vehicleAliases: aliases.filter(row => row.entityType === "vehicle"),
+    goodAliases: aliases.filter(row => row.entityType === "good_type"),
+    governorateAliases: aliases.filter(row => row.entityType === "governorate"),
     existingTransactions,
   };
 }
 
 function prepareGovernoratePriceDiffs(workbookGovRows, dbGovernorates) {
-  const dbMap = new Map(dbGovernorates.map((row) => [normalizeLookupKey(row.name), row]));
+  const dbMap = new Map(
+    dbGovernorates.map(row => [normalizeLookupKey(row.name), row])
+  );
   return workbookGovRows
-    .map((row) => {
+    .map(row => {
       const dbRow = dbMap.get(normalizeLookupKey(row.governorate));
       return {
         governorate: row.governorate,
         workbookTransPrice: row.transPrice,
-        dbTransPrice: dbRow?.trancePrice !== undefined && dbRow?.trancePrice !== null ? Number(dbRow.trancePrice) : null,
+        dbTransPrice:
+          dbRow?.trancePrice !== undefined && dbRow?.trancePrice !== null
+            ? Number(dbRow.trancePrice)
+            : null,
         status: !dbRow
-          ? 'missing-governorate'
+          ? "missing-governorate"
           : Number(dbRow.trancePrice || 0) === Number(row.transPrice || 0)
-            ? 'match'
-            : 'different',
+            ? "match"
+            : "different",
       };
     })
-    .filter((row) => row.status !== 'match');
+    .filter(row => row.status !== "match");
 }
 
-function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbContext) {
-  const accountMap = createAccountLookupMap(dbContext.accounts, dbContext.accountAliases);
-  const driverMap = createLookupMaps(dbContext.drivers, dbContext.driverAliases);
-  const vehicleMap = createLookupMaps(dbContext.vehicles, dbContext.vehicleAliases);
+function buildImportPlan(
+  workbookPath,
+  transactionsRows,
+  governorateRows,
+  dbContext
+) {
+  const accountMap = createAccountLookupMap(
+    dbContext.accounts,
+    dbContext.accountAliases
+  );
+  const driverMap = createLookupMaps(
+    dbContext.drivers,
+    dbContext.driverAliases
+  );
+  const vehicleMap = createLookupMaps(
+    dbContext.vehicles,
+    dbContext.vehicleAliases
+  );
   const goodMap = createLookupMaps(dbContext.goods, dbContext.goodAliases);
-  const govMap = createLookupMaps(dbContext.governorates, dbContext.governorateAliases);
+  const govMap = createLookupMaps(
+    dbContext.governorates,
+    dbContext.governorateAliases
+  );
 
   const existingFingerprints = new Set(
-    dbContext.existingTransactions.map((row) => buildTransactionFingerprint(row)),
+    dbContext.existingTransactions.map(row => buildTransactionFingerprint(row))
   );
 
   const unresolvedAccounts = new Map();
@@ -421,20 +511,34 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
   let rowsWithClearance = 0;
   const blockedReasons = {};
 
-  const rowDecisions = transactionsRows.map((row) => {
+  const rowDecisions = transactionsRows.map(row => {
     const account =
-      accountMap.get(normalizeLookupKey(row.traderName))
-      || accountMap.get(simplifyAccountLookupKey(row.traderName));
+      accountMap.get(normalizeLookupKey(row.traderName)) ||
+      accountMap.get(simplifyAccountLookupKey(row.traderName));
     const driver = driverMap.get(normalizeLookupKey(row.driverName));
     const vehicle = vehicleMap.get(normalizeLookupKey(row.vehiclePlate));
     const good = goodMap.get(normalizeLookupKey(row.goodType));
     const governorate = govMap.get(normalizeLookupKey(row.governorate));
 
-    if (!account) unresolvedAccounts.set(row.traderName, (unresolvedAccounts.get(row.traderName) || 0) + 1);
-    if (row.driverName && !driver) newDrivers.set(row.driverName, (newDrivers.get(row.driverName) || 0) + 1);
-    if (row.vehiclePlate && !vehicle) newVehicles.set(row.vehiclePlate, (newVehicles.get(row.vehiclePlate) || 0) + 1);
-    if (row.goodType && !good) newGoods.set(row.goodType, (newGoods.get(row.goodType) || 0) + 1);
-    if (row.governorate && !governorate) newGovernorates.set(row.governorate, (newGovernorates.get(row.governorate) || 0) + 1);
+    if (!account)
+      unresolvedAccounts.set(
+        row.traderName,
+        (unresolvedAccounts.get(row.traderName) || 0) + 1
+      );
+    if (row.driverName && !driver)
+      newDrivers.set(row.driverName, (newDrivers.get(row.driverName) || 0) + 1);
+    if (row.vehiclePlate && !vehicle)
+      newVehicles.set(
+        row.vehiclePlate,
+        (newVehicles.get(row.vehiclePlate) || 0) + 1
+      );
+    if (row.goodType && !good)
+      newGoods.set(row.goodType, (newGoods.get(row.goodType) || 0) + 1);
+    if (row.governorate && !governorate)
+      newGovernorates.set(
+        row.governorate,
+        (newGovernorates.get(row.governorate) || 0) + 1
+      );
 
     if (Number(row.transPrice || 0) !== 0) rowsWithTransPrice++;
     if (Number(row.clearance || 0) !== 0) rowsWithClearance++;
@@ -451,11 +555,11 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
 
     if (!prepared.accountId || !prepared.transDate) {
       blockedRows++;
-      const reason = !prepared.accountId ? 'missing-account' : 'missing-date';
+      const reason = !prepared.accountId ? "missing-account" : "missing-date";
       blockedReasons[reason] = (blockedReasons[reason] || 0) + 1;
       return {
         ...prepared,
-        status: 'blocked',
+        status: "blocked",
         reason,
       };
     }
@@ -465,16 +569,16 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
       duplicateRows++;
       return {
         ...prepared,
-        status: 'duplicate',
-        reason: 'already-exists',
+        status: "duplicate",
+        reason: "already-exists",
       };
     }
 
     readyRows++;
     return {
       ...prepared,
-      status: 'ready',
-      reason: 'importable',
+      status: "ready",
+      reason: "importable",
     };
   });
 
@@ -489,14 +593,19 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
       readyRows,
       duplicateRows,
       blockedRows,
-      distinctTraders: new Set(transactionsRows.map((row) => row.traderName).filter(Boolean)).size,
+      distinctTraders: new Set(
+        transactionsRows.map(row => row.traderName).filter(Boolean)
+      ).size,
       rowsWithTransPrice,
       rowsWithClearance,
     },
     distribution: {
-      recordTypes: summarizeCounts(transactionsRows, (row) => row.recordType || 'بدون نوع'),
-      directions: summarizeCounts(transactionsRows, (row) => row.direction),
-      currencies: summarizeCounts(transactionsRows, (row) => row.currency),
+      recordTypes: summarizeCounts(
+        transactionsRows,
+        row => row.recordType || "بدون نوع"
+      ),
+      directions: summarizeCounts(transactionsRows, row => row.direction),
+      currencies: summarizeCounts(transactionsRows, row => row.currency),
       blockedReasons,
     },
     blockingIssues: {
@@ -505,30 +614,47 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
         .sort((left, right) => right.count - left.count),
     },
     nonBlockingCreates: {
-      drivers: Array.from(newDrivers.entries()).map(([name, count]) => ({ name, count })).sort((left, right) => right.count - left.count),
-      vehicles: Array.from(newVehicles.entries()).map(([name, count]) => ({ name, count })).sort((left, right) => right.count - left.count),
-      goodsTypes: Array.from(newGoods.entries()).map(([name, count]) => ({ name, count })).sort((left, right) => right.count - left.count),
-      governorates: Array.from(newGovernorates.entries()).map(([name, count]) => ({ name, count })).sort((left, right) => right.count - left.count),
+      drivers: Array.from(newDrivers.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count),
+      vehicles: Array.from(newVehicles.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count),
+      goodsTypes: Array.from(newGoods.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count),
+      governorates: Array.from(newGovernorates.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count),
     },
     workbookGovernorates: {
       totalRows: governorateRows.length,
-      differences: prepareGovernoratePriceDiffs(governorateRows, dbContext.governorates),
+      differences: prepareGovernoratePriceDiffs(
+        governorateRows,
+        dbContext.governorates
+      ),
     },
     systemReadiness: {
       sectionKey: SECTION_KEY,
       notes: [
         rowsWithTransPrice > 0
-          ? 'حقل نقل عراقي (دينار) سيُحفظ في transactions.transPrice ويظهر افتراضيًا في شاشات منفذ السعودية.'
-          : 'لا توجد قيم نقل عراقي في هذا الملف.',
+          ? "حقل نقل عراقي (دينار) سيُحفظ في transactions.transPrice ويظهر افتراضيًا في شاشات منفذ السعودية."
+          : "لا توجد قيم نقل عراقي في هذا الملف.",
         rowsWithClearance > 0
           ? `حقل التخليص يحتاج حفظًا منظّمًا. الأنسب حفظه كحقل مخصص transaction (${CUSTOM_CLEARANCE_FIELD_KEY}) بدل رميه داخل الملاحظات.`
-          : 'لا توجد قيم تخليص في هذا الملف.',
+          : "لا توجد قيم تخليص في هذا الملف.",
       ],
     },
     samples: {
-      firstReadyRows: rowDecisions.filter((row) => row.status === 'ready').slice(0, 5),
-      firstDuplicateRows: rowDecisions.filter((row) => row.status === 'duplicate').slice(0, 5),
-      firstBlockedRows: rowDecisions.filter((row) => row.status === 'blocked').slice(0, 5),
+      firstReadyRows: rowDecisions
+        .filter(row => row.status === "ready")
+        .slice(0, 5),
+      firstDuplicateRows: rowDecisions
+        .filter(row => row.status === "duplicate")
+        .slice(0, 5),
+      firstBlockedRows: rowDecisions
+        .filter(row => row.status === "blocked")
+        .slice(0, 5),
     },
   };
 
@@ -537,8 +663,11 @@ function buildImportPlan(workbookPath, transactionsRows, governorateRows, dbCont
 
 function saveReport(prefix, report) {
   ensureDir(REPORT_DIR);
-  const outputPath = path.join(REPORT_DIR, `${prefix}-${buildTimestampStamp()}.json`);
-  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
+  const outputPath = path.join(
+    REPORT_DIR,
+    `${prefix}-${buildTimestampStamp()}.json`
+  );
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), "utf8");
   return outputPath;
 }
 
@@ -555,7 +684,7 @@ async function createDatabaseBackup(connection, workbookPath) {
   const snapshot = {
     meta: {
       createdAt: new Date().toISOString(),
-      source: 'import-real-workbook',
+      source: "import-real-workbook",
       workbookPath,
       database: process.env.DATABASE_URL || null,
       tableCount: tables.length,
@@ -569,70 +698,108 @@ async function createDatabaseBackup(connection, workbookPath) {
     snapshot.data[tableName] = rows;
   }
 
-  const outputPath = path.join(BACKUP_DIR, `pre-real-workbook-import-${buildTimestampStamp()}.json`);
-  fs.writeFileSync(outputPath, JSON.stringify(snapshot, null, 2), 'utf8');
+  const outputPath = path.join(
+    BACKUP_DIR,
+    `pre-real-workbook-import-${buildTimestampStamp()}.json`
+  );
+  fs.writeFileSync(outputPath, JSON.stringify(snapshot, null, 2), "utf8");
   return outputPath;
 }
 
-async function ensureEntityAlias(connection, entityType, entityId, aliasName, sourceSystem = 'real-workbook') {
+async function ensureEntityAlias(
+  connection,
+  entityType,
+  entityId,
+  aliasName,
+  sourceSystem = "real-workbook"
+) {
   const normalizedAlias = normalizeSpaces(aliasName);
   if (!normalizedAlias) return;
-  await connection.query(`
+  await connection.query(
+    `
     INSERT INTO entity_aliases (entity_type, entity_id, alias_name, source_system)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE entity_id = VALUES(entity_id), source_system = VALUES(source_system)
-  `, [entityType, entityId, normalizedAlias, sourceSystem]);
+  `,
+    [entityType, entityId, normalizedAlias, sourceSystem]
+  );
 }
 
 async function ensureCustomFieldConfig(connection, sectionKey, fieldKey) {
-  const [existing] = await connection.query(`
+  const [existing] = await connection.query(
+    `
     SELECT id
     FROM field_config
     WHERE section_key = ? AND field_key = ?
     LIMIT 1
-  `, [sectionKey, fieldKey]);
+  `,
+    [sectionKey, fieldKey]
+  );
 
   if (existing.length > 0) {
-    await connection.query(`
+    await connection.query(
+      `
       UPDATE field_config
       SET visible = 1, display_label = COALESCE(display_label, ?)
       WHERE id = ?
-    `, [CLEARANCE_FIELD_LABEL, existing[0].id]);
+    `,
+      [CLEARANCE_FIELD_LABEL, existing[0].id]
+    );
     return;
   }
 
-  const [maxOrderRows] = await connection.query(`
+  const [maxOrderRows] = await connection.query(
+    `
     SELECT COALESCE(MAX(sort_order), 0) AS maxOrder
     FROM field_config
     WHERE section_key = ?
-  `, [sectionKey]);
+  `,
+    [sectionKey]
+  );
   const nextOrder = Math.max(Number(maxOrderRows[0]?.maxOrder || 0) + 1, 900);
 
-  await connection.query(`
+  await connection.query(
+    `
     INSERT INTO field_config (section_key, field_key, visible, sort_order, display_label)
     VALUES (?, ?, 1, ?, ?)
-  `, [sectionKey, fieldKey, nextOrder, CLEARANCE_FIELD_LABEL]);
+  `,
+    [sectionKey, fieldKey, nextOrder, CLEARANCE_FIELD_LABEL]
+  );
 }
 
 async function ensureClearanceCustomField(connection) {
-  const [existing] = await connection.query(`
+  const [existing] = await connection.query(
+    `
     SELECT id, field_key AS fieldKey
     FROM custom_fields
     WHERE field_key = ?
     LIMIT 1
-  `, [CUSTOM_CLEARANCE_FIELD_KEY]);
+  `,
+    [CUSTOM_CLEARANCE_FIELD_KEY]
+  );
 
   let fieldId = existing[0]?.id;
   if (!fieldId) {
-    const [result] = await connection.query(`
+    const [result] = await connection.query(
+      `
       INSERT INTO custom_fields (field_key, label, field_type, placement)
       VALUES (?, ?, 'money', 'transaction')
-    `, [CUSTOM_CLEARANCE_FIELD_KEY, CLEARANCE_FIELD_LABEL]);
+    `,
+      [CUSTOM_CLEARANCE_FIELD_KEY, CLEARANCE_FIELD_LABEL]
+    );
     fieldId = Number(result.insertId);
   }
 
-  for (const sectionKey of [`${SECTION_KEY}::list`, `${SECTION_KEY}::statement`, `${SECTION_KEY}::invoice`]) {
-    await ensureCustomFieldConfig(connection, sectionKey, CUSTOM_CLEARANCE_FIELD_KEY);
+  for (const sectionKey of [
+    `${SECTION_KEY}::list`,
+    `${SECTION_KEY}::statement`,
+    `${SECTION_KEY}::invoice`,
+  ]) {
+    await ensureCustomFieldConfig(
+      connection,
+      sectionKey,
+      CUSTOM_CLEARANCE_FIELD_KEY
+    );
   }
 
   return fieldId;
@@ -658,33 +825,55 @@ function createMutableLookupState(dbContext) {
     },
     governorates: {
       items: [...dbContext.governorates],
-      map: createLookupMaps(dbContext.governorates, dbContext.governorateAliases),
+      map: createLookupMaps(
+        dbContext.governorates,
+        dbContext.governorateAliases
+      ),
     },
   };
 }
 
-async function findOrCreateLookupEntity(connection, state, entityType, rawName, extra = {}) {
+async function findOrCreateLookupEntity(
+  connection,
+  state,
+  entityType,
+  rawName,
+  extra = {}
+) {
   const normalizedName = normalizeSpaces(rawName);
   if (!normalizedName) return null;
 
   const existing = state.map.get(normalizeLookupKey(normalizedName));
   if (existing) {
-    await ensureEntityAlias(connection, entityType, existing.id, normalizedName);
+    await ensureEntityAlias(
+      connection,
+      entityType,
+      existing.id,
+      normalizedName
+    );
     return existing;
   }
 
   let result;
-  if (entityType === 'driver') {
-    [result] = await connection.query('INSERT INTO drivers (name) VALUES (?)', [normalizedName]);
-  } else if (entityType === 'vehicle') {
-    [result] = await connection.query('INSERT INTO vehicles (plateNumber) VALUES (?)', [normalizedName]);
-  } else if (entityType === 'good_type') {
-    [result] = await connection.query('INSERT INTO goods_types (name) VALUES (?)', [normalizedName]);
-  } else if (entityType === 'governorate') {
-    [result] = await connection.query('INSERT INTO governorates (name, trance_price) VALUES (?, ?)', [
+  if (entityType === "driver") {
+    [result] = await connection.query("INSERT INTO drivers (name) VALUES (?)", [
       normalizedName,
-      extra.transPrice ?? null,
     ]);
+  } else if (entityType === "vehicle") {
+    [result] = await connection.query(
+      "INSERT INTO vehicles (plateNumber) VALUES (?)",
+      [normalizedName]
+    );
+  } else if (entityType === "good_type") {
+    [result] = await connection.query(
+      "INSERT INTO goods_types (name) VALUES (?)",
+      [normalizedName]
+    );
+  } else if (entityType === "governorate") {
+    [result] = await connection.query(
+      "INSERT INTO governorates (name, trance_price) VALUES (?, ?)",
+      [normalizedName, extra.transPrice ?? null]
+    );
   } else {
     throw new Error(`Unsupported lookup entity type: ${entityType}`);
   }
@@ -692,7 +881,9 @@ async function findOrCreateLookupEntity(connection, state, entityType, rawName, 
   const entity = {
     id: Number(result.insertId),
     name: normalizedName,
-    ...(entityType === 'governorate' ? { trancePrice: extra.transPrice ?? null } : {}),
+    ...(entityType === "governorate"
+      ? { trancePrice: extra.transPrice ?? null }
+      : {}),
   };
   state.items.push(entity);
   addLookupEntry(state.map, normalizedName, entity);
@@ -702,24 +893,47 @@ async function findOrCreateLookupEntity(connection, state, entityType, rawName, 
 
 async function upsertRouteDefault(connection, govId, transPrice) {
   if (!govId || transPrice === null || transPrice === undefined) return;
-  await connection.query(`
+  await connection.query(
+    `
     INSERT INTO route_defaults (section_key, gov_id, currency, default_trans_price, notes, active)
     VALUES (?, ?, 'IQD', ?, ?, 1)
     ON DUPLICATE KEY UPDATE
       default_trans_price = VALUES(default_trans_price),
       notes = VALUES(notes),
       active = VALUES(active)
-  `, [SECTION_KEY, govId, transPrice, 'Imported from real workbook governorate sheet']);
+  `,
+    [
+      SECTION_KEY,
+      govId,
+      transPrice,
+      "Imported from real workbook governorate sheet",
+    ]
+  );
 }
 
-async function syncGovernorateDefaultsFromWorkbook(connection, governorateRows, lookupState) {
+async function syncGovernorateDefaultsFromWorkbook(
+  connection,
+  governorateRows,
+  lookupState
+) {
   let synced = 0;
   for (const row of governorateRows) {
-    const governorate = await findOrCreateLookupEntity(connection, lookupState.governorates, 'governorate', row.governorate, {
-      transPrice: row.transPrice,
-    });
+    const governorate = await findOrCreateLookupEntity(
+      connection,
+      lookupState.governorates,
+      "governorate",
+      row.governorate,
+      {
+        transPrice: row.transPrice,
+      }
+    );
     if (!governorate) continue;
-    await ensureEntityAlias(connection, 'governorate', governorate.id, row.governorate);
+    await ensureEntityAlias(
+      connection,
+      "governorate",
+      governorate.id,
+      row.governorate
+    );
     await upsertRouteDefault(connection, governorate.id, row.transPrice);
     synced++;
   }
@@ -727,37 +941,52 @@ async function syncGovernorateDefaultsFromWorkbook(connection, governorateRows, 
 }
 
 async function getNextPortRefNumber(connection) {
-  const [rows] = await connection.query(`
+  const [rows] = await connection.query(
+    `
     SELECT MAX(CAST(SUBSTRING(ref_no, 5) AS UNSIGNED)) AS maxRef
     FROM transactions
     WHERE port_id = ? AND ref_no LIKE 'KSA-%'
-  `, [SECTION_KEY]);
+  `,
+    [SECTION_KEY]
+  );
   return Number(rows[0]?.maxRef || 0) + 1;
 }
 
 async function writeImportAuditLog(connection, afterData) {
-  await connection.query(`
+  await connection.query(
+    `
     INSERT INTO audit_logs (entity_type, action, summary, after_data, metadata, username)
     VALUES ('import', 'create', ?, ?, ?, 'system-import')
-  `, [
-    `Workbook import ${SECTION_KEY}`,
-    JSON.stringify(afterData),
-    JSON.stringify({ source: 'import-real-workbook', sectionKey: SECTION_KEY }),
-  ]);
+  `,
+    [
+      `Workbook import ${SECTION_KEY}`,
+      JSON.stringify(afterData),
+      JSON.stringify({
+        source: "import-real-workbook",
+        sectionKey: SECTION_KEY,
+      }),
+    ]
+  );
 }
 
 async function applyImportPlan(connection, plan, governorateRows) {
   const lookupState = createMutableLookupState(plan.dbContext);
-  const readyRows = plan.rowDecisions.filter((row) => row.status === 'ready');
-  const blockedRows = plan.rowDecisions.filter((row) => row.status === 'blocked');
-  const duplicateRows = plan.rowDecisions.filter((row) => row.status === 'duplicate');
+  const readyRows = plan.rowDecisions.filter(row => row.status === "ready");
+  const blockedRows = plan.rowDecisions.filter(row => row.status === "blocked");
+  const duplicateRows = plan.rowDecisions.filter(
+    row => row.status === "duplicate"
+  );
 
   const backupPath = await createDatabaseBackup(connection, plan.workbookPath);
   const clearanceFieldId = await ensureClearanceCustomField(connection);
 
   await connection.beginTransaction();
   try {
-    const governorateDefaultsSynced = await syncGovernorateDefaultsFromWorkbook(connection, governorateRows, lookupState);
+    const governorateDefaultsSynced = await syncGovernorateDefaultsFromWorkbook(
+      connection,
+      governorateRows,
+      lookupState
+    );
     let refCounter = await getNextPortRefNumber(connection);
 
     let insertedTransactions = 0;
@@ -769,50 +998,104 @@ async function applyImportPlan(connection, plan, governorateRows) {
 
     const insertedIds = [];
     const seenFingerprints = new Set(
-      plan.dbContext.existingTransactions.map((row) => buildTransactionFingerprint(row)),
+      plan.dbContext.existingTransactions.map(row =>
+        buildTransactionFingerprint(row)
+      )
     );
 
     for (const row of readyRows) {
-      const account = lookupState.accounts.map.get(normalizeLookupKey(row.traderName))
-        || lookupState.accounts.map.get(simplifyAccountLookupKey(row.traderName));
+      const account =
+        lookupState.accounts.map.get(normalizeLookupKey(row.traderName)) ||
+        lookupState.accounts.map.get(simplifyAccountLookupKey(row.traderName));
       if (!account?.id) continue;
 
-      await ensureEntityAlias(connection, 'account', account.id, row.traderName);
+      await ensureEntityAlias(
+        connection,
+        "account",
+        account.id,
+        row.traderName
+      );
 
       let driver = null;
       if (row.driverName) {
-        const existingDriver = lookupState.drivers.map.get(normalizeLookupKey(row.driverName));
-        driver = existingDriver || await findOrCreateLookupEntity(connection, lookupState.drivers, 'driver', row.driverName);
+        const existingDriver = lookupState.drivers.map.get(
+          normalizeLookupKey(row.driverName)
+        );
+        driver =
+          existingDriver ||
+          (await findOrCreateLookupEntity(
+            connection,
+            lookupState.drivers,
+            "driver",
+            row.driverName
+          ));
         if (!existingDriver && driver) createdDrivers++;
       }
 
       let vehicle = null;
       if (row.vehiclePlate) {
-        const existingVehicle = lookupState.vehicles.map.get(normalizeLookupKey(row.vehiclePlate));
-        vehicle = existingVehicle || await findOrCreateLookupEntity(connection, lookupState.vehicles, 'vehicle', row.vehiclePlate);
+        const existingVehicle = lookupState.vehicles.map.get(
+          normalizeLookupKey(row.vehiclePlate)
+        );
+        vehicle =
+          existingVehicle ||
+          (await findOrCreateLookupEntity(
+            connection,
+            lookupState.vehicles,
+            "vehicle",
+            row.vehiclePlate
+          ));
         if (!existingVehicle && vehicle) createdVehicles++;
       }
 
       let good = null;
       if (row.goodType) {
-        const existingGood = lookupState.goods.map.get(normalizeLookupKey(row.goodType));
-        good = existingGood || await findOrCreateLookupEntity(connection, lookupState.goods, 'good_type', row.goodType);
+        const existingGood = lookupState.goods.map.get(
+          normalizeLookupKey(row.goodType)
+        );
+        good =
+          existingGood ||
+          (await findOrCreateLookupEntity(
+            connection,
+            lookupState.goods,
+            "good_type",
+            row.goodType
+          ));
         if (!existingGood && good) createdGoodsTypes++;
       }
 
       let governorate = null;
       if (row.governorate) {
-        const existingGovernorate = lookupState.governorates.map.get(normalizeLookupKey(row.governorate));
-        governorate = existingGovernorate || await findOrCreateLookupEntity(connection, lookupState.governorates, 'governorate', row.governorate, {
-          transPrice: row.transPrice,
-        });
+        const existingGovernorate = lookupState.governorates.map.get(
+          normalizeLookupKey(row.governorate)
+        );
+        governorate =
+          existingGovernorate ||
+          (await findOrCreateLookupEntity(
+            connection,
+            lookupState.governorates,
+            "governorate",
+            row.governorate,
+            {
+              transPrice: row.transPrice,
+            }
+          ));
         if (!existingGovernorate && governorate) createdGovernorates++;
         if (governorate) {
-          await ensureEntityAlias(connection, 'governorate', governorate.id, row.governorate);
+          await ensureEntityAlias(
+            connection,
+            "governorate",
+            governorate.id,
+            row.governorate
+          );
         }
       }
 
-      if (governorate && row.transPrice !== null && row.transPrice !== undefined) {
+      if (
+        governorate &&
+        row.transPrice !== null &&
+        row.transPrice !== undefined
+      ) {
         await upsertRouteDefault(connection, governorate.id, row.transPrice);
       }
 
@@ -820,9 +1103,9 @@ async function applyImportPlan(connection, plan, governorateRows) {
         accountId: account.id,
         accountType: account.accountType || ACCOUNT_TYPE_FALLBACK,
         transDate: row.transDate,
-        direction: String(row.direction || 'IN').toUpperCase(),
-        recordType: row.recordType || 'فاتورة',
-        currency: row.currency || 'USD',
+        direction: String(row.direction || "IN").toUpperCase(),
+        recordType: row.recordType || "فاتورة",
+        currency: row.currency || "USD",
         driverId: driver?.id ?? null,
         vehicleId: vehicle?.id ?? null,
         goodTypeId: good?.id ?? null,
@@ -847,48 +1130,58 @@ async function applyImportPlan(connection, plan, governorateRows) {
       if (seenFingerprints.has(fingerprint)) continue;
       seenFingerprints.add(fingerprint);
 
-      const refNo = `KSA-${String(refCounter).padStart(4, '0')}`;
+      const refNo = `KSA-${String(refCounter).padStart(4, "0")}`;
       refCounter++;
 
-      const [result] = await connection.query(`
+      const [result] = await connection.query(
+        `
         INSERT INTO transactions (
           ref_no, direction, trans_date, account_id, currency, driver_id, vehicle_id, good_type_id,
           weight, meters, cost_usd, amount_usd, cost_iqd, amount_iqd, fee_usd, trans_price, gov_id,
           notes, trader_note, record_type, port_id, account_type
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
-      `, [
-        refNo,
-        payload.direction,
-        payload.transDate,
-        payload.accountId,
-        payload.currency,
-        payload.driverId,
-        payload.vehicleId,
-        payload.goodTypeId,
-        payload.weight,
-        payload.meters,
-        payload.costUSD,
-        payload.amountUSD,
-        payload.costIQD,
-        payload.amountIQD,
-        payload.feeUSD,
-        payload.transPrice,
-        payload.govId,
-        payload.notes,
-        payload.recordType,
-        SECTION_KEY,
-        payload.accountType,
-      ]);
+      `,
+        [
+          refNo,
+          payload.direction,
+          payload.transDate,
+          payload.accountId,
+          payload.currency,
+          payload.driverId,
+          payload.vehicleId,
+          payload.goodTypeId,
+          payload.weight,
+          payload.meters,
+          payload.costUSD,
+          payload.amountUSD,
+          payload.costIQD,
+          payload.amountIQD,
+          payload.feeUSD,
+          payload.transPrice,
+          payload.govId,
+          payload.notes,
+          payload.recordType,
+          SECTION_KEY,
+          payload.accountType,
+        ]
+      );
 
       const transactionId = Number(result.insertId);
       insertedIds.push(transactionId);
       insertedTransactions++;
 
-      if (row.clearance !== null && row.clearance !== undefined && Number(row.clearance) !== 0) {
-        await connection.query(`
+      if (
+        row.clearance !== null &&
+        row.clearance !== undefined &&
+        Number(row.clearance) !== 0
+      ) {
+        await connection.query(
+          `
           INSERT INTO custom_field_values (custom_field_id, entity_type, entity_id, value)
           VALUES (?, 'transaction', ?, ?)
-        `, [clearanceFieldId, transactionId, String(row.clearance)]);
+        `,
+          [clearanceFieldId, transactionId, String(row.clearance)]
+        );
         insertedCustomValues++;
       }
     }
@@ -920,7 +1213,7 @@ async function applyImportPlan(connection, plan, governorateRows) {
       blockedRows: blockedRows.slice(0, 100),
       duplicateRows: duplicateRows.slice(0, 100),
     };
-    const applyReportPath = saveReport('real-workbook-apply', applyReport);
+    const applyReportPath = saveReport("real-workbook-apply", applyReport);
 
     return {
       backupPath,
@@ -934,7 +1227,7 @@ async function applyImportPlan(connection, plan, governorateRows) {
 }
 
 async function main() {
-  const applyMode = hasFlag('--apply');
+  const applyMode = hasFlag("--apply");
 
   const workbookPath = resolveWorkbookPath();
   const workbook = XLSX.readFile(workbookPath, { raw: false });
@@ -948,41 +1241,76 @@ async function main() {
   const parsedTransactions = mapTransactionSheet(transactionSheetRows);
   const parsedGovernorates = mapGovernorateSheet(governorateSheetRows);
 
-  const connection = await mysql.createConnection(buildMySqlConnectionOptions(process.env.DATABASE_URL));
+  const connection = await mysql.createConnection(
+    buildMySqlConnectionOptions(process.env.DATABASE_URL)
+  );
   try {
     const dbContext = await loadDatabaseContext(connection);
-    const plan = buildImportPlan(workbookPath, parsedTransactions, parsedGovernorates, dbContext);
-    const reportPath = saveReport('real-workbook-dry-run', plan.report);
+    const plan = buildImportPlan(
+      workbookPath,
+      parsedTransactions,
+      parsedGovernorates,
+      dbContext
+    );
+    const reportPath = saveReport("real-workbook-dry-run", plan.report);
 
     console.log(`Workbook: ${workbookPath}`);
-    console.log(`Rows found in "${WORKBOOK_SHEET}": ${plan.report.summary.totalTransactionRows}`);
+    console.log(
+      `Rows found in "${WORKBOOK_SHEET}": ${plan.report.summary.totalTransactionRows}`
+    );
     console.log(`Ready rows: ${plan.report.summary.readyRows}`);
     console.log(`Duplicate rows: ${plan.report.summary.duplicateRows}`);
     console.log(`Blocked rows: ${plan.report.summary.blockedRows}`);
-    console.log(`Rows with Iraqi transport: ${plan.report.summary.rowsWithTransPrice}`);
-    console.log(`Rows with clearance: ${plan.report.summary.rowsWithClearance}`);
-    console.log(`Unresolved trader accounts: ${plan.report.blockingIssues.unresolvedAccounts.length}`);
-    console.log(`Potential new drivers: ${plan.report.nonBlockingCreates.drivers.length}`);
-    console.log(`Potential new vehicles: ${plan.report.nonBlockingCreates.vehicles.length}`);
-    console.log(`Potential new goods types: ${plan.report.nonBlockingCreates.goodsTypes.length}`);
-    console.log(`Potential new governorates: ${plan.report.nonBlockingCreates.governorates.length}`);
+    console.log(
+      `Rows with Iraqi transport: ${plan.report.summary.rowsWithTransPrice}`
+    );
+    console.log(
+      `Rows with clearance: ${plan.report.summary.rowsWithClearance}`
+    );
+    console.log(
+      `Unresolved trader accounts: ${plan.report.blockingIssues.unresolvedAccounts.length}`
+    );
+    console.log(
+      `Potential new drivers: ${plan.report.nonBlockingCreates.drivers.length}`
+    );
+    console.log(
+      `Potential new vehicles: ${plan.report.nonBlockingCreates.vehicles.length}`
+    );
+    console.log(
+      `Potential new goods types: ${plan.report.nonBlockingCreates.goodsTypes.length}`
+    );
+    console.log(
+      `Potential new governorates: ${plan.report.nonBlockingCreates.governorates.length}`
+    );
     console.log(`Report saved to: ${reportPath}`);
 
     if (applyMode) {
-      const result = await applyImportPlan(connection, { ...plan, workbookPath, dbContext }, parsedGovernorates);
+      const result = await applyImportPlan(
+        connection,
+        { ...plan, workbookPath, dbContext },
+        parsedGovernorates
+      );
       console.log(`Backup saved to: ${result.backupPath}`);
       console.log(`Apply report saved to: ${result.applyReportPath}`);
-      console.log(`Imported transactions: ${result.applySummary.importedTransactions}`);
-      console.log(`Inserted clearance values: ${result.applySummary.insertedCustomValues}`);
-      console.log(`Blocked rows kept for review: ${result.applySummary.skippedBlockedRows}`);
-      console.log(`Duplicate rows skipped: ${result.applySummary.skippedDuplicateRows}`);
+      console.log(
+        `Imported transactions: ${result.applySummary.importedTransactions}`
+      );
+      console.log(
+        `Inserted clearance values: ${result.applySummary.insertedCustomValues}`
+      );
+      console.log(
+        `Blocked rows kept for review: ${result.applySummary.skippedBlockedRows}`
+      );
+      console.log(
+        `Duplicate rows skipped: ${result.applySummary.skippedDuplicateRows}`
+      );
     }
   } finally {
     await connection.end();
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(`Workbook import failed: ${error.message}`);
   process.exit(1);
 });

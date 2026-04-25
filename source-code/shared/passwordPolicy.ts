@@ -6,10 +6,10 @@ const DIGIT_REGEX = /\d/;
 
 export function isStrongPassword(password: string): boolean {
   return (
-    typeof password === "string"
-    && password.length >= PASSWORD_MIN_LENGTH
-    && UPPERCASE_REGEX.test(password)
-    && LOWERCASE_REGEX.test(password)
-    && DIGIT_REGEX.test(password)
+    typeof password === "string" &&
+    password.length >= PASSWORD_MIN_LENGTH &&
+    UPPERCASE_REGEX.test(password) &&
+    LOWERCASE_REGEX.test(password) &&
+    DIGIT_REGEX.test(password)
   );
 }

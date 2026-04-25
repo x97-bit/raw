@@ -1,16 +1,25 @@
-import { Fragment, useState } from 'react';
-import { ChevronDown, User, Clock, Hash, Layers } from 'lucide-react';
-import EmptyTableRow from '../../../components/EmptyTableRow';
+import { Fragment, useState } from "react";
+import { ChevronDown, User, Clock, Hash, Layers } from "lucide-react";
+import EmptyTableRow from "../../../components/EmptyTableRow";
 import {
   getAuditActionBadgeClass,
   getAuditActionLabel,
   getAuditEntityLabel,
-} from '../auditLogsConfig';
-import { formatAuditDateTime, parseAuditField, getAuditFieldLabel, formatAuditValue } from '../auditLogsHelpers';
+} from "../auditLogsConfig";
+import {
+  formatAuditDateTime,
+  parseAuditField,
+  getAuditFieldLabel,
+  formatAuditValue,
+} from "../auditLogsHelpers";
 
 function ChangesInline({ changes }) {
   const parsed = parseAuditField(changes);
-  if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Object.keys(parsed).length === 0
+  ) {
     return <p className="text-sm text-panel-muted">لا توجد تغييرات تفصيلية.</p>;
   }
 
@@ -20,15 +29,25 @@ function ChangesInline({ changes }) {
         <thead>
           <tr className="bg-panel-border/20 text-right">
             <th className="px-5 py-3 font-semibold text-panel-muted">الحقل</th>
-            <th className="px-5 py-3 font-semibold text-panel-muted">القيمة السابقة</th>
-            <th className="px-5 py-3 font-semibold text-panel-muted">القيمة الجديدة</th>
+            <th className="px-5 py-3 font-semibold text-panel-muted">
+              القيمة السابقة
+            </th>
+            <th className="px-5 py-3 font-semibold text-panel-muted">
+              القيمة الجديدة
+            </th>
           </tr>
         </thead>
         <tbody>
           {Object.entries(parsed).map(([key, change]) => {
-            const isBeforeAfter = change && typeof change === 'object' && ('before' in change || 'after' in change);
+            const isBeforeAfter =
+              change &&
+              typeof change === "object" &&
+              ("before" in change || "after" in change);
             return (
-              <tr key={key} className="border-t border-panel-border transition-colors hover:bg-row-hover">
+              <tr
+                key={key}
+                className="border-t border-panel-border transition-colors hover:bg-row-hover"
+              >
                 <td className="whitespace-nowrap px-5 py-3.5 font-bold text-panel-text">
                   {getAuditFieldLabel(key)}
                 </td>
@@ -57,7 +76,11 @@ function ChangesInline({ changes }) {
 
 function DataInline({ data }) {
   const parsed = parseAuditField(data);
-  if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Object.keys(parsed).length === 0
+  ) {
     return <p className="text-sm text-panel-muted">لا توجد بيانات.</p>;
   }
 
@@ -94,8 +117,8 @@ function SectionTitle({ children }) {
 function ExpandedDetails({ row }) {
   const hasChanges =
     row.changes &&
-    (typeof row.changes === 'string'
-      ? row.changes !== '{}' && row.changes !== 'null'
+    (typeof row.changes === "string"
+      ? row.changes !== "{}" && row.changes !== "null"
       : Object.keys(row.changes || {}).length > 0);
   const hasBefore = row.beforeData;
   const hasAfter = row.afterData;
@@ -146,8 +169,8 @@ function ExpandedDetails({ row }) {
 export default function AuditLogsTable({ rows }) {
   const [expandedId, setExpandedId] = useState(null);
 
-  const toggleRow = (id) => {
-    setExpandedId((current) => (current === id ? null : id));
+  const toggleRow = id => {
+    setExpandedId(current => (current === id ? null : id));
   };
 
   return (
@@ -169,7 +192,8 @@ export default function AuditLogsTable({ rows }) {
               </th>
               <th className="px-4 py-4 font-semibold text-panel-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <Layers size={15} className="text-panel-muted" /> الكيان المستهدف
+                  <Layers size={15} className="text-panel-muted" /> الكيان
+                  المستهدف
                 </span>
               </th>
               <th className="px-4 py-4 font-semibold text-panel-muted">
@@ -177,8 +201,12 @@ export default function AuditLogsTable({ rows }) {
                   <Hash size={15} className="text-panel-muted" /> المعرف
                 </span>
               </th>
-              <th className="px-4 py-4 font-semibold text-panel-muted">نوع العملية</th>
-              <th className="px-4 py-4 font-semibold text-panel-muted">وصف الملخص</th>
+              <th className="px-4 py-4 font-semibold text-panel-muted">
+                نوع العملية
+              </th>
+              <th className="px-4 py-4 font-semibold text-panel-muted">
+                وصف الملخص
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -189,20 +217,20 @@ export default function AuditLogsTable({ rows }) {
                 message="لا توجد سجلات مطابقة للفلاتر والبحث الحالي."
               />
             ) : (
-              rows.map((row) => {
+              rows.map(row => {
                 const isExpanded = expandedId === row.id;
                 return (
                   <Fragment key={row.id}>
                     <tr
                       onClick={() => toggleRow(row.id)}
                       className={`group cursor-pointer border-t border-panel-border transition-all hover:bg-row-hover ${
-                        isExpanded ? 'bg-row-hover' : ''
+                        isExpanded ? "bg-row-hover" : ""
                       }`}
                     >
                       <td className="px-4 py-4 text-panel-muted transition-colors group-hover:text-primary">
                         <div
                           className={`transform transition-transform ${
-                            isExpanded ? 'rotate-180 text-primary' : ''
+                            isExpanded ? "rotate-180 text-primary" : ""
                           }`}
                         >
                           <ChevronDown size={18} />
@@ -212,13 +240,13 @@ export default function AuditLogsTable({ rows }) {
                         {formatAuditDateTime(row.createdAt)}
                       </td>
                       <td className="px-4 py-4 font-bold text-panel-text">
-                        {row.username || '-'}
+                        {row.username || "-"}
                       </td>
                       <td className="px-4 py-4 font-medium text-panel-text">
                         {getAuditEntityLabel(row.entityType)}
                       </td>
                       <td className="px-4 py-4 font-mono text-xs tracking-wider text-panel-muted">
-                        {row.entityId || '-'}
+                        {row.entityId || "-"}
                       </td>
                       <td className="px-4 py-4">
                         <span
@@ -228,7 +256,7 @@ export default function AuditLogsTable({ rows }) {
                         </span>
                       </td>
                       <td className="min-w-[200px] px-4 py-4 leading-relaxed text-panel-text">
-                        {row.summary || '-'}
+                        {row.summary || "-"}
                       </td>
                     </tr>
                     {isExpanded && (

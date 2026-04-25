@@ -1,16 +1,16 @@
-import { createConnection } from 'mysql2/promise';
+import { createConnection } from "mysql2/promise";
 
 async function fixData() {
   const c = await createConnection({
-    host: '127.0.0.1',
+    host: "127.0.0.1",
     port: 3306,
-    user: 'root',
-    database: 'alrawi_db',
+    user: "root",
+    database: "alrawi_db",
   });
 
   // Fix invalid dates in trans_date (1900-01-00 is invalid)
   await c.execute(`SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'`);
-  
+
   const [badDates] = await c.execute(
     `SELECT id, trans_date FROM transactions WHERE trans_date < '1970-01-01' OR trans_date IS NULL`
   );
@@ -23,8 +23,8 @@ async function fixData() {
     );
     console.log(`Fixed ${rows.length} rows - set to 2000-01-01`);
   }
-  
-  // Also fix debts dates  
+
+  // Also fix debts dates
   const [badDebtDates] = await c.execute(
     `SELECT id FROM debts WHERE date < '1970-01-01'`
   );
@@ -38,10 +38,10 @@ async function fixData() {
   const [nullAccounts] = await c.execute(
     `SELECT COUNT(*) as cnt FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts)`
   );
-  console.log('Orphan account_ids:', JSON.stringify(nullAccounts));
+  console.log("Orphan account_ids:", JSON.stringify(nullAccounts));
 
   await c.end();
-  console.log('\nData fix done!');
+  console.log("\nData fix done!");
 }
 
 fixData().catch(console.error);

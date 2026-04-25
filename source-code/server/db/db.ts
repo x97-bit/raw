@@ -1,11 +1,11 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import type { InsertUser } from "../drizzle/schema";
-import { buildMySqlConnectionOptions } from "./_core/mysqlConfig";
-import type { AppDb } from "./dbTypes";
-import { schema } from "./dbTypes";
-import { getUserByOpenIdWithDb, upsertUserWithDb } from "./dbAuthUsers";
-import { ensureRuntimeSchemaWithUrl } from "./dbRuntimeSchema";
+import type { InsertUser } from "../../drizzle/schema";
+import { buildMySqlConnectionOptions } from "../_core/mysqlConfig";
+import type { AppDb } from "./schema/dbTypes";
+import { schema } from "./schema/dbTypes";
+import { getUserByOpenIdWithDb, upsertUserWithDb } from "./schema/dbAuthUsers";
+import { ensureRuntimeSchemaWithUrl } from "./schema/dbRuntimeSchema";
 
 let _db: AppDb | null = null;
 let _dbClient: mysql.Pool | null = null;
@@ -17,7 +17,9 @@ export async function getDb(): Promise<AppDb | null> {
     let nextClient: mysql.Pool | null = null;
 
     try {
-      nextClient = mysql.createPool(buildMySqlConnectionOptions(process.env.DATABASE_URL));
+      nextClient = mysql.createPool(
+        buildMySqlConnectionOptions(process.env.DATABASE_URL)
+      );
       await nextClient.query("SELECT 1");
 
       _dbClient = nextClient;
@@ -44,7 +46,10 @@ export async function getDb(): Promise<AppDb | null> {
     try {
       await ensureRuntimeSchemaWithUrl(process.env.DATABASE_URL);
     } catch (error) {
-      console.warn("[Database] Runtime schema migration had warnings (non-fatal):", (error as Error).message?.substring(0, 120));
+      console.warn(
+        "[Database] Runtime schema migration had warnings (non-fatal):",
+        (error as Error).message?.substring(0, 120)
+      );
     }
   }
 

@@ -1,5 +1,5 @@
-import { Upload } from 'lucide-react';
-import { formatBytes } from '../backupsPageHelpers';
+import { Upload } from "lucide-react";
+import { formatBytes } from "../backupsPageHelpers";
 
 export default function BackupImportPanel({
   selectedFile,
@@ -19,12 +19,14 @@ export default function BackupImportPanel({
       </div>
 
       <label className="block">
-        <span className="mb-2 block text-sm font-semibold text-[#cbd5df]">ملف النسخة</span>
+        <span className="mb-2 block text-sm font-semibold text-[#cbd5df]">
+          ملف النسخة
+        </span>
         <input
           key={fileInputKey}
           type="file"
           accept=".json,application/json"
-          onChange={(event) => onFileChange(event.target.files?.[0] || null)}
+          onChange={event => onFileChange(event.target.files?.[0] || null)}
           className="input-field cursor-pointer pt-3"
         />
       </label>
@@ -36,18 +38,20 @@ export default function BackupImportPanel({
             <div dir="ltr">{formatBytes(selectedFile.size)}</div>
           </div>
         ) : (
-          'لم يتم اختيار ملف بعد.'
+          "لم يتم اختيار ملف بعد."
         )}
       </div>
 
       <div className="flex flex-wrap gap-3">
         <button
           onClick={onImport}
-          disabled={busyAction === 'import' || !selectedFile}
+          disabled={busyAction === "import" || !selectedFile}
           className="btn-primary flex items-center gap-2 disabled:opacity-60"
         >
           <Upload size={16} />
-          <span>{busyAction === 'import' ? 'جارٍ الاستيراد...' : 'استيراد النسخة'}</span>
+          <span>
+            {busyAction === "import" ? "جارٍ الاستيراد..." : "استيراد النسخة"}
+          </span>
         </button>
         <button onClick={onClear} className="btn-outline">
           تفريغ الحقل

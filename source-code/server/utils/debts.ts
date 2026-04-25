@@ -20,7 +20,9 @@ function parseStoredAmount(value: unknown): number {
 }
 
 function hasAnyBodyKey(body: DebtBody, keys: string[]) {
-  return keys.some((key) => Object.prototype.hasOwnProperty.call(body ?? {}, key));
+  return keys.some(key =>
+    Object.prototype.hasOwnProperty.call(body ?? {}, key)
+  );
 }
 
 function pickBodyField(body: DebtBody, ...keys: string[]) {
@@ -43,11 +45,16 @@ function normalizeDecimal(value: unknown, zeroFallback = false) {
   return String(parsed);
 }
 
-export function normalizeDebtStatus(value: unknown): "pending" | "partial" | "paid" {
-  const normalized = String(value ?? "").trim().toLowerCase();
+export function normalizeDebtStatus(
+  value: unknown
+): "pending" | "partial" | "paid" {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
   if (["paid", "مسدد", "settled"].includes(normalized)) return "paid";
-  if (["partial", "جزئي", "تسديد جزئي", "partial payment"].includes(normalized)) return "partial";
+  if (["partial", "جزئي", "تسديد جزئي", "partial payment"].includes(normalized))
+    return "partial";
   return "pending";
 }
 
@@ -94,7 +101,7 @@ export function mapDebtRow(d: DebtRow) {
 export function buildDebtMutationData(
   body: DebtBody,
   resolvedDebtorName?: string | null,
-  options: { partial?: boolean; now?: string } = {},
+  options: { partial?: boolean; now?: string } = {}
 ) {
   const partial = options.partial ?? false;
   const now = options.now || new Date().toISOString().split("T")[0];
@@ -104,7 +111,7 @@ export function buildDebtMutationData(
     outputKey: K,
     inputKeys: string[],
     transform: (value: unknown) => DebtMutationData[K],
-    fallbackValue?: unknown,
+    fallbackValue?: unknown
   ) => {
     if (partial && !hasAnyBodyKey(body, inputKeys)) return;
     const rawValue = pickBodyField(body, ...inputKeys);
@@ -115,34 +122,99 @@ export function buildDebtMutationData(
   if (
     !partial ||
     resolvedDebtorName !== undefined ||
-    hasAnyBodyKey(body, ["debtorName", "accountName", "AccountName", "AccountID", "accountId", "account_id"])
+    hasAnyBodyKey(body, [
+      "debtorName",
+      "accountName",
+      "AccountName",
+      "AccountID",
+      "accountId",
+      "account_id",
+    ])
   ) {
     const normalizedDebtorName = normalizeText(
       resolvedDebtorName ??
-        pickBodyField(body, "debtorName", "accountName", "AccountName", "AccountID", "accountId", "account_id"),
-      "",
+        pickBodyField(
+          body,
+          "debtorName",
+          "accountName",
+          "AccountName",
+          "AccountID",
+          "accountId",
+          "account_id"
+        ),
+      ""
     );
     data.debtorName = normalizedDebtorName ?? "";
   }
 
-  assign("amountUSD", ["amountUSD", "AmountUSD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("amountIQD", ["amountIQD", "AmountIQD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("feeUSD", ["feeUSD", "FeeUSD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("feeIQD", ["feeIQD", "FeeIQD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("paidAmountUSD", ["paidAmountUSD", "PaidAmountUSD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("paidAmountIQD", ["paidAmountIQD", "PaidAmountIQD"], (value) => normalizeDecimal(value, true) ?? "0", "0");
-  assign("transType", ["transType", "TransType"], (value) => normalizeText(value));
-  assign("fxRate", ["fxRate", "FXRate"], (value) => normalizeDecimal(value));
-  assign("driverName", ["driverName", "DriverName"], (value) => normalizeText(value));
-  assign("carNumber", ["carNumber", "CarNumber", "VehiclePlate"], (value) => normalizeText(value));
-  assign("goodType", ["goodType", "GoodType", "GoodTypeName"], (value) => normalizeText(value));
-  assign("weight", ["weight", "Weight"], (value) => normalizeDecimal(value));
-  assign("meters", ["meters", "Meters"], (value) => normalizeDecimal(value));
-  assign("description", ["description", "Notes"], (value) => normalizeText(value, ""));
-  assign("date", ["date", "TransDate"], (value) => normalizeText(value, now), now);
-  assign("status", ["status", "Status", "State"], (value) => normalizeDebtStatus(value), "pending");
-  assign("state", ["state", "State"], (value) => normalizeText(value));
-  assign("fxNote", ["fxNote", "FxNote"], (value) => normalizeText(value));
+  assign(
+    "amountUSD",
+    ["amountUSD", "AmountUSD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign(
+    "amountIQD",
+    ["amountIQD", "AmountIQD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign(
+    "feeUSD",
+    ["feeUSD", "FeeUSD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign(
+    "feeIQD",
+    ["feeIQD", "FeeIQD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign(
+    "paidAmountUSD",
+    ["paidAmountUSD", "PaidAmountUSD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign(
+    "paidAmountIQD",
+    ["paidAmountIQD", "PaidAmountIQD"],
+    value => normalizeDecimal(value, true) ?? "0",
+    "0"
+  );
+  assign("transType", ["transType", "TransType"], value =>
+    normalizeText(value)
+  );
+  assign("fxRate", ["fxRate", "FXRate"], value => normalizeDecimal(value));
+  assign("driverName", ["driverName", "DriverName"], value =>
+    normalizeText(value)
+  );
+  assign("carNumber", ["carNumber", "CarNumber", "VehiclePlate"], value =>
+    normalizeText(value)
+  );
+  assign("goodType", ["goodType", "GoodType", "GoodTypeName"], value =>
+    normalizeText(value)
+  );
+  assign("weight", ["weight", "Weight"], value => normalizeDecimal(value));
+  assign("meters", ["meters", "Meters"], value => normalizeDecimal(value));
+  assign("description", ["description", "Notes"], value =>
+    normalizeText(value, "")
+  );
+  assign(
+    "date",
+    ["date", "TransDate"],
+    value => normalizeText(value, now),
+    now
+  );
+  assign(
+    "status",
+    ["status", "Status", "State"],
+    value => normalizeDebtStatus(value),
+    "pending"
+  );
+  assign("state", ["state", "State"], value => normalizeText(value));
+  assign("fxNote", ["fxNote", "FxNote"], value => normalizeText(value));
 
   return data;
 }

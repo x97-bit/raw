@@ -1,54 +1,80 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildFieldConfigKey,
   getScopedFieldSectionKeys,
   usesLegacyFieldConfigFallback,
-} from '../../utils/fieldConfigTargets';
-import { buildFieldConfigMap } from '../../utils/fieldConfigMetadata';
-import { getPortFormTarget, buildPortColumnsForTarget, dedupePortCustomFieldsById, getVisiblePortCustomFieldsForTarget, getVisiblePortFormulaFieldsForTarget } from './portPageHelpers';
+} from "../../utils/fieldConfigTargets";
+import { buildFieldConfigMap } from "../../utils/fieldConfigMetadata";
+import {
+  getPortFormTarget,
+  buildPortColumnsForTarget,
+  dedupePortCustomFieldsById,
+  getVisiblePortCustomFieldsForTarget,
+  getVisiblePortFormulaFieldsForTarget,
+} from "./portPageHelpers";
 
-export default function usePortFieldConfig({
-  api,
-  sectionKey,
-  formType,
-}) {
+export default function usePortFieldConfig({ api, sectionKey, formType }) {
   const [viewColumns, setViewColumns] = useState({ list: [], statement: [] });
   const [customFields, setCustomFields] = useState([]);
-  const [viewConfigMaps, setViewConfigMaps] = useState({ list: {}, statement: {}, invoice: {}, payment: {}, 'debit-note': {} });
+  const [viewConfigMaps, setViewConfigMaps] = useState({
+    list: {},
+    statement: {},
+    invoice: {},
+    payment: {},
+    "debit-note": {},
+  });
 
-  const activeFormTarget = useMemo(() => getPortFormTarget(formType), [formType]);
-  const getFieldConfigMap = useCallback((target) => viewConfigMaps[target] || {}, [viewConfigMaps]);
+  const activeFormTarget = useMemo(
+    () => getPortFormTarget(formType),
+    [formType]
+  );
+  const getFieldConfigMap = useCallback(
+    target => viewConfigMaps[target] || {},
+    [viewConfigMaps]
+  );
 
-  const getVisibleCustomFieldsForTarget = useCallback((target) => getVisiblePortCustomFieldsForTarget({
-    customFields,
-    configMap: getFieldConfigMap(target),
-    sectionKey,
-    target,
-  }), [customFields, getFieldConfigMap, sectionKey]);
+  const getVisibleCustomFieldsForTarget = useCallback(
+    target =>
+      getVisiblePortCustomFieldsForTarget({
+        customFields,
+        configMap: getFieldConfigMap(target),
+        sectionKey,
+        target,
+      }),
+    [customFields, getFieldConfigMap, sectionKey]
+  );
 
-  const getVisibleFormulaFieldsForTarget = useCallback((target) => getVisiblePortFormulaFieldsForTarget({
-    customFields,
-    configMap: getFieldConfigMap(target),
-    sectionKey,
-    target,
-  }), [customFields, getFieldConfigMap, sectionKey]);
+  const getVisibleFormulaFieldsForTarget = useCallback(
+    target =>
+      getVisiblePortFormulaFieldsForTarget({
+        customFields,
+        configMap: getFieldConfigMap(target),
+        sectionKey,
+        target,
+      }),
+    [customFields, getFieldConfigMap, sectionKey]
+  );
 
   const activeFormCustomFields = useMemo(
     () => [
       ...getVisibleCustomFieldsForTarget(activeFormTarget),
       ...getVisibleFormulaFieldsForTarget(activeFormTarget),
     ],
-    [activeFormTarget, getVisibleCustomFieldsForTarget, getVisibleFormulaFieldsForTarget],
+    [
+      activeFormTarget,
+      getVisibleCustomFieldsForTarget,
+      getVisibleFormulaFieldsForTarget,
+    ]
   );
 
   const activeFormFieldConfigMap = useMemo(
     () => getFieldConfigMap(activeFormTarget),
-    [activeFormTarget, getFieldConfigMap],
+    [activeFormTarget, getFieldConfigMap]
   );
 
   const loadFieldConfig = useCallback(async () => {
     try {
-      const fetchTargetConfigs = async (target) => {
+      const fetchTargetConfigs = async target => {
         const configKey = buildFieldConfigKey(sectionKey, target);
         const configs = await api(`/field-config/${configKey}`);
         if (configs?.length > 0) return configs;
@@ -58,21 +84,32 @@ export default function usePortFieldConfig({
         return configs || [];
       };
 
-      const customFieldSectionKeys = Array.from(new Set([
-        ...getScopedFieldSectionKeys(sectionKey, 'list'),
-        ...getScopedFieldSectionKeys(sectionKey, 'statement'),
-        ...getScopedFieldSectionKeys(sectionKey, 'invoice'),
-        ...getScopedFieldSectionKeys(sectionKey, 'payment'),
-        ...getScopedFieldSectionKeys(sectionKey, 'debit-note'),
-      ]));
+      const customFieldSectionKeys = Array.from(
+        new Set([
+          ...getScopedFieldSectionKeys(sectionKey, "list"),
+          ...getScopedFieldSectionKeys(sectionKey, "statement"),
+          ...getScopedFieldSectionKeys(sectionKey, "invoice"),
+          ...getScopedFieldSectionKeys(sectionKey, "payment"),
+          ...getScopedFieldSectionKeys(sectionKey, "debit-note"),
+        ])
+      );
 
-      const [listConfigs, statementConfigs, invoiceConfigs, paymentConfigs, debitNoteConfigs, ...customFieldGroups] = await Promise.all([
-        fetchTargetConfigs('list'),
-        fetchTargetConfigs('statement'),
-        fetchTargetConfigs('invoice'),
-        fetchTargetConfigs('payment'),
-        fetchTargetConfigs('debit-note'),
-        ...customFieldSectionKeys.map((scopeKey) => api(`/custom-fields?sectionKey=${encodeURIComponent(scopeKey)}`)),
+      const [
+        listConfigs,
+        statementConfigs,
+        invoiceConfigs,
+        paymentConfigs,
+        debitNoteConfigs,
+        ...customFieldGroups
+      ] = await Promise.all([
+        fetchTargetConfigs("list"),
+        fetchTargetConfigs("statement"),
+        fetchTargetConfigs("invoice"),
+        fetchTargetConfigs("payment"),
+        fetchTargetConfigs("debit-note"),
+        ...customFieldSectionKeys.map(scopeKey =>
+          api(`/custom-fields?sectionKey=${encodeURIComponent(scopeKey)}`)
+        ),
       ]);
 
       const dedupedCustomFields = dedupePortCustomFieldsById(customFieldGroups);
@@ -88,28 +125,31 @@ export default function usePortFieldConfig({
         statement: statementConfigMap,
         invoice: invoiceConfigMap,
         payment: paymentConfigMap,
-        'debit-note': debitNoteConfigMap,
+        "debit-note": debitNoteConfigMap,
       });
       setViewColumns({
         list: buildPortColumnsForTarget({
           sectionKey,
-          target: 'list',
+          target: "list",
           configMap: listConfigMap,
           customFields: dedupedCustomFields,
         }),
         statement: buildPortColumnsForTarget({
           sectionKey,
-          target: 'statement',
+          target: "statement",
           configMap: statementConfigMap,
           customFields: dedupedCustomFields,
         }),
       });
     } catch (error) {
-      console.error('Failed to load field config:', error);
+      console.error("Failed to load field config:", error);
       setCustomFields([]);
       setViewColumns({
-        list: buildPortColumnsForTarget({ sectionKey, target: 'list' }),
-        statement: buildPortColumnsForTarget({ sectionKey, target: 'statement' }),
+        list: buildPortColumnsForTarget({ sectionKey, target: "list" }),
+        statement: buildPortColumnsForTarget({
+          sectionKey,
+          target: "statement",
+        }),
       });
     }
   }, [api, sectionKey]);

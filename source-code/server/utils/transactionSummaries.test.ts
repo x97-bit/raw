@@ -1,14 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { addRunningBalances, calculateTransactionTotals } from "./transactionSummaries";
+import {
+  addRunningBalances,
+  calculateTransactionTotals,
+} from "./transactionSummaries";
 
 describe("transaction summary helpers", () => {
   it("calculates invoice and payment totals across legacy and current direction values", () => {
     const totals = calculateTransactionTotals([
-      { direction: "IN", amountUsd: "1000", costUsd: "700", feeUsd: "25", weight: "12500" },
+      {
+        direction: "IN",
+        amountUsd: "1000",
+        costUsd: "700",
+        feeUsd: "25",
+        weight: "12500",
+      },
       { direction: "IN", amountUsd: "400", recordType: "debit-note" },
       { direction: "out", amountUsd: "-300" },
       { direction: "CR", amountUsd: "200", amountIqd: "-150000" },
-      { direction: "DR", amountIqd: "500000", costIqd: "320000", Weight: "3600" },
+      {
+        direction: "DR",
+        amountIqd: "500000",
+        costIqd: "320000",
+        Weight: "3600",
+      },
     ]);
 
     expect(totals.count).toBe(5);
@@ -32,13 +46,22 @@ describe("transaction summary helpers", () => {
   it("builds running balances from mapped rows without trusting stored signs", () => {
     const rows = addRunningBalances([
       { TransTypeID: 1, AmountUSD: 1000, AmountIQD: 0 },
-      { TransTypeID: 3, AmountUSD: 200, AmountIQD: 0, RecordType: "debit-note" },
+      {
+        TransTypeID: 3,
+        AmountUSD: 200,
+        AmountIQD: 0,
+        RecordType: "debit-note",
+      },
       { TransTypeID: 2, AmountUSD: -300, AmountIQD: 0 },
       { direction: "OUT", amountUsd: "250", amountIqd: "100000" },
       { direction: "DR", amountUsd: "50", amountIqd: "0" },
     ]);
 
-    expect(rows.map((row) => row.runningUSD)).toEqual([1000, 1200, 900, 650, 700]);
-    expect(rows.map((row) => row.runningIQD)).toEqual([0, 0, 0, -100000, -100000]);
+    expect(rows.map(row => row.runningUSD)).toEqual([
+      1000, 1200, 900, 650, 700,
+    ]);
+    expect(rows.map(row => row.runningIQD)).toEqual([
+      0, 0, 0, -100000, -100000,
+    ]);
   });
 });

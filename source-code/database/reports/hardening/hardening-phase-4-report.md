@@ -3,9 +3,11 @@
 Date: 2026-04-08
 
 ## Goal
+
 Add input validation and business guard rails to the highest-risk financial write APIs.
 
 ## Covered Routes
+
 - `POST /transactions`
 - `PUT /transactions/:id`
 - `DELETE /transactions/:id`
@@ -23,6 +25,7 @@ Add input validation and business guard rails to the highest-risk financial writ
 - `DELETE /special/:id`
 
 ## What Was Added
+
 - Shared request validation helper:
   - `source-code/server/_core/requestValidation.ts`
 - Shared financial schemas:
@@ -31,6 +34,7 @@ Add input validation and business guard rails to the highest-risk financial writ
   - `source-code/server/utils/financialValidation.test.ts`
 
 ## Business Rules Enforced
+
 - Invalid IDs now fail with `400`
 - Transaction create/update payloads are validated before DB writes
 - Debt create/update payloads are validated before DB writes
@@ -46,14 +50,17 @@ Add input validation and business guard rails to the highest-risk financial writ
   - requested allocation does not exceed remaining invoice/payment balances
 
 ## Validation Status
+
 - `pnpm test`: passed (`176/176`)
 - `pnpm build`: passed
 - `http://127.0.0.1:3000`: returned `200`
 
 ## Residual Technical Debt
+
 - `pnpm check` still reports legacy TypeScript strict-mode issues, mostly implicit `any` in `source-code/server/apiRoutes.ts`
 - These are pre-existing typing issues, not regressions from Phase 4
 
 ## Next Recommended Phase
+
 - Add rate limiting to login and sensitive write routes
 - Then progressively type-harden `apiRoutes.ts`

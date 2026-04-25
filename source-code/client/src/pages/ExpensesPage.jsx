@@ -1,1 +1,1 @@
-export { default } from '../features/expenses/ExpensesPageContent';
+export { default } from "../features/expenses/ExpensesPageContent";

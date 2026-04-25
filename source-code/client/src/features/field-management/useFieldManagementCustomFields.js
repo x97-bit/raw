@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   expandFieldSectionsForTarget,
   isSectionTargetCompatible,
   matchesFieldTarget,
-} from '../../utils/fieldConfigTargets';
+} from "../../utils/fieldConfigTargets";
 import {
   FIELD_MANAGEMENT_SECTIONS as SECTIONS,
   OPERATORS,
   SECTION_FIELDS_MAP,
-} from '../../utils/fieldManagementConfig';
+} from "../../utils/fieldManagementConfig";
 import {
   appendFormulaPart,
   buildFormulaPreview,
@@ -18,14 +18,14 @@ import {
   parseCustomFieldOptions,
   removeFormulaPart,
   updateFormulaPart,
-} from '../../utils/fieldManagementHelpers';
+} from "../../utils/fieldManagementHelpers";
 import {
   ensureSelectionOrFallback,
   filterCompatibleSelection,
   toggleAllSections,
   toggleMultiSelection,
   toggleNonEmptyTargetSelection,
-} from './fieldManagementPageHelpers';
+} from "./fieldManagementPageHelpers";
 
 export default function useFieldManagementCustomFields({
   api,
@@ -38,42 +38,53 @@ export default function useFieldManagementCustomFields({
   const [customFieldsList, setCustomFieldsList] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newField, setNewField] = useState(() => createInitialCustomFieldForm(selectedTarget));
+  const [newField, setNewField] = useState(() =>
+    createInitialCustomFieldForm(selectedTarget)
+  );
 
   const [editingFieldId, setEditingFieldId] = useState(null);
-  const [editingLabel, setEditingLabel] = useState('');
+  const [editingLabel, setEditingLabel] = useState("");
   const [editingFormula, setEditingFormula] = useState(null);
   const [editingTargets, setEditingTargets] = useState([]);
   const [editingSections, setEditingSections] = useState([]);
 
-  const getCompatibleSectionsForTargets = useCallback((targetKeys = []) => {
-    const effectiveTargets = (targetKeys.length > 0 ? targetKeys : [selectedTarget]).filter(Boolean);
-    return SECTIONS.filter((section) => effectiveTargets.every((targetKey) => isSectionTargetCompatible(section.key, targetKey)));
-  }, [selectedTarget]);
+  const getCompatibleSectionsForTargets = useCallback(
+    (targetKeys = []) => {
+      const effectiveTargets = (
+        targetKeys.length > 0 ? targetKeys : [selectedTarget]
+      ).filter(Boolean);
+      return SECTIONS.filter(section =>
+        effectiveTargets.every(targetKey =>
+          isSectionTargetCompatible(section.key, targetKey)
+        )
+      );
+    },
+    [selectedTarget]
+  );
 
   const selectedNewFieldTargets = useMemo(
     () => (newField.targets.length > 0 ? newField.targets : [selectedTarget]),
-    [newField.targets, selectedTarget],
+    [newField.targets, selectedTarget]
   );
 
   const compatibleSectionsForNewFieldTargets = useMemo(
     () => getCompatibleSectionsForTargets(selectedNewFieldTargets),
-    [getCompatibleSectionsForTargets, selectedNewFieldTargets],
+    [getCompatibleSectionsForTargets, selectedNewFieldTargets]
   );
 
   const editingCurrentTargets = useMemo(
     () => (editingTargets.length > 0 ? editingTargets : [selectedTarget]),
-    [editingTargets, selectedTarget],
+    [editingTargets, selectedTarget]
   );
 
   const editingCompatibleSections = useMemo(
     () => getCompatibleSectionsForTargets(editingCurrentTargets),
-    [editingCurrentTargets, getCompatibleSectionsForTargets],
+    [editingCurrentTargets, getCompatibleSectionsForTargets]
   );
 
   const loadCustomFields = useCallback(async () => {
     try {
-      const customs = await api('/custom-fields');
+      const customs = await api("/custom-fields");
       setCustomFieldsList(customs);
     } catch (error) {
       console.error(error);
@@ -85,12 +96,20 @@ export default function useFieldManagementCustomFields({
   }, [loadCustomFields]);
 
   useEffect(() => {
-    setNewField((prev) => {
-      const filteredTargets = filterCompatibleSelection(prev.targets, availableTargets);
-      const nextTargets = ensureSelectionOrFallback(filteredTargets, selectedTarget);
+    setNewField(prev => {
+      const filteredTargets = filterCompatibleSelection(
+        prev.targets,
+        availableTargets
+      );
+      const nextTargets = ensureSelectionOrFallback(
+        filteredTargets,
+        selectedTarget
+      );
       if (
         nextTargets.length === prev.targets.length &&
-        nextTargets.every((targetKey, index) => targetKey === prev.targets[index])
+        nextTargets.every(
+          (targetKey, index) => targetKey === prev.targets[index]
+        )
       ) {
         return prev;
       }
@@ -99,11 +118,16 @@ export default function useFieldManagementCustomFields({
   }, [availableTargets, selectedTarget]);
 
   useEffect(() => {
-    setNewField((prev) => {
-      const filteredSections = filterCompatibleSelection(prev.sections, compatibleSectionsForNewFieldTargets);
+    setNewField(prev => {
+      const filteredSections = filterCompatibleSelection(
+        prev.sections,
+        compatibleSectionsForNewFieldTargets
+      );
       if (
         filteredSections.length === prev.sections.length &&
-        filteredSections.every((sectionKey, index) => sectionKey === prev.sections[index])
+        filteredSections.every(
+          (sectionKey, index) => sectionKey === prev.sections[index]
+        )
       ) {
         return prev;
       }
@@ -113,9 +137,12 @@ export default function useFieldManagementCustomFields({
 
   useEffect(() => {
     if (!editingFieldId) return;
-    setEditingTargets((prev) => {
+    setEditingTargets(prev => {
       const filteredTargets = filterCompatibleSelection(prev, availableTargets);
-      const nextTargets = ensureSelectionOrFallback(filteredTargets, selectedTarget);
+      const nextTargets = ensureSelectionOrFallback(
+        filteredTargets,
+        selectedTarget
+      );
       if (
         nextTargets.length === prev.length &&
         nextTargets.every((targetKey, index) => targetKey === prev[index])
@@ -128,42 +155,70 @@ export default function useFieldManagementCustomFields({
 
   useEffect(() => {
     if (!editingFieldId) return;
-    setEditingSections((prev) => {
-      const filteredSections = filterCompatibleSelection(prev, editingCompatibleSections);
+    setEditingSections(prev => {
+      const filteredSections = filterCompatibleSelection(
+        prev,
+        editingCompatibleSections
+      );
       if (filteredSections.length > 0) return filteredSections;
-      if (editingCompatibleSections.some((section) => section.key === selectedSection)) {
+      if (
+        editingCompatibleSections.some(
+          section => section.key === selectedSection
+        )
+      ) {
         return [selectedSection];
       }
-      return editingCompatibleSections[0] ? [editingCompatibleSections[0].key] : [];
+      return editingCompatibleSections[0]
+        ? [editingCompatibleSections[0].key]
+        : [];
     });
   }, [editingCompatibleSections, editingFieldId, selectedSection]);
 
-  const getCustomFieldsForSections = useCallback((sectionKeys = [], targetKey = selectedTarget) => {
-    const keys = sectionKeys.length > 0 ? sectionKeys : [selectedSection];
-    return customFieldsList.filter((field) => keys.some((key) => matchesFieldTarget(field, key, targetKey)));
-  }, [customFieldsList, selectedSection, selectedTarget]);
+  const getCustomFieldsForSections = useCallback(
+    (sectionKeys = [], targetKey = selectedTarget) => {
+      const keys = sectionKeys.length > 0 ? sectionKeys : [selectedSection];
+      return customFieldsList.filter(field =>
+        keys.some(key => matchesFieldTarget(field, key, targetKey))
+      );
+    },
+    [customFieldsList, selectedSection, selectedTarget]
+  );
 
   const currentCustomFields = useMemo(
     () => getCustomFieldsForSections([selectedSection], selectedTarget),
-    [getCustomFieldsForSections, selectedSection, selectedTarget],
+    [getCustomFieldsForSections, selectedSection, selectedTarget]
   );
 
-  const expandSectionsForTargets = useCallback((sections, targetKeys = []) => {
-    const baseSections = (sections.length > 0 ? sections : [selectedSection]).filter(Boolean);
-    const effectiveTargets = (targetKeys.length > 0 ? targetKeys : [selectedTarget]).filter(Boolean);
-    return Array.from(new Set(
-      effectiveTargets.flatMap((targetKey) => expandFieldSectionsForTarget(baseSections, targetKey)),
-    ));
-  }, [selectedSection, selectedTarget]);
+  const expandSectionsForTargets = useCallback(
+    (sections, targetKeys = []) => {
+      const baseSections = (
+        sections.length > 0 ? sections : [selectedSection]
+      ).filter(Boolean);
+      const effectiveTargets = (
+        targetKeys.length > 0 ? targetKeys : [selectedTarget]
+      ).filter(Boolean);
+      return Array.from(
+        new Set(
+          effectiveTargets.flatMap(targetKey =>
+            expandFieldSectionsForTarget(baseSections, targetKey)
+          )
+        )
+      );
+    },
+    [selectedSection, selectedTarget]
+  );
 
   const addCustomField = useCallback(async () => {
     if (!newField.label.trim()) {
-      showMessage('يرجى إدخال اسم الحقل');
+      showMessage("يرجى إدخال اسم الحقل");
       return;
     }
 
-    if (newField.fieldType === 'formula' && !hasRequiredFormulaFields(newField.formulaParts)) {
-      showMessage('يرجى اختيار حقلين على الأقل في المعادلة');
+    if (
+      newField.fieldType === "formula" &&
+      !hasRequiredFormulaFields(newField.formulaParts)
+    ) {
+      showMessage("يرجى اختيار حقلين على الأقل في المعادلة");
       return;
     }
 
@@ -172,19 +227,28 @@ export default function useFieldManagementCustomFields({
       const payload = {
         label: newField.label,
         fieldType: newField.fieldType,
-        options: newField.fieldType === 'select' ? parseCustomFieldOptions(newField.options) : null,
+        options:
+          newField.fieldType === "select"
+            ? parseCustomFieldOptions(newField.options)
+            : null,
         defaultValue: newField.defaultValue || null,
         placement: newField.placement,
-        sections: expandSectionsForTargets(newField.sections, selectedNewFieldTargets),
-        formula: newField.fieldType === 'formula' ? { parts: newField.formulaParts } : null,
+        sections: expandSectionsForTargets(
+          newField.sections,
+          selectedNewFieldTargets
+        ),
+        formula:
+          newField.fieldType === "formula"
+            ? { parts: newField.formulaParts }
+            : null,
       };
 
-      await api('/custom-fields', {
-        method: 'POST',
+      await api("/custom-fields", {
+        method: "POST",
         body: JSON.stringify(payload),
       });
 
-      showMessage('تم إضافة الحقل المخصص بنجاح');
+      showMessage("تم إضافة الحقل المخصص بنجاح");
       setShowAddForm(false);
       setNewField(createInitialCustomFieldForm(selectedTarget));
       await loadCustomFields();
@@ -203,164 +267,199 @@ export default function useFieldManagementCustomFields({
     showMessage,
   ]);
 
-  const deleteCustomField = useCallback(async (id) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الحقل المخصص؟ سيتم حذف جميع القيم المرتبطة به.')) return;
+  const deleteCustomField = useCallback(
+    async id => {
+      if (
+        !confirm(
+          "هل أنت متأكد من حذف هذا الحقل المخصص؟ سيتم حذف جميع القيم المرتبطة به."
+        )
+      )
+        return;
 
-    try {
-      await api(`/custom-fields/${id}`, { method: 'DELETE' });
-      showMessage('تم حذف الحقل المخصص');
-      await loadCustomFields();
-    } catch (error) {
-      showMessage(`خطأ: ${error.message}`);
-    }
-  }, [api, loadCustomFields, showMessage]);
+      try {
+        await api(`/custom-fields/${id}`, { method: "DELETE" });
+        showMessage("تم حذف الحقل المخصص");
+        await loadCustomFields();
+      } catch (error) {
+        showMessage(`خطأ: ${error.message}`);
+      }
+    },
+    [api, loadCustomFields, showMessage]
+  );
 
-  const startEditField = useCallback((customField) => {
-    const initialTargets = availableTargets
-      .filter((target) => matchesFieldTarget(customField, selectedSection, target.key))
-      .map((target) => target.key);
-    const effectiveInitialTargets = ensureSelectionOrFallback(initialTargets, selectedTarget);
-    const initialSections = getCompatibleSectionsForTargets(effectiveInitialTargets)
-      .filter((section) => effectiveInitialTargets.some((targetKey) => matchesFieldTarget(customField, section.key, targetKey)))
-      .map((section) => section.key);
+  const startEditField = useCallback(
+    customField => {
+      const initialTargets = availableTargets
+        .filter(target =>
+          matchesFieldTarget(customField, selectedSection, target.key)
+        )
+        .map(target => target.key);
+      const effectiveInitialTargets = ensureSelectionOrFallback(
+        initialTargets,
+        selectedTarget
+      );
+      const initialSections = getCompatibleSectionsForTargets(
+        effectiveInitialTargets
+      )
+        .filter(section =>
+          effectiveInitialTargets.some(targetKey =>
+            matchesFieldTarget(customField, section.key, targetKey)
+          )
+        )
+        .map(section => section.key);
 
-    setEditingFieldId(customField.id);
-    setEditingLabel(customField.label);
-    setEditingTargets(effectiveInitialTargets);
-    setEditingSections(ensureSelectionOrFallback(initialSections, selectedSection));
+      setEditingFieldId(customField.id);
+      setEditingLabel(customField.label);
+      setEditingTargets(effectiveInitialTargets);
+      setEditingSections(
+        ensureSelectionOrFallback(initialSections, selectedSection)
+      );
 
-    if (customField.fieldType === 'formula' && customField.formula?.parts) {
-      setEditingFormula({
-        id: customField.id,
-        label: customField.label,
-        fieldType: customField.fieldType,
-        formulaParts: [...customField.formula.parts],
-        options: customField.options,
-        defaultValue: customField.defaultValue,
-        placement: customField.placement,
-      });
-      return;
-    }
+      if (customField.fieldType === "formula" && customField.formula?.parts) {
+        setEditingFormula({
+          id: customField.id,
+          label: customField.label,
+          fieldType: customField.fieldType,
+          formulaParts: [...customField.formula.parts],
+          options: customField.options,
+          defaultValue: customField.defaultValue,
+          placement: customField.placement,
+        });
+        return;
+      }
 
-    setEditingFormula(null);
-  }, [
-    availableTargets,
-    getCompatibleSectionsForTargets,
-    selectedSection,
-    selectedTarget,
-  ]);
+      setEditingFormula(null);
+    },
+    [
+      availableTargets,
+      getCompatibleSectionsForTargets,
+      selectedSection,
+      selectedTarget,
+    ]
+  );
 
   const cancelEditField = useCallback(() => {
     setEditingFieldId(null);
-    setEditingLabel('');
+    setEditingLabel("");
     setEditingFormula(null);
     setEditingTargets([]);
     setEditingSections([]);
   }, []);
 
-  const saveEditField = useCallback(async (id) => {
-    if (!editingLabel.trim()) {
-      showMessage('اسم الحقل لا يمكن أن يكون فارغًا');
-      return;
-    }
-
-    const customField = customFieldsList.find((field) => field.id === id);
-    if (!customField) {
-      showMessage('تعذر العثور على الحقل المطلوب');
-      return;
-    }
-
-    if (editingFormula && customField.fieldType === 'formula' && !hasRequiredFormulaFields(editingFormula.formulaParts)) {
-      showMessage('يرجى اختيار حقلين على الأقل في المعادلة');
-      return;
-    }
-
-    try {
-      const targetKeys = editingCurrentTargets;
-      const baseSections = ensureSelectionOrFallback(editingSections, selectedSection);
-      const payload = {
-        label: editingLabel,
-        fieldType: customField.fieldType,
-        options: customField.options,
-        defaultValue: customField.defaultValue,
-        placement: customField.placement,
-        sections: expandSectionsForTargets(baseSections, targetKeys),
-      };
-
-      if (editingFormula && customField.fieldType === 'formula') {
-        payload.formula = { parts: editingFormula.formulaParts };
+  const saveEditField = useCallback(
+    async id => {
+      if (!editingLabel.trim()) {
+        showMessage("اسم الحقل لا يمكن أن يكون فارغًا");
+        return;
       }
 
-      await api(`/custom-fields/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
+      const customField = customFieldsList.find(field => field.id === id);
+      if (!customField) {
+        showMessage("تعذر العثور على الحقل المطلوب");
+        return;
+      }
 
-      showMessage('تم تحديث الحقل بنجاح');
-      cancelEditField();
-      await loadCustomFields();
-    } catch (error) {
-      showMessage(`خطأ في التحديث: ${error.message}`);
-    }
-  }, [
-    api,
-    cancelEditField,
-    customFieldsList,
-    editingCompatibleSections,
-    editingCurrentTargets,
-    editingFormula,
-    editingLabel,
-    editingSections,
-    expandSectionsForTargets,
-    loadCustomFields,
-    selectedSection,
-    showMessage,
-  ]);
+      if (
+        editingFormula &&
+        customField.fieldType === "formula" &&
+        !hasRequiredFormulaFields(editingFormula.formulaParts)
+      ) {
+        showMessage("يرجى اختيار حقلين على الأقل في المعادلة");
+        return;
+      }
+
+      try {
+        const targetKeys = editingCurrentTargets;
+        const baseSections = ensureSelectionOrFallback(
+          editingSections,
+          selectedSection
+        );
+        const payload = {
+          label: editingLabel,
+          fieldType: customField.fieldType,
+          options: customField.options,
+          defaultValue: customField.defaultValue,
+          placement: customField.placement,
+          sections: expandSectionsForTargets(baseSections, targetKeys),
+        };
+
+        if (editingFormula && customField.fieldType === "formula") {
+          payload.formula = { parts: editingFormula.formulaParts };
+        }
+
+        await api(`/custom-fields/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+
+        showMessage("تم تحديث الحقل بنجاح");
+        cancelEditField();
+        await loadCustomFields();
+      } catch (error) {
+        showMessage(`خطأ في التحديث: ${error.message}`);
+      }
+    },
+    [
+      api,
+      cancelEditField,
+      customFieldsList,
+      editingCompatibleSections,
+      editingCurrentTargets,
+      editingFormula,
+      editingLabel,
+      editingSections,
+      expandSectionsForTargets,
+      loadCustomFields,
+      selectedSection,
+      showMessage,
+    ]
+  );
 
   const addFormulaPart = useCallback(() => {
-    setNewField((prev) => ({
+    setNewField(prev => ({
       ...prev,
       formulaParts: appendFormulaPart(prev.formulaParts),
     }));
   }, []);
 
-  const removeNewFormulaPart = useCallback((index) => {
-    setNewField((prev) => ({
+  const removeNewFormulaPart = useCallback(index => {
+    setNewField(prev => ({
       ...prev,
       formulaParts: removeFormulaPart(prev.formulaParts, index),
     }));
   }, []);
 
   const updateNewFormulaPart = useCallback((index, value) => {
-    setNewField((prev) => ({
+    setNewField(prev => ({
       ...prev,
       formulaParts: updateFormulaPart(prev.formulaParts, index, value),
     }));
   }, []);
 
   const addEditFormulaPart = useCallback(() => {
-    setEditingFormula((prev) => ({
+    setEditingFormula(prev => ({
       ...prev,
       formulaParts: appendFormulaPart(prev.formulaParts),
     }));
   }, []);
 
-  const removeEditFormulaPart = useCallback((index) => {
-    setEditingFormula((prev) => ({
+  const removeEditFormulaPart = useCallback(index => {
+    setEditingFormula(prev => ({
       ...prev,
       formulaParts: removeFormulaPart(prev.formulaParts, index),
     }));
   }, []);
 
   const updateEditFormulaPart = useCallback((index, value) => {
-    setEditingFormula((prev) => ({
+    setEditingFormula(prev => ({
       ...prev,
       formulaParts: updateFormulaPart(prev.formulaParts, index, value),
     }));
   }, []);
 
   const getAvailableFormulaFields = useCallback(() => {
-    const sectionKeys = newField.sections.length > 0 ? newField.sections : [selectedSection];
+    const sectionKeys =
+      newField.sections.length > 0 ? newField.sections : [selectedSection];
     return collectNumericFormulaFields({
       sectionKeys,
       targetKeys: selectedNewFieldTargets,
@@ -376,12 +475,18 @@ export default function useFieldManagementCustomFields({
   ]);
 
   const getFormulaPreview = useCallback(
-    () => buildFormulaPreview(newField.formulaParts, getAvailableFormulaFields(), OPERATORS),
-    [getAvailableFormulaFields, newField.formulaParts],
+    () =>
+      buildFormulaPreview(
+        newField.formulaParts,
+        getAvailableFormulaFields(),
+        OPERATORS
+      ),
+    [getAvailableFormulaFields, newField.formulaParts]
   );
 
   const getEditFormulaFields = useCallback(() => {
-    const sectionKeys = editingSections.length > 0 ? editingSections : [selectedSection];
+    const sectionKeys =
+      editingSections.length > 0 ? editingSections : [selectedSection];
     return collectNumericFormulaFields({
       sectionKeys,
       targetKeys: editingCurrentTargets,
@@ -399,56 +504,90 @@ export default function useFieldManagementCustomFields({
   ]);
 
   const getEditFormulaPreview = useCallback(() => {
-    if (!editingFormula) return '';
-    return buildFormulaPreview(editingFormula.formulaParts, getEditFormulaFields(), OPERATORS);
+    if (!editingFormula) return "";
+    return buildFormulaPreview(
+      editingFormula.formulaParts,
+      getEditFormulaFields(),
+      OPERATORS
+    );
   }, [editingFormula, getEditFormulaFields]);
 
-  const resolveFormulaTokenLabel = useCallback((fieldKey) => {
-    const selectedField = getSectionFieldsForTarget(selectedSection, selectedTarget).find((field) => field.key === fieldKey);
-    if (selectedField) return selectedField.label;
+  const resolveFormulaTokenLabel = useCallback(
+    fieldKey => {
+      const selectedField = getSectionFieldsForTarget(
+        selectedSection,
+        selectedTarget
+      ).find(field => field.key === fieldKey);
+      if (selectedField) return selectedField.label;
 
-    for (const fields of Object.values(SECTION_FIELDS_MAP)) {
-      const foundField = fields.find((field) => field.key === fieldKey);
-      if (foundField) return foundField.label;
-    }
+      for (const fields of Object.values(SECTION_FIELDS_MAP)) {
+        const foundField = fields.find(field => field.key === fieldKey);
+        if (foundField) return foundField.label;
+      }
 
-    const customField = customFieldsList.find((field) => field.fieldKey === fieldKey);
-    if (customField) return customField.label;
+      const customField = customFieldsList.find(
+        field => field.fieldKey === fieldKey
+      );
+      if (customField) return customField.label;
 
-    return fieldKey;
-  }, [customFieldsList, getSectionFieldsForTarget, selectedSection, selectedTarget]);
+      return fieldKey;
+    },
+    [
+      customFieldsList,
+      getSectionFieldsForTarget,
+      selectedSection,
+      selectedTarget,
+    ]
+  );
 
-  const toggleTarget = useCallback((targetKey) => {
-    setNewField((prev) => ({
-      ...prev,
-      targets: toggleNonEmptyTargetSelection(prev.targets, targetKey, selectedTarget),
-    }));
-  }, [selectedTarget]);
+  const toggleTarget = useCallback(
+    targetKey => {
+      setNewField(prev => ({
+        ...prev,
+        targets: toggleNonEmptyTargetSelection(
+          prev.targets,
+          targetKey,
+          selectedTarget
+        ),
+      }));
+    },
+    [selectedTarget]
+  );
 
-  const toggleSection = useCallback((sectionKey) => {
-    setNewField((prev) => ({
+  const toggleSection = useCallback(sectionKey => {
+    setNewField(prev => ({
       ...prev,
       sections: toggleMultiSelection(prev.sections, sectionKey),
     }));
   }, []);
 
   const selectAllSections = useCallback(() => {
-    setNewField((prev) => ({
+    setNewField(prev => ({
       ...prev,
-      sections: toggleAllSections(prev.sections, compatibleSectionsForNewFieldTargets),
+      sections: toggleAllSections(
+        prev.sections,
+        compatibleSectionsForNewFieldTargets
+      ),
     }));
   }, [compatibleSectionsForNewFieldTargets]);
 
-  const toggleEditingSection = useCallback((sectionKey) => {
-    setEditingSections((prev) => toggleMultiSelection(prev, sectionKey));
+  const toggleEditingSection = useCallback(sectionKey => {
+    setEditingSections(prev => toggleMultiSelection(prev, sectionKey));
   }, []);
 
-  const toggleEditingTarget = useCallback((targetKey) => {
-    setEditingTargets((prev) => toggleNonEmptyTargetSelection(prev, targetKey, selectedTarget));
-  }, [selectedTarget]);
+  const toggleEditingTarget = useCallback(
+    targetKey => {
+      setEditingTargets(prev =>
+        toggleNonEmptyTargetSelection(prev, targetKey, selectedTarget)
+      );
+    },
+    [selectedTarget]
+  );
 
   const selectAllEditingSections = useCallback(() => {
-    setEditingSections((prev) => toggleAllSections(prev, editingCompatibleSections));
+    setEditingSections(prev =>
+      toggleAllSections(prev, editingCompatibleSections)
+    );
   }, [editingCompatibleSections]);
 
   return {

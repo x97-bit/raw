@@ -1,4 +1,4 @@
-import { USER_ROLE_CONFIG } from '../usersManagementConfig';
+import { USER_ROLE_CONFIG } from "../usersManagementConfig";
 
 export default function UserRoleCards({ value, onChange }) {
   return (
@@ -11,13 +11,21 @@ export default function UserRoleCards({ value, onChange }) {
             key={key}
             type="button"
             onClick={() => onChange(key)}
-            className={`flex items-center gap-2 rounded-xl p-3 text-sm transition-all ${value === key ? 'bg-accent-50 ring-2 ring-accent-500/30' : 'bg-gray-50 hover:bg-gray-100'}`}
-            style={{ border: value === key ? '1px solid rgba(9,103,210,0.2)' : '1px solid rgba(0,0,0,0.04)' }}
+            className={`flex items-center gap-2 rounded-xl p-3 text-sm transition-all border ${value === key ? "bg-primary/10 border-primary ring-2 ring-primary/30" : "bg-secondary/20 border-border hover:bg-secondary/40"}`}
           >
-            <Icon size={16} className={value === key ? 'text-accent-600' : 'text-gray-400'} />
+            <Icon
+              size={16}
+              className={
+                value === key ? "text-primary" : "text-muted-foreground"
+              }
+            />
             <div className="text-right">
-              <p className="text-sm font-bold">{config.label}</p>
-              <p className="text-[11px] text-gray-400">{config.description}</p>
+              <p className="text-sm font-bold text-foreground">
+                {config.label}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {config.description}
+              </p>
             </div>
           </button>
         );

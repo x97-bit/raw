@@ -50,7 +50,7 @@ describe("financial validation schemas", () => {
     expect(() =>
       transactionUpdateSchema.parse({
         accountId: null,
-      }),
+      })
     ).toThrow();
   });
 
@@ -114,7 +114,7 @@ describe("financial validation schemas", () => {
         amountUSD: "0",
         amountIQD: "0",
         notes: null,
-      }),
+      })
     ).toThrow();
   });
 });

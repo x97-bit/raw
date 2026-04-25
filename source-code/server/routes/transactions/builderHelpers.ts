@@ -1,6 +1,12 @@
-import type { AppDb } from "../../dbTypes";
+import type { AppDb } from "../../db/schema/dbTypes";
 import { eq } from "drizzle-orm";
-import { companies, drivers, goodsTypes, governorates, vehicles } from "../../../drizzle/schema";
+import {
+  companies,
+  drivers,
+  goodsTypes,
+  governorates,
+  vehicles,
+} from "../../../drizzle/schema";
 
 type LookupInsertTable = typeof drivers | typeof vehicles | typeof goodsTypes;
 
@@ -13,10 +19,13 @@ export async function resolveNewLookupId<TTable extends LookupInsertTable>(
   existingIdValue: unknown,
   table: TTable,
   insertValues: TTable["$inferInsert"],
-  newValue: unknown,
+  newValue: unknown
 ): Promise<number | string | null> {
   if (existingIdValue) {
-    return typeof existingIdValue === "string" || typeof existingIdValue === "number" ? existingIdValue : null;
+    return typeof existingIdValue === "string" ||
+      typeof existingIdValue === "number"
+      ? existingIdValue
+      : null;
   }
 
   const normalizedValue = getTrimmedText(newValue);
@@ -28,11 +37,19 @@ export async function resolveNewLookupId<TTable extends LookupInsertTable>(
   return Number(result[0].insertId);
 }
 
-export async function resolveCompanySelection(db: AppDb, companyIdValue: unknown, companyNameValue: unknown) {
+export async function resolveCompanySelection(
+  db: AppDb,
+  companyIdValue: unknown,
+  companyNameValue: unknown
+) {
   let companyId: number | null = null;
   let companyName: string | null = getTrimmedText(companyNameValue);
 
-  if (companyIdValue !== undefined && companyIdValue !== null && companyIdValue !== "") {
+  if (
+    companyIdValue !== undefined &&
+    companyIdValue !== null &&
+    companyIdValue !== ""
+  ) {
     companyId = Number.parseInt(String(companyIdValue), 10);
   }
 
@@ -68,7 +85,11 @@ export async function resolveCompanySelection(db: AppDb, companyIdValue: unknown
   return { companyId, companyName };
 }
 
-export async function resolveGovernorateId(db: AppDb, govIdValue: unknown, govNameValue: unknown): Promise<number | null> {
+export async function resolveGovernorateId(
+  db: AppDb,
+  govIdValue: unknown,
+  govNameValue: unknown
+): Promise<number | null> {
   if (govIdValue !== undefined && govIdValue !== null && govIdValue !== "") {
     const parsed = Number.parseInt(String(govIdValue), 10);
     if (!Number.isNaN(parsed) && parsed > 0) return parsed;

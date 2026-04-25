@@ -1,5 +1,5 @@
-import { Clock3, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
-import SidebarToggleButton from '../../../components/SidebarToggleButton';
+import { Clock3, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import SidebarToggleButton from "../../../components/SidebarToggleButton";
 
 export default function MainDashboardHeader({
   dateStr,
@@ -10,8 +10,8 @@ export default function MainDashboardHeader({
   onLogout,
 }) {
   const softButtonStyle = {
-    background: 'rgba(255,255,255,0.05)',
-    boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
+    background: "rgba(255,255,255,0.05)",
+    boxShadow: "0 12px 24px rgba(0,0,0,0.2)",
   };
 
   return (
@@ -19,7 +19,7 @@ export default function MainDashboardHeader({
       <div
         className="relative overflow-hidden rounded-[32px] bg-[rgba(15,20,26,0.82)] backdrop-blur-xl"
         style={{
-          boxShadow: '0 24px 54px rgba(0,0,0,0.24)',
+          boxShadow: "0 24px 54px rgba(0,0,0,0.24)",
         }}
       >
         <div className="absolute inset-x-0 top-0 h-[2px] bg-[linear-gradient(90deg,transparent_8%,rgba(100,142,169,0.7)_50%,transparent_94%)]" />
@@ -33,21 +33,29 @@ export default function MainDashboardHeader({
               <div className="flex flex-wrap items-center gap-2.5">
                 <SidebarToggleButton />
 
-                <div className="flex items-center gap-2.5 rounded-[22px] px-3 py-2" style={softButtonStyle}>
+                <div
+                  className="flex items-center gap-2.5 rounded-[22px] px-3 py-2"
+                  style={softButtonStyle}
+                >
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black text-white"
                     style={{
-                      background: 'linear-gradient(145deg, #16202b 0%, #223141 70%, #648ea9 100%)',
+                      background:
+                        "linear-gradient(145deg, #16202b 0%, #223141 70%, #648ea9 100%)",
                     }}
                   >
                     {firstLetter}
                   </div>
 
                   <div className="text-right">
-                    <p className="text-[13px] font-semibold text-[#f4f8fb]">{displayName}</p>
+                    <p className="text-[13px] font-semibold text-[#f4f8fb]">
+                      {displayName}
+                    </p>
                     <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-medium text-[#8f9daa]">
-                      {isAdmin && <ShieldCheck size={10} className="text-[#648ea9]" />}
-                      <span>{isAdmin ? 'مدير النظام' : 'مستخدم النظام'}</span>
+                      {isAdmin && (
+                        <ShieldCheck size={10} className="text-[#648ea9]" />
+                      )}
+                      <span>{isAdmin ? "مدير النظام" : "مستخدم النظام"}</span>
                     </div>
                   </div>
                 </div>
@@ -72,7 +80,8 @@ export default function MainDashboardHeader({
                   مساحة عمل أوضح وأكثر توازنًا
                 </h1>
                 <p className="mt-2 max-w-2xl text-[13px] leading-7 text-[#8f9daa] sm:text-[14px]">
-                  الألوان الآن أكثر ثباتًا وتناسقًا، مع تركيز أكبر على المحتوى والمهام بدل التباين الحاد والزخرفة الزائدة.
+                  الألوان الآن أكثر ثباتًا وتناسقًا، مع تركيز أكبر على المحتوى
+                  والمهام بدل التباين الحاد والزخرفة الزائدة.
                 </p>
               </div>
             </div>
@@ -84,8 +93,13 @@ export default function MainDashboardHeader({
                     <Clock3 size={19} />
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium tracking-wide text-[#8f9daa]">بتوقيت بغداد</div>
-                    <div className="mt-1 text-[22px] font-black tracking-[0.18em] text-[#f4f8fb] tabular-nums" dir="ltr">
+                    <div className="text-[10px] font-medium tracking-wide text-[#8f9daa]">
+                      بتوقيت بغداد
+                    </div>
+                    <div
+                      className="mt-1 text-[22px] font-black tracking-[0.18em] text-[#f4f8fb] tabular-nums"
+                      dir="ltr"
+                    >
                       {timeStr}
                     </div>
                   </div>
@@ -100,8 +114,12 @@ export default function MainDashboardHeader({
                   {dateStr}
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-1 text-[11px] font-medium text-[#8f9daa]">
-                  {isAdmin && <ShieldCheck size={12} className="text-[#648ea9]" />}
-                  <span>{isAdmin ? 'إدارة كاملة للنظام' : 'وصول بحسب الصلاحيات'}</span>
+                  {isAdmin && (
+                    <ShieldCheck size={12} className="text-[#648ea9]" />
+                  )}
+                  <span>
+                    {isAdmin ? "إدارة كاملة للنظام" : "وصول بحسب الصلاحيات"}
+                  </span>
                 </div>
               </div>
             </div>

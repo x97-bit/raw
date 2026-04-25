@@ -1,1 +1,1 @@
-export { default } from '../features/users-management/UsersPageContent';
+export { default } from "../features/users-management/UsersPageContent";

@@ -6,7 +6,7 @@ export async function ensureColumn(
   connection: RuntimeSchemaConnection,
   tableName: string,
   columnName: string,
-  definitionSql: string,
+  definitionSql: string
 ) {
   const [existing] = await connection.query<mysql.RowDataPacket[]>(
     `
@@ -17,11 +17,13 @@ export async function ensureColumn(
         AND COLUMN_NAME = ?
       LIMIT 1
     `,
-    [tableName, columnName],
+    [tableName, columnName]
   );
 
   if (existing.length === 0) {
-    await connection.query(`ALTER TABLE \`${tableName}\` ADD COLUMN ${definitionSql}`);
+    await connection.query(
+      `ALTER TABLE \`${tableName}\` ADD COLUMN ${definitionSql}`
+    );
   }
 }
 
@@ -29,7 +31,7 @@ export async function ensureIndex(
   connection: RuntimeSchemaConnection,
   tableName: string,
   indexName: string,
-  definitionSql: string,
+  definitionSql: string
 ) {
   const [existing] = await connection.query<mysql.RowDataPacket[]>(
     `
@@ -40,7 +42,7 @@ export async function ensureIndex(
         AND INDEX_NAME = ?
       LIMIT 1
     `,
-    [tableName, indexName],
+    [tableName, indexName]
   );
 
   if (existing.length === 0) {
@@ -52,7 +54,7 @@ export async function ensureForeignKey(
   connection: RuntimeSchemaConnection,
   tableName: string,
   constraintName: string,
-  definitionSql: string,
+  definitionSql: string
 ) {
   const [existing] = await connection.query<mysql.RowDataPacket[]>(
     `
@@ -64,11 +66,13 @@ export async function ensureForeignKey(
         AND CONSTRAINT_TYPE = 'FOREIGN KEY'
       LIMIT 1
     `,
-    [tableName, constraintName],
+    [tableName, constraintName]
   );
 
   if (existing.length === 0) {
-    await connection.query(`ALTER TABLE \`${tableName}\` ADD CONSTRAINT \`${constraintName}\` ${definitionSql}`);
+    await connection.query(
+      `ALTER TABLE \`${tableName}\` ADD CONSTRAINT \`${constraintName}\` ${definitionSql}`
+    );
   }
 }
 
@@ -76,7 +80,7 @@ export async function ensureUniqueConstraint(
   connection: RuntimeSchemaConnection,
   tableName: string,
   constraintName: string,
-  definitionSql: string,
+  definitionSql: string
 ) {
   const [existing] = await connection.query<mysql.RowDataPacket[]>(
     `
@@ -88,11 +92,13 @@ export async function ensureUniqueConstraint(
         AND CONSTRAINT_TYPE = 'UNIQUE'
       LIMIT 1
     `,
-    [tableName, constraintName],
+    [tableName, constraintName]
   );
 
   if (existing.length === 0) {
-    await connection.query(`ALTER TABLE \`${tableName}\` ADD CONSTRAINT \`${constraintName}\` ${definitionSql}`);
+    await connection.query(
+      `ALTER TABLE \`${tableName}\` ADD CONSTRAINT \`${constraintName}\` ${definitionSql}`
+    );
   }
 }
 
@@ -100,7 +106,7 @@ export async function ensureDateColumn(
   connection: RuntimeSchemaConnection,
   tableName: string,
   columnName: string,
-  { nullable }: { nullable: boolean },
+  { nullable }: { nullable: boolean }
 ) {
   const [existing] = await connection.query<mysql.RowDataPacket[]>(
     `
@@ -111,11 +117,13 @@ export async function ensureDateColumn(
         AND COLUMN_NAME = ?
       LIMIT 1
     `,
-    [tableName, columnName],
+    [tableName, columnName]
   );
 
   if (existing.length === 0) {
-    throw new Error(`Column ${tableName}.${columnName} was not found during date hardening.`);
+    throw new Error(
+      `Column ${tableName}.${columnName} was not found during date hardening.`
+    );
   }
 
   if (String(existing[0].DATA_TYPE).toLowerCase() === "date") {
@@ -132,7 +140,9 @@ export async function ensureDateColumn(
 
   const invalidCount = Number(invalidRows[0]?.c || 0);
   if (invalidCount > 0) {
-    throw new Error(`Cannot convert ${tableName}.${columnName} to DATE because ${invalidCount} invalid rows were found.`);
+    throw new Error(
+      `Cannot convert ${tableName}.${columnName} to DATE because ${invalidCount} invalid rows were found.`
+    );
   }
 
   await connection.query(`

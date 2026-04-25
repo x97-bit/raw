@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { trpc } from "../../utils/trpc";
 import {
   buildCreateUserPayload,
   buildPermissionsPayload,
@@ -11,7 +12,7 @@ import {
   togglePermissionSelection,
   validateNewUserForm,
   validateResetPassword,
-} from './usersManagementHelpers';
+} from "./usersManagementHelpers";
 
 export default function useUsersManagementState({ api }) {
   const [users, setUsers] = useState([]);
@@ -21,22 +22,25 @@ export default function useUsersManagementState({ api }) {
   const [editingUser, setEditingUser] = useState(null);
   const [editingPermissions, setEditingPermissions] = useState([]);
   const [form, setForm] = useState(createInitialUserForm());
-  const [newPassword, setNewPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
-  const loadUsers = useCallback(async (showSpinner = false) => {
-    if (showSpinner) setLoading(true);
+  const loadUsers = useCallback(
+    async (showSpinner = false) => {
+      if (showSpinner) setLoading(true);
 
-    try {
-      const response = await api('/auth/users');
-      setUsers(response);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+      try {
+        const response = await trpc.users.list.query();
+        setUsers(response);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     loadUsers(true);
@@ -45,44 +49,49 @@ export default function useUsersManagementState({ api }) {
   const closeCreateModal = useCallback(() => {
     setShowCreateModal(false);
     setForm(createInitialUserForm());
-    setMessage('');
+    setMessage("");
   }, []);
 
   const closeEditModal = useCallback(() => {
     setEditingUser(null);
     setEditingPermissions([]);
-    setMessage('');
+    setMessage("");
   }, []);
 
   const closeResetPasswordModal = useCallback(() => {
     setResetPasswordUserId(null);
-    setNewPassword('');
-    setMessage('');
+    setNewPassword("");
+    setMessage("");
   }, []);
 
   const openCreateModal = useCallback(() => {
     setForm(createInitialUserForm());
-    setMessage('');
+    setMessage("");
     setShowCreateModal(true);
   }, []);
 
-  const openEditModal = useCallback(async (user) => {
-    setEditingUser({ ...user });
-    setMessage('');
+  const openEditModal = useCallback(
+    async user => {
+      setEditingUser({ ...user });
+      setMessage("");
 
-    try {
-      const permissions = await api(`/auth/users/${user.UserID}/permissions`);
-      setEditingPermissions(normalizePermissionList(permissions));
-    } catch (error) {
-      console.error(error);
-      setEditingPermissions([]);
-    }
-  }, [api]);
+      try {
+        const permissions = await trpc.users.getPermissions.query({
+          id: user.UserID,
+        });
+        setEditingPermissions(normalizePermissionList(permissions));
+      } catch (error) {
+        console.error(error);
+        setEditingPermissions([]);
+      }
+    },
+    [api]
+  );
 
-  const openResetPasswordModal = useCallback((userId) => {
+  const openResetPasswordModal = useCallback(userId => {
     setResetPasswordUserId(userId);
-    setNewPassword('');
-    setMessage('');
+    setNewPassword("");
+    setMessage("");
   }, []);
 
   const handleCreate = useCallback(async () => {
@@ -94,10 +103,7 @@ export default function useUsersManagementState({ api }) {
 
     setSaving(true);
     try {
-      await api('/auth/users', {
-        method: 'POST',
-        body: JSON.stringify(buildCreateUserPayload(form)),
-      });
+      await trpc.users.create.mutate(buildCreateUserPayload(form));
       closeCreateModal();
       await loadUsers();
     } catch (error) {
@@ -112,15 +118,15 @@ export default function useUsersManagementState({ api }) {
 
     setSaving(true);
     try {
-      await api(`/auth/users/${editingUser.UserID}`, {
-        method: 'PUT',
-        body: JSON.stringify(buildUserUpdatePayload(editingUser)),
+      await trpc.users.update.mutate({
+        id: editingUser.UserID,
+        ...buildUserUpdatePayload(editingUser),
       });
 
-      if (editingUser.Role !== 'admin') {
-        await api(`/auth/users/${editingUser.UserID}/permissions`, {
-          method: 'PUT',
-          body: JSON.stringify(buildPermissionsPayload(editingPermissions)),
+      if (editingUser.Role !== "admin") {
+        await trpc.users.updatePermissions.mutate({
+          id: editingUser.UserID,
+          permissions: buildPermissionsPayload(editingPermissions),
         });
       }
 
@@ -135,7 +141,7 @@ export default function useUsersManagementState({ api }) {
 
   const handleGenerateResetPassword = useCallback(() => {
     setNewPassword(generateTemporaryPassword());
-    setMessage('');
+    setMessage("");
   }, []);
 
   const handleResetPassword = useCallback(async () => {
@@ -147,23 +153,30 @@ export default function useUsersManagementState({ api }) {
 
     setSaving(true);
     try {
-      await api(`/auth/users/${resetPasswordUserId}/reset-password`, {
-        method: 'PUT',
-        body: JSON.stringify({ newPassword }),
+      await trpc.users.resetPassword.mutate({
+        id: resetPasswordUserId,
+        newPassword: newPassword,
       });
 
       let copied = false;
       try {
-        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        if (
+          typeof navigator !== "undefined" &&
+          navigator.clipboard?.writeText
+        ) {
           await navigator.clipboard.writeText(newPassword);
           copied = true;
         }
       } catch (clipboardError) {
-        console.warn('Could not copy the generated password.', clipboardError);
+        console.warn("Could not copy the generated password.", clipboardError);
       }
 
       closeResetPasswordModal();
-      window.alert(copied ? 'تمت إعادة تعيين كلمة المرور ونسخها.' : 'تمت إعادة تعيين كلمة المرور بنجاح.');
+      window.alert(
+        copied
+          ? "تمت إعادة تعيين كلمة المرور ونسخها."
+          : "تمت إعادة تعيين كلمة المرور بنجاح."
+      );
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -172,15 +185,17 @@ export default function useUsersManagementState({ api }) {
   }, [api, closeResetPasswordModal, newPassword, resetPasswordUserId]);
 
   const handleFormChange = useCallback((key, value) => {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm(current => ({ ...current, [key]: value }));
   }, []);
 
-  const handleEditingUserChange = useCallback((updater) => {
-    setEditingUser((current) => (typeof updater === 'function' ? updater(current) : updater));
+  const handleEditingUserChange = useCallback(updater => {
+    setEditingUser(current =>
+      typeof updater === "function" ? updater(current) : updater
+    );
   }, []);
 
-  const handleTogglePermission = useCallback((key) => {
-    setEditingPermissions((current) => togglePermissionSelection(current, key));
+  const handleTogglePermission = useCallback(key => {
+    setEditingPermissions(current => togglePermissionSelection(current, key));
   }, []);
 
   const handleSelectAllPermissions = useCallback(() => {

@@ -7,5 +7,12 @@ export {
   parseOptionalInt,
   pickBodyField,
 } from "./bodyFields";
-export { getCustomFieldsWithSections, syncCustomFieldSections } from "./customFieldSections";
-export { enrichTransactions, getLookupNameById, mapTransaction } from "./transactionEnrichment";
+export {
+  getCustomFieldsWithSections,
+  syncCustomFieldSections,
+} from "./customFieldSections";
+export {
+  enrichTransactions,
+  getLookupNameById,
+  mapTransaction,
+} from "./transactionEnrichment";

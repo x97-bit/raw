@@ -1,33 +1,36 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileDown, Pencil, Trash2, X } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { buildPortAccountPayload } from '../features/port/portTransactionFormHelpers';
-import useTransactionFormLayout from '../features/transactions/useTransactionFormLayout';
-import TransactionModalEditItem from '../features/transactions/components/TransactionModalEditItem';
-import { runExportInvoicePDF } from '../utils/exportActions';
-import ModalPortal from './ModalPortal';
-import TransactionEditSections from './TransactionEditSections';
-import TransactionPreviewPanel from './TransactionPreviewPanel';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FileDown, Pencil, Trash2, X } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { buildPortAccountPayload } from "../features/port/portTransactionFormHelpers";
+import useTransactionFormLayout from "../features/transactions/useTransactionFormLayout";
+import TransactionModalEditItem from "../features/transactions/components/TransactionModalEditItem";
+import { runExportInvoicePDF } from "../utils/exportActions";
+import ModalPortal from "./ModalPortal";
+import TransactionEditSections from "./TransactionEditSections";
+import TransactionPreviewPanel from "./TransactionPreviewPanel";
 import {
   evaluateCustomFormula,
   formatCustomFieldDisplayValue,
   getInitialCustomFieldValues,
-} from '../utils/customFields';
-import { filterSectionsByCurrency } from '../utils/orderedFormSections';
-import { getTransactionTypeLabel } from '../utils/transactionTypeLabels';
+} from "../utils/customFields";
+import { filterSectionsByCurrency } from "../utils/orderedFormSections";
+import { getTransactionTypeLabel } from "../utils/transactionTypeLabels";
 import {
   applyDefaultsToTransactionDraft,
   buildTransactionModalSeed,
   parseNumericInput,
-} from '../utils/transactionModalDefaults';
+} from "../utils/transactionModalDefaults";
 import {
   buildTransactionDetailItems,
   formatTransactionModalNumber,
-} from '../utils/transactionModalConfig';
+} from "../utils/transactionModalConfig";
 
 function mergeUniqueById(items, entry, idKey) {
-  if (!entry || entry[idKey] === undefined || entry[idKey] === null) return items;
-  return items.some((item) => item[idKey] === entry[idKey]) ? items : [...items, entry];
+  if (!entry || entry[idKey] === undefined || entry[idKey] === null)
+    return items;
+  return items.some(item => item[idKey] === entry[idKey])
+    ? items
+    : [...items, entry];
 }
 
 export default function TransactionModal({
@@ -52,7 +55,7 @@ export default function TransactionModal({
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [traderText, setTraderText] = useState('');
+  const [traderText, setTraderText] = useState("");
   const [localAccounts, setLocalAccounts] = useState(accounts || []);
   const [driversOptions, setDriversOptions] = useState(drivers || []);
   const [vehiclesOptions, setVehiclesOptions] = useState(vehicles || []);
@@ -69,28 +72,38 @@ export default function TransactionModal({
   useEffect(() => {
     setEditMode(false);
     setEditForm({});
-    setTraderText('');
+    setTraderText("");
   }, [transaction?.TransID]);
 
   const isPaymentTransaction = transaction?.TransTypeID === 2;
   const isAdjustmentTransaction = transaction?.TransTypeID === 3;
   const formTarget = isPaymentTransaction
-    ? 'payment'
+    ? "payment"
     : isAdjustmentTransaction
-      ? 'debit-note'
-      : 'invoice';
-  const transactionLabel = getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
-    sectionKey,
-    recordType: transaction?.RecordType,
-  });
-  const amountUsd = transaction?.AmountUSD ? `$${formatTransactionModalNumber(transaction.AmountUSD)}` : '-';
-  const amountIqd = transaction?.AmountIQD ? formatTransactionModalNumber(transaction.AmountIQD) : '-';
-  const costUsd = transaction?.CostUSD ? `$${formatTransactionModalNumber(transaction.CostUSD)}` : '-';
+      ? "debit-note"
+      : "invoice";
+  const transactionLabel = getTransactionTypeLabel(
+    transaction?.TransTypeName,
+    transaction?.TransTypeID,
+    {
+      sectionKey,
+      recordType: transaction?.RecordType,
+    }
+  );
+  const amountUsd = transaction?.AmountUSD
+    ? `$${formatTransactionModalNumber(transaction.AmountUSD)}`
+    : "-";
+  const amountIqd = transaction?.AmountIQD
+    ? formatTransactionModalNumber(transaction.AmountIQD)
+    : "-";
+  const costUsd = transaction?.CostUSD
+    ? `$${formatTransactionModalNumber(transaction.CostUSD)}`
+    : "-";
   const accentTone = isPaymentTransaction
-    ? 'from-emerald-50 via-white to-teal-50 border-emerald-100/80 text-emerald-800'
+    ? "from-emerald-50 via-white to-teal-50 border-emerald-100/80 text-emerald-800"
     : isAdjustmentTransaction
-      ? 'from-amber-50 via-white to-yellow-50 border-amber-100/80 text-amber-800'
-      : 'from-blue-50 via-white to-sky-50 border-blue-100/80 text-blue-800';
+      ? "from-amber-50 via-white to-yellow-50 border-amber-100/80 text-amber-800"
+      : "from-blue-50 via-white to-sky-50 border-blue-100/80 text-blue-800";
   const {
     editableCustomFields,
     formulaCustomFields,
@@ -102,60 +115,85 @@ export default function TransactionModal({
     formTarget,
     fieldConfigMap,
     customFields,
-    fallbackTitle: 'تفاصيل الحركة',
-    fallbackSubtitle: 'يعرض الحقول حسب ترتيب إدارة الحقول',
+    fallbackTitle: "تفاصيل الحركة",
+    fallbackSubtitle: "يعرض الحقول حسب ترتيب إدارة الحقول",
   });
   const filteredEditSections = useMemo(
-    () => filterSectionsByCurrency(
-      orderedEditSections,
-      editForm?.Currency || transaction?.Currency,
-    ),
-    [orderedEditSections, editForm?.Currency, transaction?.Currency],
+    () =>
+      filterSectionsByCurrency(
+        orderedEditSections,
+        editForm?.Currency || transaction?.Currency
+      ),
+    [orderedEditSections, editForm?.Currency, transaction?.Currency]
   );
-  const scopedBuiltInFieldLabel = useCallback((fieldKey, fallbackLabel) => {
-    if (sectionKey === 'transport-1' && fieldKey === 'ref_no') {
-      return formTarget === 'payment' ? 'رقم سند الدفع' : 'رقم استحقاق النقل';
-    }
+  const scopedBuiltInFieldLabel = useCallback(
+    (fieldKey, fallbackLabel) => {
+      if (sectionKey === "transport-1" && fieldKey === "ref_no") {
+        return formTarget === "payment" ? "رقم سند الدفع" : "رقم استحقاق النقل";
+      }
 
-    if (fieldKey === 'ref_no' && transaction?.TransTypeID === 3) {
-      return 'رقم سند الإضافة';
-    }
+      if (fieldKey === "ref_no" && transaction?.TransTypeID === 3) {
+        return "رقم سند الإضافة";
+      }
 
-    return getBuiltInFieldLabel(fieldKey, fallbackLabel);
-  }, [formTarget, getBuiltInFieldLabel, sectionKey, transaction?.TransTypeID]);
+      return getBuiltInFieldLabel(fieldKey, fallbackLabel);
+    },
+    [formTarget, getBuiltInFieldLabel, sectionKey, transaction?.TransTypeID]
+  );
 
   const extraReferenceFields = useMemo(() => {
-    const fieldOrder = ['currency', 'driver_name', 'vehicle_plate', 'good_type', 'gov_name', 'company_name', 'carrier_name'];
-    return fieldOrder.filter((fieldKey) => visibleBuiltInFieldKeys.has(fieldKey));
+    const fieldOrder = [
+      "currency",
+      "driver_name",
+      "vehicle_plate",
+      "good_type",
+      "gov_name",
+      "company_name",
+      "carrier_name",
+    ];
+    return fieldOrder.filter(fieldKey => visibleBuiltInFieldKeys.has(fieldKey));
   }, [visibleBuiltInFieldKeys]);
   const extraNumericFields = useMemo(() => {
-    const fieldOrder = ['cost_iqd', 'meters', 'fee_usd', 'syr_cus', 'car_qty', 'trans_price'];
-    return fieldOrder.filter((fieldKey) => visibleBuiltInFieldKeys.has(fieldKey));
+    const fieldOrder = [
+      "cost_iqd",
+      "meters",
+      "fee_usd",
+      "syr_cus",
+      "car_qty",
+      "trans_price",
+    ];
+    return fieldOrder.filter(fieldKey => visibleBuiltInFieldKeys.has(fieldKey));
   }, [visibleBuiltInFieldKeys]);
   const customDetailItems = useMemo(() => {
     const detailFields = [...editableCustomFields, ...formulaCustomFields];
     return detailFields
-      .map((field) => {
-        const value = field.fieldType === 'formula'
-          ? evaluateCustomFormula(field.formula, transaction || {})
-          : transaction?.[field.fieldKey];
-        if (value === undefined || value === null || value === '') return null;
+      .map(field => {
+        const value =
+          field.fieldType === "formula"
+            ? evaluateCustomFormula(field.formula, transaction || {})
+            : transaction?.[field.fieldKey];
+        if (value === undefined || value === null || value === "") return null;
         return {
           label: field.label,
-          value: field.fieldType === 'formula'
-            ? formatTransactionModalNumber(Math.round(value * 100) / 100)
-            : formatCustomFieldDisplayValue(field, value),
+          value:
+            field.fieldType === "formula"
+              ? formatTransactionModalNumber(Math.round(value * 100) / 100)
+              : formatCustomFieldDisplayValue(field, value),
         };
       })
       .filter(Boolean);
   }, [editableCustomFields, formulaCustomFields, transaction]);
 
-  const detailItems = useMemo(() => buildTransactionDetailItems({
-    transaction,
-    transactionLabel,
-    customDetailItems,
-    sectionKey,
-  }), [customDetailItems, sectionKey, transaction, transactionLabel]);
+  const detailItems = useMemo(
+    () =>
+      buildTransactionDetailItems({
+        transaction,
+        transactionLabel,
+        customDetailItems,
+        sectionKey,
+      }),
+    [customDetailItems, sectionKey, transaction, transactionLabel]
+  );
 
   useEffect(() => {
     if (!editMode || readOnly || !sectionKey) return undefined;
@@ -163,25 +201,62 @@ export default function TransactionModal({
     let cancelled = false;
     const requests = [];
 
-    if (!driversOptions.length) requests.push(api('/lookups/drivers').then((data) => { if (!cancelled) setDriversOptions(data); }));
-    if (!vehiclesOptions.length) requests.push(api('/lookups/vehicles').then((data) => { if (!cancelled) setVehiclesOptions(data); }));
-    if (!goodsOptions.length) requests.push(api(`/lookups/goods-types?port=${portId || ''}`).then((data) => { if (!cancelled) setGoodsOptions(data); }));
-    if (!govOptions.length) requests.push(api('/lookups/governorates').then((data) => { if (!cancelled) setGovOptions(data); }));
-    if (!companyOptions.length) requests.push(api('/lookups/companies').then((data) => { if (!cancelled) setCompanyOptions(data); }));
+    if (!driversOptions.length)
+      requests.push(
+        api("/lookups/drivers").then(data => {
+          if (!cancelled) setDriversOptions(data);
+        })
+      );
+    if (!vehiclesOptions.length)
+      requests.push(
+        api("/lookups/vehicles").then(data => {
+          if (!cancelled) setVehiclesOptions(data);
+        })
+      );
+    if (!goodsOptions.length)
+      requests.push(
+        api(`/lookups/goods-types?port=${portId || ""}`).then(data => {
+          if (!cancelled) setGoodsOptions(data);
+        })
+      );
+    if (!govOptions.length)
+      requests.push(
+        api("/lookups/governorates").then(data => {
+          if (!cancelled) setGovOptions(data);
+        })
+      );
+    if (!companyOptions.length)
+      requests.push(
+        api("/lookups/companies").then(data => {
+          if (!cancelled) setCompanyOptions(data);
+        })
+      );
 
     if (requests.length) {
-      Promise.all(requests).catch((error) => {
-        console.error('Failed to load modal lookups:', error);
+      Promise.all(requests).catch(error => {
+        console.error("Failed to load modal lookups:", error);
       });
     }
 
     return () => {
       cancelled = true;
     };
-  }, [api, companyOptions.length, driversOptions.length, editMode, goodsOptions.length, govOptions.length, portId, readOnly, sectionKey, vehiclesOptions.length]);
+  }, [
+    api,
+    companyOptions.length,
+    driversOptions.length,
+    editMode,
+    goodsOptions.length,
+    govOptions.length,
+    portId,
+    readOnly,
+    sectionKey,
+    vehiclesOptions.length,
+  ]);
 
   useEffect(() => {
-    if (!editMode || readOnly || !sectionKey || !editForm.AccountID) return undefined;
+    if (!editMode || readOnly || !sectionKey || !editForm.AccountID)
+      return undefined;
     if (transaction?.TransID) return undefined;
 
     let cancelled = false;
@@ -194,15 +269,24 @@ export default function TransactionModal({
           formType: formTarget,
         });
 
-        if (editForm.GovID) params.set('govId', String(editForm.GovID));
-        if (editForm.Currency) params.set('currency', String(editForm.Currency));
+        if (editForm.GovID) params.set("govId", String(editForm.GovID));
+        if (editForm.Currency)
+          params.set("currency", String(editForm.Currency));
 
-        const defaults = await api(`/defaults/transaction-form?${params.toString()}`);
+        const defaults = await api(
+          `/defaults/transaction-form?${params.toString()}`
+        );
         if (!cancelled) {
-          setEditForm((current) => applyDefaultsToTransactionDraft(current, defaults, visibleBuiltInFieldKeys));
+          setEditForm(current =>
+            applyDefaultsToTransactionDraft(
+              current,
+              defaults,
+              visibleBuiltInFieldKeys
+            )
+          );
         }
       } catch (error) {
-        console.error('Failed to load transaction defaults in modal:', error);
+        console.error("Failed to load transaction defaults in modal:", error);
       }
     };
 
@@ -210,119 +294,190 @@ export default function TransactionModal({
     return () => {
       cancelled = true;
     };
-  }, [api, editForm.AccountID, editForm.Currency, editForm.GovID, editMode, formTarget, readOnly, sectionKey, transaction?.TransID, visibleBuiltInFieldKeys]);
+  }, [
+    api,
+    editForm.AccountID,
+    editForm.Currency,
+    editForm.GovID,
+    editMode,
+    formTarget,
+    readOnly,
+    sectionKey,
+    transaction?.TransID,
+    visibleBuiltInFieldKeys,
+  ]);
 
   const setField = useCallback((fieldKey, value) => {
-    setEditForm((form) => ({ ...form, [fieldKey]: value }));
+    setEditForm(form => ({ ...form, [fieldKey]: value }));
   }, []);
 
-  const setNumericField = useCallback((fieldKey, rawValue, parser = parseFloat) => {
-    setEditForm((form) => ({
-      ...form,
-      [fieldKey]: parseNumericInput(rawValue, parser),
-    }));
-  }, []);
+  const setNumericField = useCallback(
+    (fieldKey, rawValue, parser = parseFloat) => {
+      setEditForm(form => ({
+        ...form,
+        [fieldKey]: parseNumericInput(rawValue, parser),
+      }));
+    },
+    []
+  );
 
-  const createAccountIfNeeded = useCallback(async (draft) => {
-    if (draft.AccountID || !traderText.trim()) return draft;
-    const newAccount = await api('/accounts', {
-      method: 'POST',
-      body: JSON.stringify(buildPortAccountPayload({ traderText, accountType, portId })),
-    });
-    const accountEntry = { AccountID: newAccount.id, AccountName: traderText.trim() };
-    setLocalAccounts((items) => mergeUniqueById(items, accountEntry, 'AccountID'));
-    return {
-      ...draft,
-      AccountID: newAccount.id,
-      AccountName: traderText.trim(),
-    };
-  }, [accountType, api, portId, traderText]);
-
-  const handleAddTraderAccount = useCallback(async (name) => {
-    const traderName = String(name || '').trim();
-    if (!traderName) return null;
-
-    const newAccount = await api('/accounts', {
-      method: 'POST',
-      body: JSON.stringify(buildPortAccountPayload({ traderText: traderName, accountType, portId })),
-    });
-
-    const accountEntry = {
-      AccountID: newAccount.id,
-      AccountName: traderName,
-    };
-
-    setLocalAccounts((items) => mergeUniqueById(items, accountEntry, 'AccountID'));
-    setTraderText(traderName);
-    setEditForm((current) => ({
-      ...current,
-      AccountID: newAccount.id,
-      AccountName: traderName,
-    }));
-
-    return accountEntry;
-  }, [accountType, api, portId]);
-
-  const finalizeEditForm = useCallback(async (source) => {
-    let draft = { ...source };
-    draft = await createAccountIfNeeded(draft);
-
-    if (!draft.DriverID && draft._driverText?.trim()) {
-      const newDriver = await api('/lookups/drivers', {
-        method: 'POST',
-        body: JSON.stringify({ DriverName: draft._driverText.trim() }),
+  const createAccountIfNeeded = useCallback(
+    async draft => {
+      if (draft.AccountID || !traderText.trim()) return draft;
+      const newAccount = await api("/accounts", {
+        method: "POST",
+        body: JSON.stringify(
+          buildPortAccountPayload({ traderText, accountType, portId })
+        ),
       });
-      setDriversOptions((items) => mergeUniqueById(items, { DriverID: newDriver.id, DriverName: draft._driverText.trim() }, 'DriverID'));
-      draft.DriverID = newDriver.id;
-    }
+      const accountEntry = {
+        AccountID: newAccount.id,
+        AccountName: traderText.trim(),
+      };
+      setLocalAccounts(items =>
+        mergeUniqueById(items, accountEntry, "AccountID")
+      );
+      return {
+        ...draft,
+        AccountID: newAccount.id,
+        AccountName: traderText.trim(),
+      };
+    },
+    [accountType, api, portId, traderText]
+  );
 
-    if (!draft.VehicleID && draft._vehicleText?.trim()) {
-      const newVehicle = await api('/lookups/vehicles', {
-        method: 'POST',
-        body: JSON.stringify({ PlateNumber: draft._vehicleText.trim() }),
+  const handleAddTraderAccount = useCallback(
+    async name => {
+      const traderName = String(name || "").trim();
+      if (!traderName) return null;
+
+      const newAccount = await api("/accounts", {
+        method: "POST",
+        body: JSON.stringify(
+          buildPortAccountPayload({
+            traderText: traderName,
+            accountType,
+            portId,
+          })
+        ),
       });
-      setVehiclesOptions((items) => mergeUniqueById(items, { VehicleID: newVehicle.id, PlateNumber: draft._vehicleText.trim() }, 'VehicleID'));
-      draft.VehicleID = newVehicle.id;
-    }
 
-    if (!draft.GoodTypeID && draft._goodText?.trim()) {
-      const newGoodType = await api('/lookups/goods-types', {
-        method: 'POST',
-        body: JSON.stringify({ TypeName: draft._goodText.trim() }),
-      });
-      setGoodsOptions((items) => mergeUniqueById(items, { GoodTypeID: newGoodType.id, TypeName: draft._goodText.trim() }, 'GoodTypeID'));
-      draft.GoodTypeID = newGoodType.id;
-    }
+      const accountEntry = {
+        AccountID: newAccount.id,
+        AccountName: traderName,
+      };
 
-    if (!draft.CompanyID && draft._companyText?.trim()) {
-      const newCompany = await api('/lookups/companies', {
-        method: 'POST',
-        body: JSON.stringify({ CompanyName: draft._companyText.trim() }),
-      });
-      setCompanyOptions((items) => mergeUniqueById(items, { CompanyID: newCompany.id, CompanyName: newCompany.CompanyName || draft._companyText.trim() }, 'CompanyID'));
-      draft.CompanyID = newCompany.id;
-      draft.CompanyName = newCompany.CompanyName || draft._companyText.trim();
-    }
+      setLocalAccounts(items =>
+        mergeUniqueById(items, accountEntry, "AccountID")
+      );
+      setTraderText(traderName);
+      setEditForm(current => ({
+        ...current,
+        AccountID: newAccount.id,
+        AccountName: traderName,
+      }));
 
-    if (!draft.GovID && (draft._newGovName?.trim() || draft._govText?.trim())) {
-      const govName = (draft._newGovName?.trim() || draft._govText?.trim());
-      const newGov = await api('/lookups/governorates', {
-        method: 'POST',
-        body: JSON.stringify({ GovName: govName }),
-      });
-      draft.GovID = newGov.id;
-    }
+      return accountEntry;
+    },
+    [accountType, api, portId]
+  );
 
-    delete draft._driverText;
-    delete draft._vehicleText;
-    delete draft._goodText;
-    delete draft._govText;
-    delete draft._newGovName;
-    delete draft._companyText;
-    delete draft._carrierText;
+  const finalizeEditForm = useCallback(
+    async source => {
+      let draft = { ...source };
+      draft = await createAccountIfNeeded(draft);
 
-    return draft;
-  }, [api, createAccountIfNeeded]);
+      if (!draft.DriverID && draft._driverText?.trim()) {
+        const newDriver = await api("/lookups/drivers", {
+          method: "POST",
+          body: JSON.stringify({ DriverName: draft._driverText.trim() }),
+        });
+        setDriversOptions(items =>
+          mergeUniqueById(
+            items,
+            { DriverID: newDriver.id, DriverName: draft._driverText.trim() },
+            "DriverID"
+          )
+        );
+        draft.DriverID = newDriver.id;
+      }
+
+      if (!draft.VehicleID && draft._vehicleText?.trim()) {
+        const newVehicle = await api("/lookups/vehicles", {
+          method: "POST",
+          body: JSON.stringify({ PlateNumber: draft._vehicleText.trim() }),
+        });
+        setVehiclesOptions(items =>
+          mergeUniqueById(
+            items,
+            {
+              VehicleID: newVehicle.id,
+              PlateNumber: draft._vehicleText.trim(),
+            },
+            "VehicleID"
+          )
+        );
+        draft.VehicleID = newVehicle.id;
+      }
+
+      if (!draft.GoodTypeID && draft._goodText?.trim()) {
+        const newGoodType = await api("/lookups/goods-types", {
+          method: "POST",
+          body: JSON.stringify({ TypeName: draft._goodText.trim() }),
+        });
+        setGoodsOptions(items =>
+          mergeUniqueById(
+            items,
+            { GoodTypeID: newGoodType.id, TypeName: draft._goodText.trim() },
+            "GoodTypeID"
+          )
+        );
+        draft.GoodTypeID = newGoodType.id;
+      }
+
+      if (!draft.CompanyID && draft._companyText?.trim()) {
+        const newCompany = await api("/lookups/companies", {
+          method: "POST",
+          body: JSON.stringify({ CompanyName: draft._companyText.trim() }),
+        });
+        setCompanyOptions(items =>
+          mergeUniqueById(
+            items,
+            {
+              CompanyID: newCompany.id,
+              CompanyName: newCompany.CompanyName || draft._companyText.trim(),
+            },
+            "CompanyID"
+          )
+        );
+        draft.CompanyID = newCompany.id;
+        draft.CompanyName = newCompany.CompanyName || draft._companyText.trim();
+      }
+
+      if (
+        !draft.GovID &&
+        (draft._newGovName?.trim() || draft._govText?.trim())
+      ) {
+        const govName = draft._newGovName?.trim() || draft._govText?.trim();
+        const newGov = await api("/lookups/governorates", {
+          method: "POST",
+          body: JSON.stringify({ GovName: govName }),
+        });
+        draft.GovID = newGov.id;
+      }
+
+      delete draft._driverText;
+      delete draft._vehicleText;
+      delete draft._goodText;
+      delete draft._govText;
+      delete draft._newGovName;
+      delete draft._companyText;
+      delete draft._carrierText;
+
+      return draft;
+    },
+    [api, createAccountIfNeeded]
+  );
 
   const handleStartEdit = useCallback(() => {
     if (!transaction) return;
@@ -330,7 +485,7 @@ export default function TransactionModal({
       ...getInitialCustomFieldValues(editableCustomFields),
       ...buildTransactionModalSeed(transaction),
     });
-    setTraderText(transaction.AccountName || transaction.TraderName || '');
+    setTraderText(transaction.AccountName || transaction.TraderName || "");
     setEditMode(true);
   }, [editableCustomFields, transaction]);
 
@@ -348,55 +503,62 @@ export default function TransactionModal({
 
   const handleDelete = () => {
     if (!onDelete) return;
-    if (!confirm('هل أنت متأكد من حذف هذه المعاملة؟')) return;
+    if (!confirm("هل أنت متأكد من حذف هذه المعاملة؟")) return;
     onDelete(transaction.TransID);
   };
 
   const handleExportPDF = async () => {
     await runExportInvoicePDF({
       transaction,
-      title: getTransactionTypeLabel(transaction?.TransTypeName, transaction?.TransTypeID, {
-        sectionKey,
-        recordType: transaction?.RecordType,
-      }),
+      title: getTransactionTypeLabel(
+        transaction?.TransTypeName,
+        transaction?.TransTypeID,
+        {
+          sectionKey,
+          recordType: transaction?.RecordType,
+        }
+      ),
       sectionKey,
       portId,
     });
   };
 
-  const renderOrderedEditItem = useCallback((item) => (
-    <TransactionModalEditItem
-      key={item.key}
-      item={item}
-      editForm={editForm}
-      setEditForm={setEditForm}
-      setField={setField}
-      setNumericField={setNumericField}
-      traderText={traderText}
-      setTraderText={setTraderText}
-      localAccounts={localAccounts}
-      driversOptions={driversOptions}
-      vehiclesOptions={vehiclesOptions}
-      goodsOptions={goodsOptions}
-      govOptions={govOptions}
-      companyOptions={companyOptions}
-      getBuiltInFieldLabel={scopedBuiltInFieldLabel}
-      onAddAccount={handleAddTraderAccount}
-    />
-  ), [
-    companyOptions,
-    driversOptions,
-    editForm,
-    scopedBuiltInFieldLabel,
-    goodsOptions,
-    govOptions,
-    handleAddTraderAccount,
-    localAccounts,
-    setField,
-    setNumericField,
-    traderText,
-    vehiclesOptions,
-  ]);
+  const renderOrderedEditItem = useCallback(
+    item => (
+      <TransactionModalEditItem
+        key={item.key}
+        item={item}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        setField={setField}
+        setNumericField={setNumericField}
+        traderText={traderText}
+        setTraderText={setTraderText}
+        localAccounts={localAccounts}
+        driversOptions={driversOptions}
+        vehiclesOptions={vehiclesOptions}
+        goodsOptions={goodsOptions}
+        govOptions={govOptions}
+        companyOptions={companyOptions}
+        getBuiltInFieldLabel={scopedBuiltInFieldLabel}
+        onAddAccount={handleAddTraderAccount}
+      />
+    ),
+    [
+      companyOptions,
+      driversOptions,
+      editForm,
+      scopedBuiltInFieldLabel,
+      goodsOptions,
+      govOptions,
+      handleAddTraderAccount,
+      localAccounts,
+      setField,
+      setNumericField,
+      traderText,
+      vehiclesOptions,
+    ]
+  );
 
   if (!transaction) return null;
 
@@ -404,95 +566,109 @@ export default function TransactionModal({
     <ModalPortal>
       <div
         className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-4"
-        onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+        onMouseDown={e => e.target === e.currentTarget && onClose()}
       >
-        <div className="my-auto w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_24px_80px_rgba(15,23,42,0.22)] animate-modal-in" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="max-h-[92vh] overflow-y-auto">
-          <div className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
-            <div className={`border-b border-white/50 bg-gradient-to-r ${accentTone} px-5 py-5 md:px-6`}>
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <div className={`mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
-                    isPaymentTransaction
-                      ? 'border-emerald-200 bg-white/80 text-emerald-700'
-                      : isAdjustmentTransaction
-                        ? 'border-amber-200 bg-white/80 text-amber-700'
-                        : 'border-blue-200 bg-white/80 text-blue-700'
-                  }`}>
-                    {transactionLabel}
+        <div
+          className="my-auto w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_24px_80px_rgba(15,23,42,0.22)] animate-modal-in"
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
+              <div
+                className={`border-b border-white/50 bg-gradient-to-r ${accentTone} px-5 py-5 md:px-6`}
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div
+                      className={`mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
+                        isPaymentTransaction
+                          ? "border-emerald-200 bg-white/80 text-emerald-700"
+                          : isAdjustmentTransaction
+                            ? "border-amber-200 bg-white/80 text-amber-700"
+                            : "border-blue-200 bg-white/80 text-blue-700"
+                      }`}
+                    >
+                      {transactionLabel}
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-900 md:text-xl">
+                      {editMode ? "تعديل المعاملة" : "معاينة المعاملة"}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                      <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">
+                        {transaction.RefNo || "بدون رقم"}
+                      </span>
+                      <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">
+                        {transaction.TransDate?.split(" ")[0] || "-"}
+                      </span>
+                      <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">
+                        {transaction.AccountName ||
+                          transaction.TraderName ||
+                          "-"}
+                      </span>
+                    </div>
                   </div>
-                  <h2 className="text-lg font-bold text-slate-900 md:text-xl">
-                    {editMode ? 'تعديل المعاملة' : 'معاينة المعاملة'}
-                  </h2>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                    <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">{transaction.RefNo || 'بدون رقم'}</span>
-                    <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">{transaction.TransDate?.split(' ')[0] || '-'}</span>
-                    <span className="rounded-full bg-white/80 px-3 py-1 ring-1 ring-slate-200/70">{transaction.AccountName || transaction.TraderName || '-'}</span>
+                  <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                    {!editMode && (
+                      <>
+                        <button
+                          onClick={handleExportPDF}
+                          className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-50"
+                        >
+                          <FileDown size={14} /> PDF
+                        </button>
+                        {!readOnly && onUpdate && (
+                          <button
+                            onClick={handleStartEdit}
+                            className="flex items-center gap-1.5 rounded-xl border border-primary-200 bg-white px-3 py-2 text-xs font-semibold text-primary-700 transition-all hover:bg-primary-50"
+                          >
+                            <Pencil size={14} /> تعديل
+                          </button>
+                        )}
+                        {!readOnly && onDelete && (
+                          <button
+                            onClick={handleDelete}
+                            className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-all hover:bg-red-50"
+                          >
+                            <Trash2 size={14} /> حذف
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditMode(false);
+                        onClose();
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                  {!editMode && (
-                    <>
-                      <button
-                        onClick={handleExportPDF}
-                        className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-50"
-                      >
-                        <FileDown size={14} /> PDF
-                      </button>
-                      {!readOnly && onUpdate && (
-                        <button
-                          onClick={handleStartEdit}
-                          className="flex items-center gap-1.5 rounded-xl border border-primary-200 bg-white px-3 py-2 text-xs font-semibold text-primary-700 transition-all hover:bg-primary-50"
-                        >
-                          <Pencil size={14} /> تعديل
-                        </button>
-                      )}
-                      {!readOnly && onDelete && (
-                        <button
-                          onClick={handleDelete}
-                          className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-all hover:bg-red-50"
-                        >
-                          <Trash2 size={14} /> حذف
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <button
-                    onClick={() => {
-                      setEditMode(false);
-                      onClose();
-                    }}
-                    className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700"
-                  >
-                    <X size={18} />
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          {editMode ? (
-            <TransactionEditSections
-              orderedEditSections={filteredEditSections}
-              renderOrderedEditItem={renderOrderedEditItem}
-              saving={saving}
-              onCancel={() => setEditMode(false)}
-              onSave={handleUpdate}
-            />
-          ) : (
-            <TransactionPreviewPanel
-              transaction={transaction}
-              detailItems={detailItems}
-              amountUsd={amountUsd}
-              amountIqd={amountIqd}
-              costUsd={costUsd}
-              sectionKey={sectionKey}
-            />
-          )}
-        </div>
+            {editMode ? (
+              <TransactionEditSections
+                orderedEditSections={filteredEditSections}
+                renderOrderedEditItem={renderOrderedEditItem}
+                saving={saving}
+                onCancel={() => setEditMode(false)}
+                onSave={handleUpdate}
+              />
+            ) : (
+              <TransactionPreviewPanel
+                transaction={transaction}
+                detailItems={detailItems}
+                amountUsd={amountUsd}
+                amountIqd={amountIqd}
+                costUsd={costUsd}
+                sectionKey={sectionKey}
+              />
+            )}
+          </div>
         </div>
       </div>
     </ModalPortal>
   );
 }
-

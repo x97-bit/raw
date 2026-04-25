@@ -6,7 +6,9 @@ type JsonRequestOptions = Omit<RequestInit, "body"> & {
   json?: unknown;
 };
 
-export async function createRouteHarness(registerRoutes: (router: Router) => void) {
+export async function createRouteHarness(
+  registerRoutes: (router: Router) => void
+) {
   const app = express();
   app.use(express.json());
 
@@ -15,7 +17,7 @@ export async function createRouteHarness(registerRoutes: (router: Router) => voi
   app.use(router);
 
   const server = createServer(app);
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     server.listen(0, "127.0.0.1", resolve);
   });
 
@@ -31,7 +33,8 @@ export async function createRouteHarness(registerRoutes: (router: Router) => voi
         if (!headers.has("content-type")) {
           headers.set("content-type", "application/json");
         }
-        body = options.json === undefined ? undefined : JSON.stringify(options.json);
+        body =
+          options.json === undefined ? undefined : JSON.stringify(options.json);
       }
 
       const response = await fetch(`${baseUrl}${path}`, {
@@ -59,7 +62,7 @@ export async function createRouteHarness(registerRoutes: (router: Router) => voi
       };
     },
     async close() {
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         server.close(() => resolve());
       });
     },

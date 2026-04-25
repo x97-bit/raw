@@ -16,8 +16,14 @@ if (!databaseUrl) {
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const projectRoot = process.cwd();
 const backupDir = path.join(projectRoot, "database", "backups");
-const backupPath = path.join(backupDir, `pre-keep-schema-wipe-${timestamp}.json`);
-const reportPath = path.join(backupDir, `keep-schema-wipe-report-${timestamp}.json`);
+const backupPath = path.join(
+  backupDir,
+  `pre-keep-schema-wipe-${timestamp}.json`
+);
+const reportPath = path.join(
+  backupDir,
+  `keep-schema-wipe-report-${timestamp}.json`
+);
 const applyMode = process.argv.includes("--apply");
 const dropMigrationMeta = process.argv.includes("--drop-migration-meta");
 
@@ -47,21 +53,29 @@ async function readAllTables(connection) {
 }
 
 async function countTable(connection, tableName) {
-  const [rows] = await connection.query(`SELECT COUNT(*) AS count FROM \`${tableName}\``);
+  const [rows] = await connection.query(
+    `SELECT COUNT(*) AS count FROM \`${tableName}\``
+  );
   return Number(rows[0]?.count || 0);
 }
 
 async function main() {
-  const connection = await mysql.createConnection(buildMySqlConnectionOptions(databaseUrl));
+  const connection = await mysql.createConnection(
+    buildMySqlConnectionOptions(databaseUrl)
+  );
 
   try {
     const snapshot = await readAllTables(connection);
     const preservedTables = dropMigrationMeta ? [] : ["__drizzle_migrations"];
-    const tablesToClear = snapshot.tableNames.filter((tableName) => !preservedTables.includes(tableName));
+    const tablesToClear = snapshot.tableNames.filter(
+      tableName => !preservedTables.includes(tableName)
+    );
 
     const backupPayload = {
       meta: {
-        action: applyMode ? "wipe-keep-schema-apply" : "wipe-keep-schema-dry-run",
+        action: applyMode
+          ? "wipe-keep-schema-apply"
+          : "wipe-keep-schema-dry-run",
         createdAt: new Date().toISOString(),
         databaseUrl: databaseUrl.replace(/:[^:@/]+@/, ":***@"),
         tablesToClear,
@@ -143,7 +157,7 @@ async function main() {
   }
 }
 
-main().catch(async (error) => {
+main().catch(async error => {
   console.error(error);
   process.exit(1);
 });

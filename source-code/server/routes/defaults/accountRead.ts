@@ -1,10 +1,18 @@
 import { Router, Response } from "express";
 import { and, desc, eq, type SQL } from "drizzle-orm";
-import { accounts, accountDefaults, companies, drivers, goodsTypes, governorates, vehicles } from "../../../drizzle/schema";
+import {
+  accounts,
+  accountDefaults,
+  companies,
+  drivers,
+  goodsTypes,
+  governorates,
+  vehicles,
+} from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
-import { getDb } from "../../db";
-import type { AppDb } from "../../dbTypes";
+import { getDb } from "../../db/db";
+import type { AppDb } from "../../db/schema/dbTypes";
 import { parseNullableNumber, parseOptionalInt } from "../../utils/bodyFields";
 import { requireDefaultAdmin } from "./shared";
 
@@ -60,18 +68,30 @@ function readQueryString(value: unknown): string | undefined {
 
   if (Array.isArray(value)) {
     const [firstValue] = value;
-    return typeof firstValue === "string" ? readQueryString(firstValue) : undefined;
+    return typeof firstValue === "string"
+      ? readQueryString(firstValue)
+      : undefined;
   }
 
   return undefined;
 }
 
-function createNameMap<TRow extends { id: number }>(rows: TRow[], valueSelector: (row: TRow) => string) {
-  return new Map(rows.map((row) => [row.id, valueSelector(row)]));
+function createNameMap<TRow extends { id: number }>(
+  rows: TRow[],
+  valueSelector: (row: TRow) => string
+) {
+  return new Map(rows.map(row => [row.id, valueSelector(row)]));
 }
 
 async function loadAccountDefaultMaps(db: AppDb): Promise<AccountDefaultMaps> {
-  const [allAccounts, allDrivers, allVehicles, allGoods, allGovs, allCompanies] = await Promise.all([
+  const [
+    allAccounts,
+    allDrivers,
+    allVehicles,
+    allGoods,
+    allGovs,
+    allCompanies,
+  ] = await Promise.all([
     db.select().from(accounts),
     db.select().from(drivers),
     db.select().from(vehicles),
@@ -81,12 +101,15 @@ async function loadAccountDefaultMaps(db: AppDb): Promise<AccountDefaultMaps> {
   ]);
 
   return {
-    accountMap: createNameMap(allAccounts as AccountRow[], (row) => row.name),
-    driverMap: createNameMap(allDrivers as DriverRow[], (row) => row.name),
-    vehicleMap: createNameMap(allVehicles as VehicleRow[], (row) => row.plateNumber),
-    goodTypeMap: createNameMap(allGoods as GoodTypeRow[], (row) => row.name),
-    govMap: createNameMap(allGovs as GovernorateRow[], (row) => row.name),
-    companyMap: createNameMap(allCompanies as CompanyRow[], (row) => row.name),
+    accountMap: createNameMap(allAccounts as AccountRow[], row => row.name),
+    driverMap: createNameMap(allDrivers as DriverRow[], row => row.name),
+    vehicleMap: createNameMap(
+      allVehicles as VehicleRow[],
+      row => row.plateNumber
+    ),
+    goodTypeMap: createNameMap(allGoods as GoodTypeRow[], row => row.name),
+    govMap: createNameMap(allGovs as GovernorateRow[], row => row.name),
+    companyMap: createNameMap(allCompanies as CompanyRow[], row => row.name),
   };
 }
 
@@ -95,7 +118,10 @@ function getMappedName(map: Map<number, string>, id?: number | null): string {
   return map.get(id) || "";
 }
 
-function mapAccountDefaultRow(row: AccountDefaultRow, maps: AccountDefaultMaps): AccountDefaultListRow {
+function mapAccountDefaultRow(
+  row: AccountDefaultRow,
+  maps: AccountDefaultMaps
+): AccountDefaultListRow {
   return {
     id: row.id,
     accountId: row.accountId,
@@ -123,46 +149,75 @@ function mapAccountDefaultRow(row: AccountDefaultRow, maps: AccountDefaultMaps):
   };
 }
 
-function applyAccountDefaultSearch(rows: AccountDefaultListRow[], search: string) {
+function applyAccountDefaultSearch(
+  rows: AccountDefaultListRow[],
+  search: string
+) {
   if (!search) {
     return rows;
   }
 
   return rows.filter(
-    (row) =>
+    row =>
       row.accountName.toLowerCase().includes(search) ||
       row.sectionKey.toLowerCase().includes(search) ||
       row.defaultDriverName.toLowerCase().includes(search) ||
-      row.defaultGovName.toLowerCase().includes(search),
+      row.defaultGovName.toLowerCase().includes(search)
   );
 }
 
 export function registerAccountDefaultReadRoutes(router: Router) {
-  router.get("/defaults/account", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      if (!requireDefaultAdmin(req, res)) return;
+  router.get(
+    "/defaults/account",
+    authMiddleware,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        if (!requireDefaultAdmin(req, res)) return;
 
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const conditions: SQL<unknown>[] = [];
-      const sectionKey = readQueryString(req.query.sectionKey) ?? "";
-      const accountId = parseOptionalInt(req.query.accountId);
-      const search = (readQueryString(req.query.search) ?? "").toLowerCase();
+        const conditions: SQL<unknown>[] = [];
+        const sectionKey = readQueryString(req.query.sectionKey) ?? "";
+        const accountId = parseOptionalInt(req.query.accountId);
+        const search = (readQueryString(req.query.search) ?? "").toLowerCase();
 
-      if (sectionKey) conditions.push(eq(accountDefaults.sectionKey, sectionKey));
-      if (accountId) conditions.push(eq(accountDefaults.accountId, accountId));
+        if (sectionKey)
+          conditions.push(eq(accountDefaults.sectionKey, sectionKey));
+        if (accountId)
+          conditions.push(eq(accountDefaults.accountId, accountId));
 
-      const query = conditions.length > 0
-        ? db.select().from(accountDefaults).where(and(...conditions)).orderBy(desc(accountDefaults.updatedAt), desc(accountDefaults.id))
-        : db.select().from(accountDefaults).orderBy(desc(accountDefaults.updatedAt), desc(accountDefaults.id));
+        const query =
+          conditions.length > 0
+            ? db
+                .select()
+                .from(accountDefaults)
+                .where(and(...conditions))
+                .orderBy(
+                  desc(accountDefaults.updatedAt),
+                  desc(accountDefaults.id)
+                )
+            : db
+                .select()
+                .from(accountDefaults)
+                .orderBy(
+                  desc(accountDefaults.updatedAt),
+                  desc(accountDefaults.id)
+                );
 
-      const [rows, maps] = await Promise.all([query, loadAccountDefaultMaps(db)]);
-      const result = applyAccountDefaultSearch(rows.map((row) => mapAccountDefaultRow(row, maps)), search);
+        const [rows, maps] = await Promise.all([
+          query,
+          loadAccountDefaultMaps(db),
+        ]);
+        const result = applyAccountDefaultSearch(
+          rows.map(row => mapAccountDefaultRow(row, maps)),
+          search
+        );
 
-      return res.json(result);
-    } catch (error) {
-      return respondRouteError(res, error);
+        return res.json(result);
+      } catch (error) {
+        return respondRouteError(res, error);
+      }
     }
-  });
+  );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 const EMPTY_LOOKUPS = {
   accounts: [],
@@ -16,14 +16,15 @@ export default function useDefaultsLookups({ api, onMessage }) {
   const loadLookups = useCallback(async () => {
     setLoadingLookups(true);
     try {
-      const [accounts, drivers, vehicles, goodsTypes, governorates, companies] = await Promise.all([
-        api('/accounts'),
-        api('/lookups/drivers'),
-        api('/lookups/vehicles'),
-        api('/lookups/goods-types'),
-        api('/lookups/governorates'),
-        api('/lookups/companies'),
-      ]);
+      const [accounts, drivers, vehicles, goodsTypes, governorates, companies] =
+        await Promise.all([
+          api("/accounts"),
+          api("/lookups/drivers"),
+          api("/lookups/vehicles"),
+          api("/lookups/goods-types"),
+          api("/lookups/governorates"),
+          api("/lookups/companies"),
+        ]);
 
       setLookups({
         accounts,

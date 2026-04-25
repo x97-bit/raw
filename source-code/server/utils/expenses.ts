@@ -10,8 +10,14 @@ export function parseStoredExpenseAmount(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function normalizeExpenseChargeTarget(value: unknown): NormalizedExpenseChargeTarget {
-  return String(value || "").trim().toLowerCase() === "trader" ? "trader" : "port";
+export function normalizeExpenseChargeTarget(
+  value: unknown
+): NormalizedExpenseChargeTarget {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "trader"
+    ? "trader"
+    : "port";
 }
 
 export function mapExpenseRow(expense: ExpenseRow) {
@@ -26,40 +32,46 @@ export function mapExpenseRow(expense: ExpenseRow) {
 }
 
 export function buildExpenseTotals(rows: ExpenseRow[]) {
-  return rows.reduce((totals, expense) => {
-    const chargeTarget = normalizeExpenseChargeTarget(expense.chargeTarget);
-    const amountUSD = parseStoredExpenseAmount(expense.amountUSD);
-    const amountIQD = parseStoredExpenseAmount(expense.amountIQD);
+  return rows.reduce(
+    (totals, expense) => {
+      const chargeTarget = normalizeExpenseChargeTarget(expense.chargeTarget);
+      const amountUSD = parseStoredExpenseAmount(expense.amountUSD);
+      const amountIQD = parseStoredExpenseAmount(expense.amountIQD);
 
-    totals.totalUSD += amountUSD;
-    totals.totalIQD += amountIQD;
-    totals.count += 1;
+      totals.totalUSD += amountUSD;
+      totals.totalIQD += amountIQD;
+      totals.count += 1;
 
-    if (chargeTarget === "trader") {
-      totals.chargedToTraderUSD += amountUSD;
-      totals.chargedToTraderIQD += amountIQD;
-      totals.chargedToTraderCount += 1;
-    } else {
-      totals.directExpenseUSD += amountUSD;
-      totals.directExpenseIQD += amountIQD;
-      totals.directExpenseCount += 1;
+      if (chargeTarget === "trader") {
+        totals.chargedToTraderUSD += amountUSD;
+        totals.chargedToTraderIQD += amountIQD;
+        totals.chargedToTraderCount += 1;
+      } else {
+        totals.directExpenseUSD += amountUSD;
+        totals.directExpenseIQD += amountIQD;
+        totals.directExpenseCount += 1;
+      }
+
+      return totals;
+    },
+    {
+      totalUSD: 0,
+      totalIQD: 0,
+      count: 0,
+      directExpenseUSD: 0,
+      directExpenseIQD: 0,
+      directExpenseCount: 0,
+      chargedToTraderUSD: 0,
+      chargedToTraderIQD: 0,
+      chargedToTraderCount: 0,
     }
-
-    return totals;
-  }, {
-    totalUSD: 0,
-    totalIQD: 0,
-    count: 0,
-    directExpenseUSD: 0,
-    directExpenseIQD: 0,
-    directExpenseCount: 0,
-    chargedToTraderUSD: 0,
-    chargedToTraderIQD: 0,
-    chargedToTraderCount: 0,
-  });
+  );
 }
 
-export function mapChargedExpenseToStatementRow(expense: ExpenseRow, fallbackAccountName = "") {
+export function mapChargedExpenseToStatementRow(
+  expense: ExpenseRow,
+  fallbackAccountName = ""
+) {
   const mapped = mapTransaction({
     id: -Number(expense.id || 0),
     refNo: `EXP-${expense.id}`,

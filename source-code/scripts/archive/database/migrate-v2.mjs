@@ -1,7 +1,9 @@
-import mysql from 'mysql2/promise';
-import { buildMySqlConnectionOptions } from '../../shared/scriptMysqlConfig.mjs';
+import mysql from "mysql2/promise";
+import { buildMySqlConnectionOptions } from "../../shared/scriptMysqlConfig.mjs";
 
-const conn = await mysql.createConnection(buildMySqlConnectionOptions(process.env.DATABASE_URL));
+const conn = await mysql.createConnection(
+  buildMySqlConnectionOptions(process.env.DATABASE_URL)
+);
 
 const queries = [
   // Create drivers table
@@ -54,11 +56,11 @@ const queries = [
 for (const q of queries) {
   try {
     await conn.execute(q);
-    console.log('OK:', q.substring(0, 60) + '...');
+    console.log("OK:", q.substring(0, 60) + "...");
   } catch (e) {
-    console.error('ERR:', e.message, '\nQuery:', q.substring(0, 80));
+    console.error("ERR:", e.message, "\nQuery:", q.substring(0, 80));
   }
 }
 
 await conn.end();
-console.log('Migration v2 complete');
+console.log("Migration v2 complete");

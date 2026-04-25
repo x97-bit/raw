@@ -1,6 +1,6 @@
-import PageHeader from '../../../components/PageHeader';
-import PortAccountDateFilters from './PortAccountDateFilters';
-import PortStatementAccountPicker from './PortStatementAccountPicker';
+import PageHeader from "../../../components/PageHeader";
+import PortAccountDateFilters from "./PortAccountDateFilters";
+import PortStatementAccountPicker from "./PortStatementAccountPicker";
 
 export default function PortStatementSelectView({
   portName,
@@ -23,12 +23,17 @@ export default function PortStatementSelectView({
   sectionKey,
 }) {
   const labels = portViewLabels || {};
-  const statementTitle = `${labels.statementTitlePrefix || 'كشف حساب'} - ${portName}`;
-  const accountLabel = sectionKey === 'transport-1' ? 'ناقل' : 'تاجر';
+  const statementTitle = `${labels.statementTitlePrefix || "كشف حساب"} - ${portName}`;
+  const accountLabel = sectionKey === "transport-1" ? "ناقل" : "تاجر";
 
   return (
     <div className="page-shell">
-      <PageHeader title={statementTitle} subtitle={portName} onBack={onBack} onHome={onHome} />
+      <PageHeader
+        title={statementTitle}
+        subtitle={portName}
+        onBack={onBack}
+        onHome={onHome}
+      />
       <div className="p-5">
         <PortAccountDateFilters
           accounts={accounts}
@@ -43,7 +48,7 @@ export default function PortStatementSelectView({
           onStatement={onOpenStatement}
           statementDisabled={!statementFilterAccountId}
           resetLabel="مسح التواريخ"
-          statementButtonLabel={labels.statementOpenLabel || 'عرض كشف الحساب'}
+          statementButtonLabel={labels.statementOpenLabel || "عرض كشف الحساب"}
           accountLabel={accountLabel}
         />
         <PortStatementAccountPicker
@@ -52,7 +57,7 @@ export default function PortStatementSelectView({
           accounts={accounts}
           onSelectAccount={onSelectAccount}
           accountLabel={accountLabel}
-          hideSearch={sectionKey === 'transport-1'}
+          hideSearch={sectionKey === "transport-1"}
         />
       </div>
     </div>

@@ -1,7 +1,7 @@
 export default function EmptyTableRow({
   colSpan,
   message,
-  className = 'px-4 py-14 text-center text-slate-400',
+  className = "px-4 py-14 text-center text-slate-400",
 }) {
   return (
     <tr>

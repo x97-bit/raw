@@ -1,8 +1,11 @@
-import { REPORT_PORTS, REPORT_SPECIAL_ACCOUNTS } from '../../utils/reportsConfig';
+import {
+  REPORT_PORTS,
+  REPORT_SPECIAL_ACCOUNTS,
+} from "../../utils/reportsConfig";
 
 export function createEmptyTraderForm(overrides = {}) {
   return {
-    AccountName: '',
+    AccountName: "",
     AccountTypeID: 1,
     DefaultCurrencyID: 1,
     ...overrides,
@@ -14,22 +17,22 @@ export function buildTraderFormForPort(portId) {
 }
 
 export function getReportPortById(portId) {
-  return REPORT_PORTS.find((entry) => entry.id === portId) || null;
+  return REPORT_PORTS.find(entry => entry.id === portId) || null;
 }
 
 export function getReportSpecialAccountById(accountId) {
-  return REPORT_SPECIAL_ACCOUNTS.find((entry) => entry.id === accountId) || null;
+  return REPORT_SPECIAL_ACCOUNTS.find(entry => entry.id === accountId) || null;
 }
 
 export function buildReportRequestPath(action, portId, filters = {}) {
-  const from = filters.from || '';
-  const to = filters.to || '';
+  const from = filters.from || "";
+  const to = filters.to || "";
 
-  if (action === 'expenses') {
+  if (action === "expenses") {
     return `/reports/expenses/${portId}?${new URLSearchParams({ from, to }).toString()}`;
   }
 
-  if (action === 'profits') {
+  if (action === "profits") {
     return `/reports/profits?${new URLSearchParams({ port: portId, from, to }).toString()}`;
   }
 
@@ -37,10 +40,10 @@ export function buildReportRequestPath(action, portId, filters = {}) {
 }
 
 export function buildSpecialAccountReportRequestPath(accountId, filters = {}) {
-  const from = filters.from || '';
-  const to = filters.to || '';
+  const from = filters.from || "";
+  const to = filters.to || "";
 
-  if (accountId === 'haider') {
+  if (accountId === "haider") {
     return `/special/haider?${new URLSearchParams({ from, to }).toString()}`;
   }
 
@@ -48,13 +51,15 @@ export function buildSpecialAccountReportRequestPath(accountId, filters = {}) {
 }
 
 export function formatReportNumber(value) {
-  return value ? Number(value).toLocaleString('en-US') : '0';
+  return value ? Number(value).toLocaleString("en-US") : "0";
 }
 
 export function formatReportDate(value) {
-  return value?.split(' ')[0] || '-';
+  return value?.split(" ")[0] || "-";
 }
 
 export function getProfitTone(value) {
-  return (Number(value) || 0) >= 0 ? 'text-utility-success-text' : 'text-utility-danger-text';
+  return (Number(value) || 0) >= 0
+    ? "text-utility-success-text"
+    : "text-utility-danger-text";
 }

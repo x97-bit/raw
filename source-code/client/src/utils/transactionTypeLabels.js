@@ -1,51 +1,56 @@
-const INVOICE_LABEL = 'فاتورة';
-const RECEIPT_VOUCHER_LABEL = 'سند قبض';
-const DEBIT_NOTE_LABEL = 'سند إضافة';
-const EXPENSE_CHARGE_LABEL = 'مصروف محمل على التاجر';
-const TRANSPORT_INVOICE_LABEL = 'استحقاق نقل';
-const TRANSPORT_PAYMENT_LABEL = 'سند دفع';
-const TRANSPORT_INVOICE_REFERENCE_LABEL = 'رقم استحقاق النقل';
-const TRANSPORT_PAYMENT_REFERENCE_LABEL = 'رقم سند الدفع';
-const INVOICE_REFERENCE_LABEL = 'رقم الفاتورة';
-const PAYMENT_REFERENCE_LABEL = 'رقم سند القبض';
-const DEBIT_NOTE_REFERENCE_LABEL = 'رقم سند الإضافة';
-const GENERIC_REFERENCE_LABEL = 'رقم المرجع';
+const INVOICE_LABEL = "فاتورة";
+const RECEIPT_VOUCHER_LABEL = "سند قبض";
+const DEBIT_NOTE_LABEL = "سند إضافة";
+const EXPENSE_CHARGE_LABEL = "مصروف محمل على التاجر";
+const TRANSPORT_INVOICE_LABEL = "استحقاق نقل";
+const TRANSPORT_PAYMENT_LABEL = "سند دفع";
+const TRANSPORT_INVOICE_REFERENCE_LABEL = "رقم استحقاق النقل";
+const TRANSPORT_PAYMENT_REFERENCE_LABEL = "رقم سند الدفع";
+const INVOICE_REFERENCE_LABEL = "رقم الفاتورة";
+const PAYMENT_REFERENCE_LABEL = "رقم سند القبض";
+const DEBIT_NOTE_REFERENCE_LABEL = "رقم سند الإضافة";
+const GENERIC_REFERENCE_LABEL = "رقم المرجع";
 
 const INVOICE_ALIASES = [
-  'له',
+  "له",
   INVOICE_LABEL,
   TRANSPORT_INVOICE_LABEL,
-  'استحقاق',
-  'invoice',
-  'in',
-  'dr',
+  "استحقاق",
+  "invoice",
+  "in",
+  "dr",
 ];
 
 const RECEIPT_VOUCHER_ALIASES = [
-  'عليه',
-  'سند',
-  'سند صرف',
-  'سند دفع',
+  "عليه",
+  "سند",
+  "سند صرف",
+  "سند دفع",
   RECEIPT_VOUCHER_LABEL,
   TRANSPORT_PAYMENT_LABEL,
-  'payment',
-  'receipt',
-  'voucher',
-  'out',
-  'cr',
+  "payment",
+  "receipt",
+  "voucher",
+  "out",
+  "cr",
 ];
 
 function normalizeRecordType(value) {
-  return String(value ?? '').trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function isDebitNoteRecordType(value) {
   const normalized = normalizeRecordType(value);
-  return normalized === 'debit-note' || String(value ?? '').trim() === DEBIT_NOTE_LABEL;
+  return (
+    normalized === "debit-note" ||
+    String(value ?? "").trim() === DEBIT_NOTE_LABEL
+  );
 }
 
 function isExpenseChargeRecordType(value) {
-  return normalizeRecordType(value) === 'expense-charge';
+  return normalizeRecordType(value) === "expense-charge";
 }
 
 function getCustomRecordTypeLabel(recordType) {
@@ -61,14 +66,20 @@ function getCustomReferenceLabel(recordType) {
 }
 
 export function isTransportSectionKey(sectionKey) {
-  return String(sectionKey || '').trim().toLowerCase() === 'transport-1';
+  return (
+    String(sectionKey || "")
+      .trim()
+      .toLowerCase() === "transport-1"
+  );
 }
 
 function isTransportTransactionContext(options = {}) {
   return (
-    isTransportSectionKey(options.sectionKey)
-    || String(options.portId || '').trim().toLowerCase() === 'transport-1'
-    || String(options.accountType || '').trim() === '2'
+    isTransportSectionKey(options.sectionKey) ||
+    String(options.portId || "")
+      .trim()
+      .toLowerCase() === "transport-1" ||
+    String(options.accountType || "").trim() === "2"
   );
 }
 
@@ -95,10 +106,12 @@ export function getTransactionTypeLabel(value, transTypeId, options = {}) {
   const customLabel = getCustomRecordTypeLabel(options.recordType);
   if (customLabel) return customLabel;
 
-  if (transTypeId === 1 || transTypeId === '1') return labels.invoice;
-  if (transTypeId === 2 || transTypeId === '2') return labels.payment;
+  if (transTypeId === 1 || transTypeId === "1") return labels.invoice;
+  if (transTypeId === 2 || transTypeId === "2") return labels.payment;
 
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
   if (INVOICE_ALIASES.includes(normalized)) {
     return labels.invoice;
@@ -108,7 +121,7 @@ export function getTransactionTypeLabel(value, transTypeId, options = {}) {
     return labels.payment;
   }
 
-  return value || '-';
+  return value || "-";
 }
 
 export function getTransactionReferenceLabel(transTypeId, options = {}) {
@@ -116,7 +129,7 @@ export function getTransactionReferenceLabel(transTypeId, options = {}) {
   const customReferenceLabel = getCustomReferenceLabel(options.recordType);
   if (customReferenceLabel) return customReferenceLabel;
 
-  return transTypeId === 2 || transTypeId === '2'
+  return transTypeId === 2 || transTypeId === "2"
     ? labels.paymentReference
     : labels.invoiceReference;
 }

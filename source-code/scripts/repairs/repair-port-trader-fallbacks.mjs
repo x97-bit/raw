@@ -1,28 +1,28 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import { buildMySqlConnectionOptions } from '../shared/scriptMysqlConfig.mjs';
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+import { buildMySqlConnectionOptions } from "../shared/scriptMysqlConfig.mjs";
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const BACKUP_DIR = path.join(REPO_ROOT, 'database', 'backups');
-const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const BACKUP_DIR = path.join(REPO_ROOT, "database", "backups");
+const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 
 const FIXES = [
   {
-    portId: 'port-1',
-    brokenName: '???? ???? ???????? ????-????',
-    fixedName: 'حساب قديم السعودية بدون-معرف',
+    portId: "port-1",
+    brokenName: "???? ???? ???????? ????-????",
+    fixedName: "حساب قديم السعودية بدون-معرف",
   },
   {
-    portId: 'port-3',
-    brokenName: '???? ???? ?????? 71',
-    fixedName: 'حساب قديم القائم 71',
+    portId: "port-3",
+    brokenName: "???? ???? ?????? 71",
+    fixedName: "حساب قديم القائم 71",
   },
 ];
 
@@ -31,7 +31,9 @@ async function ensureDir(dir) {
 }
 
 async function main() {
-  const conn = await mysql.createConnection(buildMySqlConnectionOptions(process.env.DATABASE_URL));
+  const conn = await mysql.createConnection(
+    buildMySqlConnectionOptions(process.env.DATABASE_URL)
+  );
 
   try {
     const matched = [];
@@ -62,12 +64,15 @@ async function main() {
     }
 
     if (!matched.length) {
-      console.log('No matching broken fallback trader accounts found.');
+      console.log("No matching broken fallback trader accounts found.");
       return;
     }
 
     await ensureDir(BACKUP_DIR);
-    const backupPath = path.join(BACKUP_DIR, `port-trader-fallback-fix-${stamp}.json`);
+    const backupPath = path.join(
+      BACKUP_DIR,
+      `port-trader-fallback-fix-${stamp}.json`
+    );
     await fs.writeFile(
       backupPath,
       JSON.stringify(
@@ -81,14 +86,14 @@ async function main() {
         null,
         2
       ),
-      'utf8'
+      "utf8"
     );
 
     for (const item of matched) {
-      await conn.query(
-        'UPDATE accounts SET name = ? WHERE id = ?',
-        [item.fixedName, item.account.id]
-      );
+      await conn.query("UPDATE accounts SET name = ? WHERE id = ?", [
+        item.fixedName,
+        item.account.id,
+      ]);
     }
 
     const [remaining] = await conn.query(
@@ -100,9 +105,9 @@ async function main() {
     const [updated] = await conn.query(
       `SELECT id, name, portId
        FROM accounts
-       WHERE id IN (${matched.map(() => '?').join(',')})
+       WHERE id IN (${matched.map(() => "?").join(",")})
        ORDER BY id`,
-      matched.map((item) => item.account.id)
+      matched.map(item => item.account.id)
     );
 
     console.log(
@@ -121,7 +126,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error);
   process.exitCode = 1;
 });

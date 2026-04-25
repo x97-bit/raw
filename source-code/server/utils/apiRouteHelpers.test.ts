@@ -12,14 +12,16 @@ import {
 
 describe("apiRouteHelpers", () => {
   it("maps legacy account fields", () => {
-    expect(mapAccount({
-      id: 9,
-      name: "Test Account",
-      accountType: 4,
-      portId: "QAIM",
-      phone: "123",
-      notes: "note",
-    })).toMatchObject({
+    expect(
+      mapAccount({
+        id: 9,
+        name: "Test Account",
+        accountType: 4,
+        portId: "QAIM",
+        phone: "123",
+        notes: "note",
+      })
+    ).toMatchObject({
       AccountID: 9,
       AccountName: "Test Account",
       AccountTypeID: 4,
@@ -30,27 +32,35 @@ describe("apiRouteHelpers", () => {
   });
 
   it("maps transaction names and profit fields", () => {
-    expect(mapTransaction({
-      id: 11,
-      refNo: "INV-11",
-      direction: "IN",
-      transDate: "2026-01-01",
-      accountId: 5,
-      currency: "USD",
-      amountUsd: "150",
-      costUsd: "100",
-      amountIqd: "0",
-      costIqd: "0",
-      feeUsd: "5",
-      syrCus: "0",
-      portId: "SA",
-      accountType: "4",
-      createdBy: 1,
-      notes: "ok",
-      traderNote: "t",
-      recordType: "shipment",
-      companyName: "ACME",
-    }, "Driver", "11A", "Goods", "Baghdad")).toMatchObject({
+    expect(
+      mapTransaction(
+        {
+          id: 11,
+          refNo: "INV-11",
+          direction: "IN",
+          transDate: "2026-01-01",
+          accountId: 5,
+          currency: "USD",
+          amountUsd: "150",
+          costUsd: "100",
+          amountIqd: "0",
+          costIqd: "0",
+          feeUsd: "5",
+          syrCus: "0",
+          portId: "SA",
+          accountType: "4",
+          createdBy: 1,
+          notes: "ok",
+          traderNote: "t",
+          recordType: "shipment",
+          companyName: "ACME",
+        },
+        "Driver",
+        "11A",
+        "Goods",
+        "Baghdad"
+      )
+    ).toMatchObject({
       TransTypeID: 1,
       TransTypeName: "فاتورة",
       DriverName: "Driver",
@@ -62,24 +72,26 @@ describe("apiRouteHelpers", () => {
   });
 
   it("maps debit-note transactions as a separate display type without profit", () => {
-    expect(mapTransaction({
-      id: 12,
-      refNo: "DBN-12",
-      direction: "IN",
-      transDate: "2026-01-02",
-      accountId: 5,
-      currency: "USD",
-      amountUsd: "150",
-      costUsd: "0",
-      amountIqd: "0",
-      costIqd: "0",
-      feeUsd: "0",
-      syrCus: "0",
-      portId: "SA",
-      accountType: "4",
-      createdBy: 1,
-      recordType: "debit-note",
-    })).toMatchObject({
+    expect(
+      mapTransaction({
+        id: 12,
+        refNo: "DBN-12",
+        direction: "IN",
+        transDate: "2026-01-02",
+        accountId: 5,
+        currency: "USD",
+        amountUsd: "150",
+        costUsd: "0",
+        amountIqd: "0",
+        costIqd: "0",
+        feeUsd: "0",
+        syrCus: "0",
+        portId: "SA",
+        accountType: "4",
+        createdBy: 1,
+        recordType: "debit-note",
+      })
+    ).toMatchObject({
       TransTypeID: 3,
       TransTypeName: "سند إضافة",
       ProfitUSD: 0,

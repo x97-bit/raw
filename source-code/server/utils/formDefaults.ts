@@ -59,7 +59,8 @@ type BuildTransactionFormDefaultsInput = {
   recentTransaction?: Nullable<RecentTransactionSource>;
 };
 
-const hasValue = (value: unknown) => value !== undefined && value !== null && value !== '';
+const hasValue = (value: unknown) =>
+  value !== undefined && value !== null && value !== "";
 
 const firstDefined = <T>(...values: Array<Nullable<T>>): T | null => {
   for (const value of values) {
@@ -77,19 +78,19 @@ export function buildTransactionFormDefaults({
   const currency = firstDefined(
     accountDefaults?.defaultCurrency,
     recentTransaction?.Currency,
-    accountCurrency,
+    accountCurrency
   );
 
   const govId = firstDefined(
     accountDefaults?.defaultGov?.id,
     routeDefaults?.gov?.id,
-    recentTransaction?.GovID,
+    recentTransaction?.GovID
   );
 
   const govName = firstDefined(
     accountDefaults?.defaultGov?.name,
     routeDefaults?.gov?.name,
-    recentTransaction?.Governorate,
+    recentTransaction?.Governorate
   );
 
   return {
@@ -110,7 +111,10 @@ export function buildTransactionFormDefaults({
     AmountUSD: firstDefined(routeDefaults?.defaultAmountUsd),
     CostIQD: firstDefined(routeDefaults?.defaultCostIqd),
     AmountIQD: firstDefined(routeDefaults?.defaultAmountIqd),
-    FeeUSD: firstDefined(accountDefaults?.defaultFeeUsd, routeDefaults?.defaultFeeUsd),
+    FeeUSD: firstDefined(
+      accountDefaults?.defaultFeeUsd,
+      routeDefaults?.defaultFeeUsd
+    ),
     SyrCus: firstDefined(accountDefaults?.defaultSyrCus),
     CarQty: firstDefined(accountDefaults?.defaultCarQty),
     TransPrice: firstDefined(routeDefaults?.defaultTransPrice),

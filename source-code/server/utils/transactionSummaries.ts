@@ -1,22 +1,48 @@
-import { getAbsoluteAmount, getSignedDirectionAmount, isInvoiceDirection, isPaymentDirection } from "./direction";
+import {
+  getAbsoluteAmount,
+  getSignedDirectionAmount,
+  isInvoiceDirection,
+  isPaymentDirection,
+} from "./direction";
 
 type TransactionLike = Record<string, unknown>;
 
-const NON_SHIPMENT_DEBIT_RECORD_TYPES = new Set(["expense-charge", "debit-note"]);
+const NON_SHIPMENT_DEBIT_RECORD_TYPES = new Set([
+  "expense-charge",
+  "debit-note",
+]);
 
 function getTransactionDirectionValue(transaction: TransactionLike): unknown {
-  if (transaction.direction !== undefined && transaction.direction !== null && transaction.direction !== "") {
+  if (
+    transaction.direction !== undefined &&
+    transaction.direction !== null &&
+    transaction.direction !== ""
+  ) {
     return transaction.direction;
   }
-  if (transaction.TransTypeID === 1 || transaction.TransTypeID === "1" || transaction.TransTypeID === 3 || transaction.TransTypeID === "3") {
+  if (
+    transaction.TransTypeID === 1 ||
+    transaction.TransTypeID === "1" ||
+    transaction.TransTypeID === 3 ||
+    transaction.TransTypeID === "3"
+  ) {
     return "IN";
   }
-  if (transaction.TransTypeID === 2 || transaction.TransTypeID === "2") return "OUT";
+  if (transaction.TransTypeID === 2 || transaction.TransTypeID === "2")
+    return "OUT";
   return transaction.TransTypeName;
 }
 
-function getAmountValue(transaction: TransactionLike, rawKey: string, mappedKey: string): unknown {
-  if (transaction[rawKey] !== undefined && transaction[rawKey] !== null && transaction[rawKey] !== "") {
+function getAmountValue(
+  transaction: TransactionLike,
+  rawKey: string,
+  mappedKey: string
+): unknown {
+  if (
+    transaction[rawKey] !== undefined &&
+    transaction[rawKey] !== null &&
+    transaction[rawKey] !== ""
+  ) {
     return transaction[rawKey];
   }
   return transaction[mappedKey];
@@ -24,7 +50,9 @@ function getAmountValue(transaction: TransactionLike, rawKey: string, mappedKey:
 
 function getRecordTypeValue(transaction: TransactionLike): string {
   const rawValue = transaction.recordType ?? transaction.RecordType;
-  return String(rawValue ?? "").trim().toLowerCase();
+  return String(rawValue ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function isShipmentLikeDebitRecord(transaction: TransactionLike): boolean {
@@ -38,6 +66,7 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
     paymentCount: 0,
     shipmentCount: 0,
     totalWeight: 0,
+    totalMeters: 0,
     totalInvoicesUSD: 0,
     totalInvoicesIQD: 0,
     totalPaymentsUSD: 0,
@@ -53,12 +82,27 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
 
   for (const transaction of transactions || []) {
     const direction = getTransactionDirectionValue(transaction);
-    const amountUsd = getAbsoluteAmount(getAmountValue(transaction, "amountUsd", "AmountUSD"));
-    const amountIqd = getAbsoluteAmount(getAmountValue(transaction, "amountIqd", "AmountIQD"));
-    const costUsd = getAbsoluteAmount(getAmountValue(transaction, "costUsd", "CostUSD"));
-    const costIqd = getAbsoluteAmount(getAmountValue(transaction, "costIqd", "CostIQD"));
-    const feeUsd = getAbsoluteAmount(getAmountValue(transaction, "feeUsd", "FeeUSD"));
-    const weight = getAbsoluteAmount(getAmountValue(transaction, "weight", "Weight"));
+    const amountUsd = getAbsoluteAmount(
+      getAmountValue(transaction, "amountUsd", "AmountUSD")
+    );
+    const amountIqd = getAbsoluteAmount(
+      getAmountValue(transaction, "amountIqd", "AmountIQD")
+    );
+    const costUsd = getAbsoluteAmount(
+      getAmountValue(transaction, "costUsd", "CostUSD")
+    );
+    const costIqd = getAbsoluteAmount(
+      getAmountValue(transaction, "costIqd", "CostIQD")
+    );
+    const feeUsd = getAbsoluteAmount(
+      getAmountValue(transaction, "feeUsd", "FeeUSD")
+    );
+    const weight = getAbsoluteAmount(
+      getAmountValue(transaction, "weight", "Weight")
+    );
+    const meters = getAbsoluteAmount(
+      getAmountValue(transaction, "meters", "Meters")
+    );
 
     if (isInvoiceDirection(direction)) {
       totals.invoiceCount += 1;
@@ -68,6 +112,7 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
       if (isShipmentLikeDebitRecord(transaction)) {
         totals.shipmentCount += 1;
         totals.totalWeight += weight;
+        totals.totalMeters += meters;
         totals.totalCostUSD += costUsd;
         totals.totalCostIQD += costIqd;
         totals.totalFeeUSD += feeUsd;
@@ -87,11 +132,13 @@ export function calculateTransactionTotals(transactions: TransactionLike[]) {
   return totals;
 }
 
-export function addRunningBalances<T extends TransactionLike>(transactions: T[]) {
+export function addRunningBalances<T extends TransactionLike>(
+  transactions: T[]
+) {
   let runningUSD = 0;
   let runningIQD = 0;
 
-  return (transactions || []).map((transaction) => {
+  return (transactions || []).map(transaction => {
     const direction = getTransactionDirectionValue(transaction);
     const amountUsd = getAmountValue(transaction, "amountUsd", "AmountUSD");
     const amountIqd = getAmountValue(transaction, "amountIqd", "AmountIQD");

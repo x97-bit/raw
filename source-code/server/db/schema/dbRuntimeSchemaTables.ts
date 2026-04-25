@@ -1,8 +1,23 @@
-import { ensureColumn, type RuntimeSchemaConnection } from "./dbRuntimeSchemaHelpers";
+import {
+  ensureColumn,
+  type RuntimeSchemaConnection,
+} from "./dbRuntimeSchemaHelpers";
 
-export async function ensureRuntimeSupportTables(connection: RuntimeSchemaConnection) {
-  await ensureColumn(connection, "field_config", "display_label", "`display_label` VARCHAR(255) NULL AFTER `sort_order`");
-  await ensureColumn(connection, "app_users", "profile_image", "`profile_image` LONGTEXT NULL AFTER `name`");
+export async function ensureRuntimeSupportTables(
+  connection: RuntimeSchemaConnection
+) {
+  await ensureColumn(
+    connection,
+    "field_config",
+    "display_label",
+    "`display_label` VARCHAR(255) NULL AFTER `sort_order`"
+  );
+  await ensureColumn(
+    connection,
+    "app_users",
+    "profile_image",
+    "`profile_image` LONGTEXT NULL AFTER `name`"
+  );
 
   await connection.query(`
     CREATE TABLE IF NOT EXISTS companies (
@@ -99,8 +114,28 @@ export async function ensureRuntimeSupportTables(connection: RuntimeSchemaConnec
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  await ensureColumn(connection, "transactions", "company_id", "`company_id` INT NULL AFTER `company_name`");
-  await ensureColumn(connection, "expenses", "charge_target", "`charge_target` VARCHAR(20) NOT NULL DEFAULT 'port' AFTER `port_id`");
-  await ensureColumn(connection, "expenses", "account_id", "`account_id` INT NULL AFTER `charge_target`");
-  await ensureColumn(connection, "expenses", "account_name", "`account_name` VARCHAR(255) NULL AFTER `account_id`");
+  await ensureColumn(
+    connection,
+    "transactions",
+    "company_id",
+    "`company_id` INT NULL AFTER `company_name`"
+  );
+  await ensureColumn(
+    connection,
+    "expenses",
+    "charge_target",
+    "`charge_target` VARCHAR(20) NOT NULL DEFAULT 'port' AFTER `port_id`"
+  );
+  await ensureColumn(
+    connection,
+    "expenses",
+    "account_id",
+    "`account_id` INT NULL AFTER `charge_target`"
+  );
+  await ensureColumn(
+    connection,
+    "expenses",
+    "account_name",
+    "`account_name` VARCHAR(255) NULL AFTER `account_id`"
+  );
 }

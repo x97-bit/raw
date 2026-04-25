@@ -1,4 +1,7 @@
-import { APP_ACCESS_TOKEN_TTL_SECONDS, APP_REFRESH_COOKIE_NAME } from "@shared/const";
+import {
+  APP_ACCESS_TOKEN_TTL_SECONDS,
+  APP_REFRESH_COOKIE_NAME,
+} from "@shared/const";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { Request, Response, Router } from "express";
@@ -16,8 +19,8 @@ import {
 import { getAppRefreshCookieOptions } from "../../_core/cookies";
 import { respondRouteError } from "../../_core/routeResponses";
 import { validateInput } from "../../_core/requestValidation";
-import { getDb } from "../../db";
-import type { AppUserRecord } from "../../dbTypes";
+import { getDb } from "../../db/db";
+import type { AppUserRecord } from "../../db/schema/dbTypes";
 import {
   authRateLimit,
   CHANGE_PASSWORD_VALIDATION_MESSAGE,
@@ -30,9 +33,12 @@ import {
   toLegacyUserShape,
 } from "./shared";
 
-const INVALID_CREDENTIALS_ERROR = "\u0627\u0633\u0645 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0623\u0648 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u063a\u064a\u0631 \u0635\u062d\u064a\u062d\u0629";
-const ACCOUNT_DISABLED_ERROR = "\u0627\u0644\u062d\u0633\u0627\u0628 \u0645\u0639\u0637\u0644";
-const SESSION_EXPIRED_ERROR = "\u0627\u0646\u062a\u0647\u062a \u0627\u0644\u062c\u0644\u0633\u0629";
+const INVALID_CREDENTIALS_ERROR =
+  "\u0627\u0633\u0645 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0623\u0648 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u063a\u064a\u0631 \u0635\u062d\u064a\u062d\u0629";
+const ACCOUNT_DISABLED_ERROR =
+  "\u0627\u0644\u062d\u0633\u0627\u0628 \u0645\u0639\u0637\u0644";
+const SESSION_EXPIRED_ERROR =
+  "\u0627\u0646\u062a\u0647\u062a \u0627\u0644\u062c\u0644\u0633\u0629";
 
 function clearRefreshTokenCookie(req: Request, res: Response) {
   res.clearCookie(APP_REFRESH_COOKIE_NAME, {
@@ -41,11 +47,22 @@ function clearRefreshTokenCookie(req: Request, res: Response) {
   });
 }
 
-async function issueAuthSession(req: Request, res: Response, user: AppUserRecord) {
+async function issueAuthSession(
+  req: Request,
+  res: Response,
+  user: AppUserRecord
+) {
   const token = await signToken({ userId: user.id, role: user.role });
-  const refreshToken = await signRefreshToken({ userId: user.id, role: user.role });
+  const refreshToken = await signRefreshToken({
+    userId: user.id,
+    role: user.role,
+  });
 
-  res.cookie(APP_REFRESH_COOKIE_NAME, refreshToken, getAppRefreshCookieOptions(req));
+  res.cookie(
+    APP_REFRESH_COOKIE_NAME,
+    refreshToken,
+    getAppRefreshCookieOptions(req)
+  );
 
   const { password: _password, ...safeUser } = user;
   return {
@@ -56,33 +73,45 @@ async function issueAuthSession(req: Request, res: Response, user: AppUserRecord
 }
 
 export function registerAuthRoutes(router: Router) {
-  router.post("/auth/login", authRateLimit, async (req: Request, res: Response) => {
-    try {
-      const { username, password } = validateInput(loginSchema, req.body, LOGIN_VALIDATION_MESSAGE);
-      const normalizedUsername = username.trim();
+  router.post(
+    "/auth/login",
+    authRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const { username, password } = validateInput(
+          loginSchema,
+          req.body,
+          LOGIN_VALIDATION_MESSAGE
+        );
+        const normalizedUsername = username.trim();
 
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const [user] = await db.select().from(appUsers).where(eq(appUsers.username, normalizedUsername)).limit(1);
-      if (!user) {
-        return res.status(401).json({ error: INVALID_CREDENTIALS_ERROR });
+        const [user] = await db
+          .select()
+          .from(appUsers)
+          .where(eq(appUsers.username, normalizedUsername))
+          .limit(1);
+        if (!user) {
+          return res.status(401).json({ error: INVALID_CREDENTIALS_ERROR });
+        }
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) {
+          return res.status(401).json({ error: INVALID_CREDENTIALS_ERROR });
+        }
+
+        if (!user.active) {
+          return res.status(403).json({ error: ACCOUNT_DISABLED_ERROR });
+        }
+
+        return res.json(await issueAuthSession(req, res, user));
+      } catch (error) {
+        return respondRouteError(res, error);
       }
-
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        return res.status(401).json({ error: INVALID_CREDENTIALS_ERROR });
-      }
-
-      if (!user.active) {
-        return res.status(403).json({ error: ACCOUNT_DISABLED_ERROR });
-      }
-
-      return res.json(await issueAuthSession(req, res, user));
-    } catch (error) {
-      return respondRouteError(res, error);
     }
-  });
+  );
 
   router.post("/auth/refresh", async (req: Request, res: Response) => {
     try {
@@ -125,51 +154,82 @@ export function registerAuthRoutes(router: Router) {
     return res.json(toLegacyUserShape(safeUser));
   });
 
-  router.put("/auth/profile", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      const appUser = requireAppUser(req);
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.put(
+    "/auth/profile",
+    authMiddleware,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        const appUser = requireAppUser(req);
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const payload = validateInput(profileUpdateSchema, req.body, PROFILE_UPDATE_VALIDATION_MESSAGE);
+        const payload = validateInput(
+          profileUpdateSchema,
+          req.body,
+          PROFILE_UPDATE_VALIDATION_MESSAGE
+        );
 
-      await db
-        .update(appUsers)
-        .set({ profileImage: payload.profileImage ?? null })
-        .where(eq(appUsers.id, appUser.id));
+        await db
+          .update(appUsers)
+          .set({ profileImage: payload.profileImage ?? null })
+          .where(eq(appUsers.id, appUser.id));
 
-      const [updatedUser] = await db.select().from(appUsers).where(eq(appUsers.id, appUser.id)).limit(1);
-      if (!updatedUser) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
+        const [updatedUser] = await db
+          .select()
+          .from(appUsers)
+          .where(eq(appUsers.id, appUser.id))
+          .limit(1);
+        if (!updatedUser) {
+          return res.status(404).json({ error: "المستخدم غير موجود" });
+        }
+
+        const { password: _password, ...safeUser } = updatedUser;
+        return res.json({
+          message: payload.profileImage
+            ? "تم تحديث الصورة الشخصية"
+            : "تم حذف الصورة الشخصية",
+          user: toLegacyUserShape(safeUser),
+        });
+      } catch (error) {
+        return respondRouteError(res, error);
       }
-
-      const { password: _password, ...safeUser } = updatedUser;
-      return res.json({
-        message: payload.profileImage ? "تم تحديث الصورة الشخصية" : "تم حذف الصورة الشخصية",
-        user: toLegacyUserShape(safeUser),
-      });
-    } catch (error) {
-      return respondRouteError(res, error);
     }
-  });
+  );
 
-  router.post("/auth/change-password", authMiddleware, passwordRateLimit, async (req: AuthRequest, res: Response) => {
-    try {
-      const appUser = requireAppUser(req);
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.post(
+    "/auth/change-password",
+    authMiddleware,
+    passwordRateLimit,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        const appUser = requireAppUser(req);
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const payload = validateInput(changePasswordSchema, req.body, CHANGE_PASSWORD_VALIDATION_MESSAGE);
-      const valid = await bcrypt.compare(payload.currentPassword, appUser.password);
-      if (!valid) {
-        return res.status(400).json({ error: "كلمة المرور الحالية غير صحيحة" });
+        const payload = validateInput(
+          changePasswordSchema,
+          req.body,
+          CHANGE_PASSWORD_VALIDATION_MESSAGE
+        );
+        const valid = await bcrypt.compare(
+          payload.currentPassword,
+          appUser.password
+        );
+        if (!valid) {
+          return res
+            .status(400)
+            .json({ error: "كلمة المرور الحالية غير صحيحة" });
+        }
+
+        const hashed = await bcrypt.hash(payload.newPassword, 10);
+        await db
+          .update(appUsers)
+          .set({ password: hashed })
+          .where(eq(appUsers.id, appUser.id));
+        return res.json({ message: "تم تغيير كلمة المرور" });
+      } catch (error) {
+        return respondRouteError(res, error);
       }
-
-      const hashed = await bcrypt.hash(payload.newPassword, 10);
-      await db.update(appUsers).set({ password: hashed }).where(eq(appUsers.id, appUser.id));
-      return res.json({ message: "تم تغيير كلمة المرور" });
-    } catch (error) {
-      return respondRouteError(res, error);
     }
-  });
+  );
 }

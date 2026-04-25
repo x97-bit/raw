@@ -9,7 +9,9 @@ export function hasBodyValue(value: unknown) {
 }
 
 export function hasAnyBodyKey(body: Record<string, any>, keys: string[]) {
-  return keys.some((key) => Object.prototype.hasOwnProperty.call(body ?? {}, key));
+  return keys.some(key =>
+    Object.prototype.hasOwnProperty.call(body ?? {}, key)
+  );
 }
 
 export function pickBodyField(body: Record<string, any>, ...keys: string[]) {
@@ -19,7 +21,10 @@ export function pickBodyField(body: Record<string, any>, ...keys: string[]) {
   return undefined;
 }
 
-export function normalizeText(value: unknown, emptyValue: string | null = null) {
+export function normalizeText(
+  value: unknown,
+  emptyValue: string | null = null
+) {
   if (!hasBodyValue(value)) return emptyValue;
   const normalized = String(value).trim();
   return normalized || emptyValue;
@@ -45,16 +50,22 @@ export function withinDateRange(dateValue: string, from?: string, to?: string) {
   return true;
 }
 
-export function sortByDateDesc<T extends { TransDate?: string; id?: number }>(rows: T[]) {
+export function sortByDateDesc<T extends { TransDate?: string; id?: number }>(
+  rows: T[]
+) {
   return [...rows].sort((a, b) => {
-    const dateCompare = String(a.TransDate || "").localeCompare(String(b.TransDate || ""));
+    const dateCompare = String(a.TransDate || "").localeCompare(
+      String(b.TransDate || "")
+    );
     if (dateCompare !== 0) return dateCompare;
     return Number(a.id || 0) - Number(b.id || 0);
   });
 }
 
 export function getDefaultSpecialAccountName(type: string) {
-  if (type === "haider") return "\u062D\u064A\u062F\u0631 \u0634\u0631\u0643\u0629 \u0627\u0644\u0623\u0646\u0648\u0627\u0631";
-  if (type === "partnership" || type === "yaser") return "\u064A\u0627\u0633\u0631 \u0639\u0627\u062F\u0644";
+  if (type === "haider")
+    return "\u062D\u064A\u062F\u0631 \u0634\u0631\u0643\u0629 \u0627\u0644\u0623\u0646\u0648\u0627\u0631";
+  if (type === "partnership" || type === "yaser")
+    return "\u064A\u0627\u0633\u0631 \u0639\u0627\u062F\u0644";
   return "";
 }

@@ -5,6 +5,7 @@ This is the saved, proven workflow for importing the old `AlrawiApp` JSON export
 ## When to use this
 
 Use this runbook when:
+
 - the old export file is `AlrawiApp_all_data (1).json`
 - the app is deployed on the VPS
 - you want to import into the live MySQL database behind `alrawiapp.com`
@@ -56,6 +57,7 @@ bash /root/run-legacy-import-on-vps.sh
 ```
 
 What this helper does:
+
 - loads `/etc/alrawi/alrawi.env`
 - checks whether production is empty or non-empty
 - imports directly into production if it is empty
@@ -71,7 +73,7 @@ curl -s http://127.0.0.1:3000/healthz
 Expected `healthz` shape:
 
 ```json
-{"ok":true,"environment":"production"}
+{ "ok": true, "environment": "production" }
 ```
 
 ## 5. Verify imported row counts
@@ -81,6 +83,7 @@ mysql -u root -D alrawi_db -e "SELECT COUNT(*) AS accounts FROM accounts; SELECT
 ```
 
 Expected values from the current legacy export:
+
 - `accounts = 94`
 - `transactions = 1199`
 - `debts = 208`

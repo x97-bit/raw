@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { addRunningBalances, calculateTransactionTotals } from "../../utils/transactionSummaries";
+import {
+  addRunningBalances,
+  calculateTransactionTotals,
+} from "../../utils/transactionSummaries";
 
 describe("Profit Calculation Logic", () => {
   it("calculates invoice profit from amount minus cost", () => {
@@ -98,16 +101,17 @@ describe("Trial Balance Opening/Closing Balance Logic", () => {
     accountId: number,
     allTxns: Transaction[],
     startDate: string | null,
-    endDate: string | null,
+    endDate: string | null
   ) {
-    const accAllTxns = allTxns.filter((t) => t.accountId === accountId);
+    const accAllTxns = allTxns.filter(t => t.accountId === accountId);
     const priorTxns = startDate
-      ? accAllTxns.filter((t) => t.transDate < startDate)
+      ? accAllTxns.filter(t => t.transDate < startDate)
       : [];
 
     let periodTxns = accAllTxns;
-    if (startDate) periodTxns = periodTxns.filter((t) => t.transDate >= startDate);
-    if (endDate) periodTxns = periodTxns.filter((t) => t.transDate <= endDate);
+    if (startDate)
+      periodTxns = periodTxns.filter(t => t.transDate >= startDate);
+    if (endDate) periodTxns = periodTxns.filter(t => t.transDate <= endDate);
 
     const openingTotals = calculateTransactionTotals(priorTxns);
     const periodTotals = calculateTransactionTotals(periodTxns);
@@ -122,9 +126,24 @@ describe("Trial Balance Opening/Closing Balance Logic", () => {
 
   it("computes opening balance from prior transactions", () => {
     const txns: Transaction[] = [
-      { direction: "IN", amountUsd: 1000, transDate: "2025-01-15", accountId: 1 },
-      { direction: "OUT", amountUsd: -300, transDate: "2025-01-20", accountId: 1 },
-      { direction: "DR", amountUsd: 500, transDate: "2025-02-10", accountId: 1 },
+      {
+        direction: "IN",
+        amountUsd: 1000,
+        transDate: "2025-01-15",
+        accountId: 1,
+      },
+      {
+        direction: "OUT",
+        amountUsd: -300,
+        transDate: "2025-01-20",
+        accountId: 1,
+      },
+      {
+        direction: "DR",
+        amountUsd: 500,
+        transDate: "2025-02-10",
+        accountId: 1,
+      },
     ];
     const result = computeTrialBalanceRow(1, txns, "2025-02-01", "2025-02-28");
 
@@ -136,7 +155,12 @@ describe("Trial Balance Opening/Closing Balance Logic", () => {
 
   it("has zero opening balance when no start date", () => {
     const txns: Transaction[] = [
-      { direction: "IN", amountUsd: 1000, transDate: "2025-01-15", accountId: 1 },
+      {
+        direction: "IN",
+        amountUsd: 1000,
+        transDate: "2025-01-15",
+        accountId: 1,
+      },
     ];
     const result = computeTrialBalanceRow(1, txns, null, null);
 
@@ -147,8 +171,18 @@ describe("Trial Balance Opening/Closing Balance Logic", () => {
 
   it("handles negative closing balance", () => {
     const txns: Transaction[] = [
-      { direction: "CR", amountUsd: 1000, transDate: "2025-01-15", accountId: 1 },
-      { direction: "IN", amountUsd: 300, transDate: "2025-02-10", accountId: 1 },
+      {
+        direction: "CR",
+        amountUsd: 1000,
+        transDate: "2025-01-15",
+        accountId: 1,
+      },
+      {
+        direction: "IN",
+        amountUsd: 300,
+        transDate: "2025-02-10",
+        accountId: 1,
+      },
     ];
     const result = computeTrialBalanceRow(1, txns, "2025-02-01", "2025-02-28");
 
@@ -159,8 +193,18 @@ describe("Trial Balance Opening/Closing Balance Logic", () => {
 
   it("separates accounts correctly", () => {
     const txns: Transaction[] = [
-      { direction: "IN", amountUsd: 1000, transDate: "2025-01-15", accountId: 1 },
-      { direction: "DR", amountUsd: 2000, transDate: "2025-01-15", accountId: 2 },
+      {
+        direction: "IN",
+        amountUsd: 1000,
+        transDate: "2025-01-15",
+        accountId: 1,
+      },
+      {
+        direction: "DR",
+        amountUsd: 2000,
+        transDate: "2025-01-15",
+        accountId: 2,
+      },
     ];
     const result1 = computeTrialBalanceRow(1, txns, null, null);
     const result2 = computeTrialBalanceRow(2, txns, null, null);

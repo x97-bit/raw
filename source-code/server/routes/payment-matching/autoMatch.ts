@@ -2,23 +2,31 @@ import { Router, Response } from "express";
 import { sql } from "drizzle-orm";
 import { paymentMatching } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
-import { getDb } from "../../db";
+import { getDb } from "../../db/db";
 import {
   AutoMatchInvoiceRow,
   AutoMatchPaymentRow,
   buildAutoMatchAllocations,
 } from "../../utils/paymentMatchingAutoMatch";
-import { AUTO_MATCH_NOTE, buildAutoMatchSuccessMessage, heavyJobRateLimit } from "./mutationShared";
+import {
+  AUTO_MATCH_NOTE,
+  buildAutoMatchSuccessMessage,
+  heavyJobRateLimit,
+} from "./mutationShared";
 
 export { buildAutoMatchAllocations } from "../../utils/paymentMatchingAutoMatch";
 
 export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
-  router.post("/payment-matching/auto-match-all", authMiddleware, heavyJobRateLimit, async (_req: AuthRequest, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.post(
+    "/payment-matching/auto-match-all",
+    authMiddleware,
+    heavyJobRateLimit,
+    async (_req: AuthRequest, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const payments: any[] = await db.execute(sql`
+        const payments: any[] = await db.execute(sql`
         SELECT
           t.id AS payment_id,
           t.account_id,
@@ -39,14 +47,17 @@ export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
         ORDER BY t.trans_date ASC
       `);
 
-      const accountIds = Array.from(new Set(
-        payments
-          .map((payment) => Number(payment.account_id))
-          .filter((accountId) => Number.isInteger(accountId) && accountId > 0),
-      ));
+        const accountIds = Array.from(
+          new Set(
+            payments
+              .map(payment => Number(payment.account_id))
+              .filter(accountId => Number.isInteger(accountId) && accountId > 0)
+          )
+        );
 
-      const invoices: AutoMatchInvoiceRow[] = accountIds.length > 0
-        ? await db.execute(sql`
+        const invoices: AutoMatchInvoiceRow[] =
+          accountIds.length > 0
+            ? ((await db.execute(sql`
           SELECT
             t.id AS invoice_id,
             t.account_id,
@@ -63,29 +74,35 @@ export function registerPaymentMatchingAutoMatchRoutes(router: Router) {
             GROUP BY invoiceId
           ) pm_agg ON pm_agg.invoiceId = t.id
           WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
-            AND t.account_id IN (${sql.join(accountIds.map((accountId) => sql`${accountId}`), sql`, `)})
+            AND t.account_id IN (${sql.join(
+              accountIds.map(accountId => sql`${accountId}`),
+              sql`, `
+            )})
           HAVING (amount_usd - COALESCE(paid_usd, 0) > 0) OR (amount_iqd - COALESCE(paid_iqd, 0) > 0)
           ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-        `) as unknown as AutoMatchInvoiceRow[]
-        : [];
+        `)) as unknown as AutoMatchInvoiceRow[])
+            : [];
 
-      const allocations = buildAutoMatchAllocations(payments as AutoMatchPaymentRow[], invoices)
-        .map((allocation) => ({ ...allocation, notes: AUTO_MATCH_NOTE }));
+        const allocations = buildAutoMatchAllocations(
+          payments as AutoMatchPaymentRow[],
+          invoices
+        ).map(allocation => ({ ...allocation, notes: AUTO_MATCH_NOTE }));
 
-      const chunkSize = 250;
-      for (let start = 0; start < allocations.length; start += chunkSize) {
-        const chunk = allocations.slice(start, start + chunkSize);
-        if (chunk.length > 0) {
-          await db.insert(paymentMatching).values(chunk);
+        const chunkSize = 250;
+        for (let start = 0; start < allocations.length; start += chunkSize) {
+          const chunk = allocations.slice(start, start + chunkSize);
+          if (chunk.length > 0) {
+            await db.insert(paymentMatching).values(chunk);
+          }
         }
-      }
 
-      return res.json({
-        message: buildAutoMatchSuccessMessage(allocations.length),
-        matched: allocations.length,
-      });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+        return res.json({
+          message: buildAutoMatchSuccessMessage(allocations.length),
+          matched: allocations.length,
+        });
+      } catch (error: any) {
+        return res.status(500).json({ error: error.message });
+      }
     }
-  });
+  );
 }

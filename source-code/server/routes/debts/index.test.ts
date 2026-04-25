@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createQueryResult, filterRowsByCondition, getDrizzleTableName } from "../../tests/support/fakeSql";
+import {
+  createQueryResult,
+  filterRowsByCondition,
+  getDrizzleTableName,
+} from "../../tests/support/fakeSql";
 import { createRouteHarness } from "../../tests/support/httpRouteHarness";
 
 function createDebtsDb(seedRows: Array<Record<string, unknown>>) {
-  const rows = seedRows.map((row) => ({ ...row }));
+  const rows = seedRows.map(row => ({ ...row }));
 
   return {
     rows,
@@ -25,7 +29,9 @@ function createDebtsDb(seedRows: Array<Record<string, unknown>>) {
 
       return {
         values: async (data: Record<string, unknown>) => {
-          const nextId = rows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) + 1;
+          const nextId =
+            rows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) +
+            1;
           rows.push({
             id: nextId,
             ...data,
@@ -60,7 +66,9 @@ function createDebtsDb(seedRows: Array<Record<string, unknown>>) {
 
       return {
         where: async (condition: unknown) => {
-          const matches = new Set(filterRowsByCondition(rows, condition as never));
+          const matches = new Set(
+            filterRowsByCondition(rows, condition as never)
+          );
           for (let index = rows.length - 1; index >= 0; index -= 1) {
             if (matches.has(rows[index])) {
               rows.splice(index, 1);
@@ -80,14 +88,19 @@ async function loadDebtsHarness(fakeDb: ReturnType<typeof createDebtsDb>) {
     getDb: vi.fn().mockResolvedValue(fakeDb),
   }));
   vi.doMock("../../_core/appAuth", () => ({
-    authMiddleware: (req: Record<string, unknown>, _res: unknown, next: () => void) => {
+    authMiddleware: (
+      req: Record<string, unknown>,
+      _res: unknown,
+      next: () => void
+    ) => {
       req.appUser = { id: 55, role: "admin", username: "tester" };
       next();
     },
     requireAppUser: (req: Record<string, unknown>) => req.appUser,
   }));
   vi.doMock("../../_core/financialRateLimits", () => ({
-    financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) => next(),
+    financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) =>
+      next(),
   }));
   vi.doMock("../../utils/safeAuditLog", () => ({
     safeWriteAuditLog: vi.fn().mockResolvedValue(undefined),
@@ -145,7 +158,9 @@ describe("debt routes integration", () => {
 
       const partialList = await harness.request("/debts", { method: "GET" });
       expect(partialList.status).toBe(200);
-      expect((partialList.json as Array<Record<string, unknown>>)[0]).toMatchObject({
+      expect(
+        (partialList.json as Array<Record<string, unknown>>)[0]
+      ).toMatchObject({
         DebtID: 1,
         Status: "partial",
         State: "تسديد جزئي",
@@ -164,7 +179,9 @@ describe("debt routes integration", () => {
       expect(paid.status).toBe(200);
 
       const paidList = await harness.request("/debts", { method: "GET" });
-      expect((paidList.json as Array<Record<string, unknown>>)[0]).toMatchObject({
+      expect(
+        (paidList.json as Array<Record<string, unknown>>)[0]
+      ).toMatchObject({
         DebtID: 1,
         Status: "paid",
         State: "مسدد",

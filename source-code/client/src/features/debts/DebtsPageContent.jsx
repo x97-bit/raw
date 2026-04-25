@@ -1,15 +1,15 @@
-import { Plus } from 'lucide-react';
-import ExportButtons from '../../components/ExportButtons';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import PageHeader from '../../components/PageHeader';
-import DebtFiltersPanel from './components/DebtFiltersPanel';
-import DebtFormModal from './components/DebtFormModal';
-import DebtPreviewModal from './components/DebtPreviewModal';
-import DebtSummaryGrid from './components/DebtSummaryGrid';
-import DebtTable from './components/DebtTable';
-import DebtTotalsCards from './components/DebtTotalsCards';
-import useDebtsPageState from './useDebtsPageState';
-import { useAuth } from '../../contexts/AuthContext';
+import { Plus } from "lucide-react";
+import ExportButtons from "../../components/ExportButtons";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import PageHeader from "../../components/PageHeader";
+import DebtFiltersPanel from "./components/DebtFiltersPanel";
+import DebtFormModal from "./components/DebtFormModal";
+import DebtPreviewModal from "./components/DebtPreviewModal";
+import DebtSummaryGrid from "./components/DebtSummaryGrid";
+import DebtTable from "./components/DebtTable";
+import DebtTotalsCards from "./components/DebtTotalsCards";
+import useDebtsPageState from "./useDebtsPageState";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function DebtsPage({ onBack }) {
   const { api, can } = useAuth();
@@ -52,7 +52,11 @@ export default function DebtsPage({ onBack }) {
 
   return (
     <div className="page-shell">
-      <PageHeader title="الديون" subtitle="قائمة الديون والحركات" onBack={onBack}>
+      <PageHeader
+        title="الديون"
+        subtitle="قائمة الديون والحركات"
+        onBack={onBack}
+      >
         {filteredDebts.length > 0 && (
           <ExportButtons
             inHeader

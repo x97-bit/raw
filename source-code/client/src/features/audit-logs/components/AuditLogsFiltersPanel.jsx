@@ -1,13 +1,22 @@
-import { Filter, X } from 'lucide-react';
-import { ACTION_OPTIONS, ENTITY_OPTIONS } from '../auditLogsConfig';
-import { createAuditFilters } from '../auditLogsHelpers';
+import { Filter, X } from "lucide-react";
+import { ACTION_OPTIONS, ENTITY_OPTIONS } from "../auditLogsConfig";
+import { createAuditFilters } from "../auditLogsHelpers";
 
-export default function AuditLogsFiltersPanel({ filters, onFieldChange, onApply, onReset }) {
+export default function AuditLogsFiltersPanel({
+  filters,
+  onFieldChange,
+  onApply,
+  onReset,
+}) {
   const hasActiveFilters = Boolean(
-    filters.entityType || filters.action || filters.username || filters.from || filters.to,
+    filters.entityType ||
+      filters.action ||
+      filters.username ||
+      filters.from ||
+      filters.to
   );
 
-  const handleSubmit = (event) => {
+  const handleSubmit = event => {
     event.preventDefault();
     onApply();
   };
@@ -45,34 +54,40 @@ export default function AuditLogsFiltersPanel({ filters, onFieldChange, onApply,
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">من تاريخ</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            من تاريخ
+          </label>
           <input
             type="date"
             value={filters.from}
-            onChange={(event) => onFieldChange('from', event.target.value)}
+            onChange={event => onFieldChange("from", event.target.value)}
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">إلى تاريخ</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            إلى تاريخ
+          </label>
           <input
             type="date"
             value={filters.to}
-            onChange={(event) => onFieldChange('to', event.target.value)}
+            onChange={event => onFieldChange("to", event.target.value)}
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">الكيان (الجدول)</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            الكيان (الجدول)
+          </label>
           <select
             value={filters.entityType}
-            onChange={(event) => onFieldChange('entityType', event.target.value)}
+            onChange={event => onFieldChange("entityType", event.target.value)}
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none [&>option]:bg-panel"
           >
-            {ENTITY_OPTIONS.map((option) => (
-              <option key={option.value || 'all-entities'} value={option.value}>
+            {ENTITY_OPTIONS.map(option => (
+              <option key={option.value || "all-entities"} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -80,14 +95,16 @@ export default function AuditLogsFiltersPanel({ filters, onFieldChange, onApply,
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">نوع العملية</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            نوع العملية
+          </label>
           <select
             value={filters.action}
-            onChange={(event) => onFieldChange('action', event.target.value)}
+            onChange={event => onFieldChange("action", event.target.value)}
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none [&>option]:bg-panel"
           >
-            {ACTION_OPTIONS.map((option) => (
-              <option key={option.value || 'all-actions'} value={option.value}>
+            {ACTION_OPTIONS.map(option => (
+              <option key={option.value || "all-actions"} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -95,20 +112,26 @@ export default function AuditLogsFiltersPanel({ filters, onFieldChange, onApply,
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">المستخدم</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            المستخدم
+          </label>
           <input
             value={filters.username}
-            onChange={(event) => onFieldChange('username', event.target.value)}
+            onChange={event => onFieldChange("username", event.target.value)}
             placeholder="ابحث باسم المستخدم..."
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text placeholder-panel-muted/60 shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">الحد الأقصى (للعرض)</label>
+          <label className="mb-2 block text-xs font-semibold tracking-wide text-panel-muted">
+            الحد الأقصى (للعرض)
+          </label>
           <select
             value={filters.limit}
-            onChange={(event) => onFieldChange('limit', Number(event.target.value) || 100)}
+            onChange={event =>
+              onFieldChange("limit", Number(event.target.value) || 100)
+            }
             className="w-full rounded-xl border border-panel-border bg-panel/50 px-3 py-2.5 text-sm text-panel-text shadow-sm transition-colors focus:border-primary focus:bg-panel focus:outline-none [&>option]:bg-panel"
           >
             <option value={50}>50 سجل</option>

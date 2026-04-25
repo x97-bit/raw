@@ -1,9 +1,11 @@
-import mysql from 'mysql2/promise';
-import { buildMySqlConnectionOptions } from '../../shared/scriptMysqlConfig.mjs';
+import mysql from "mysql2/promise";
+import { buildMySqlConnectionOptions } from "../../shared/scriptMysqlConfig.mjs";
 
 async function migrate() {
-  const conn = await mysql.createConnection(buildMySqlConnectionOptions(process.env.DATABASE_URL));
-  
+  const conn = await mysql.createConnection(
+    buildMySqlConnectionOptions(process.env.DATABASE_URL)
+  );
+
   const tables = [
     `CREATE TABLE IF NOT EXISTS app_users (
       id int AUTO_INCREMENT NOT NULL PRIMARY KEY,
@@ -86,21 +88,21 @@ async function migrate() {
       date varchar(20),
       createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )`
+    )`,
   ];
 
   for (const sql of tables) {
     try {
       await conn.query(sql);
       const match = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/);
-      console.log(`✓ ${match ? match[1] : 'table'} created`);
+      console.log(`✓ ${match ? match[1] : "table"} created`);
     } catch (e) {
       console.error(`✗ Error:`, e.message);
     }
   }
 
-  const [rows] = await conn.query('SHOW TABLES');
-  console.log('\nAll tables:', rows.map(r => Object.values(r)[0]).join(', '));
+  const [rows] = await conn.query("SHOW TABLES");
+  console.log("\nAll tables:", rows.map(r => Object.values(r)[0]).join(", "));
   await conn.end();
 }
 

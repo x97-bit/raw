@@ -1,13 +1,18 @@
-import 'dotenv/config';
-import mysql from 'mysql2/promise';
-import { buildMySqlConnectionOptions } from '../../shared/scriptMysqlConfig.mjs';
+import "dotenv/config";
+import mysql from "mysql2/promise";
+import { buildMySqlConnectionOptions } from "../../shared/scriptMysqlConfig.mjs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) { console.error('No DATABASE_URL'); process.exit(1); }
+if (!DATABASE_URL) {
+  console.error("No DATABASE_URL");
+  process.exit(1);
+}
 
 async function run() {
-  const conn = await mysql.createConnection(buildMySqlConnectionOptions(DATABASE_URL));
-  
+  const conn = await mysql.createConnection(
+    buildMySqlConnectionOptions(DATABASE_URL)
+  );
+
   const alterStatements = [
     // Add syr_cus column
     `ALTER TABLE transactions ADD COLUMN syr_cus DECIMAL(15,2) DEFAULT 0`,
@@ -22,20 +27,29 @@ async function run() {
   for (const sql of alterStatements) {
     try {
       await conn.execute(sql);
-      console.log('✅', sql.substring(0, 80));
+      console.log("✅", sql.substring(0, 80));
     } catch (e) {
-      if (e.code === 'ER_DUP_FIELDNAME' || e.message.includes('Duplicate column')) {
-        console.log('⏭️  Column already exists:', sql.substring(0, 80));
-      } else if (e.code === 'ER_CANT_DROP_FIELD_OR_KEY' || e.message.includes("check that column/key exists")) {
-        console.log('⏭️  Column does not exist:', sql.substring(0, 80));
+      if (
+        e.code === "ER_DUP_FIELDNAME" ||
+        e.message.includes("Duplicate column")
+      ) {
+        console.log("⏭️  Column already exists:", sql.substring(0, 80));
+      } else if (
+        e.code === "ER_CANT_DROP_FIELD_OR_KEY" ||
+        e.message.includes("check that column/key exists")
+      ) {
+        console.log("⏭️  Column does not exist:", sql.substring(0, 80));
       } else {
-        console.error('❌', e.message, '→', sql.substring(0, 80));
+        console.error("❌", e.message, "→", sql.substring(0, 80));
       }
     }
   }
 
   await conn.end();
-  console.log('\nMigration complete!');
+  console.log("\nMigration complete!");
 }
 
-run().catch(e => { console.error(e); process.exit(1); });
+run().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

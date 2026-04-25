@@ -22,7 +22,9 @@ type RateLimitCheckResult = {
 
 export function resolveRateLimitClientIp(req: Request) {
   if (Array.isArray(req.ips) && req.ips.length > 0) {
-    const trustedProxyIp = req.ips.find((entry) => typeof entry === "string" && entry.trim());
+    const trustedProxyIp = req.ips.find(
+      entry => typeof entry === "string" && entry.trim()
+    );
     if (trustedProxyIp) {
       return trustedProxyIp.trim();
     }
@@ -66,7 +68,10 @@ export function buildRateLimitGuard(options: RateLimitOptions) {
     existing.count += 1;
     store.set(fullKey, existing);
 
-    const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - currentTime) / 1000));
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((existing.resetAt - currentTime) / 1000)
+    );
     return {
       allowed: existing.count <= options.max,
       remaining: Math.max(0, options.max - existing.count),
@@ -74,7 +79,11 @@ export function buildRateLimitGuard(options: RateLimitOptions) {
     };
   };
 
-  const middleware: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+  const middleware: RequestHandler = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const resolvedKey = options.keyFn?.(req) || resolveRateLimitClientIp(req);
     const result = check(resolvedKey);
 
@@ -97,6 +106,13 @@ export function buildRateLimitGuard(options: RateLimitOptions) {
   };
 }
 
-export function createRateLimitMiddleware(options: RateLimitOptions) {
+export function createRateLimitMiddleware(
+  options: RateLimitOptions
+): RequestHandler {
+  // In development mode, skip rate limiting entirely to avoid blocking local testing.
+  if (process.env.NODE_ENV === "development") {
+    return (_req: Request, _res: Response, next: NextFunction) => next();
+  }
+
   return buildRateLimitGuard(options).middleware;
 }

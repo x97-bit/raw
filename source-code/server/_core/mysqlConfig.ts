@@ -1,6 +1,8 @@
 import type { ConnectionOptions } from "mysql2/promise";
 
-export function buildMySqlConnectionOptions(databaseUrl: string): ConnectionOptions {
+export function buildMySqlConnectionOptions(
+  databaseUrl: string
+): ConnectionOptions {
   const url = new URL(databaseUrl);
   const database = url.pathname.replace(/^\/+/, "");
 
@@ -17,12 +19,12 @@ export function buildMySqlConnectionOptions(databaseUrl: string): ConnectionOpti
     charset: "utf8mb4",
     dateStrings: ["DATE"],
     // ── Performance tuning ──────────────────────────────────────────
-    connectionLimit: 20,          // Max simultaneous DB connections
-    waitForConnections: true,     // Queue requests instead of failing
-    queueLimit: 0,                // Unlimited queue
-    connectTimeout: 10_000,       // 10s timeout for new connections
-    enableKeepAlive: true,        // Keep TCP connections alive
-    keepAliveInitialDelay: 10_000,// Start keep-alive pings after 10s
+    connectionLimit: 20, // Max simultaneous DB connections
+    waitForConnections: true, // Queue requests instead of failing
+    queueLimit: 0, // Unlimited queue
+    connectTimeout: 10_000, // 10s timeout for new connections
+    enableKeepAlive: true, // Keep TCP connections alive
+    keepAliveInitialDelay: 10_000, // Start keep-alive pings after 10s
     // ────────────────────────────────────────────────────────────────
   };
 }

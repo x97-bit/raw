@@ -1,23 +1,23 @@
-import { getCurrencyLabel } from './currencyLabels';
+import { getCurrencyLabel } from "./currencyLabels";
 import {
   formatEnglishLongDate,
   shouldUseTayAlRawiBranding,
   TAY_ALRAWI_BRAND_ASSETS,
   resolveBrandAssets,
   TAY_ALRAWI_BRAND_COLORS,
-} from './exportBranding';
+} from "./exportBranding";
 
 function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function resolveColumnValue(row, column) {
-  if (typeof column?.getValue === 'function') {
+  if (typeof column?.getValue === "function") {
     return column.getValue(row);
   }
 
@@ -25,12 +25,13 @@ function resolveColumnValue(row, column) {
 }
 
 function formatCellValue(value, format) {
-  if (value === null || value === undefined || value === '') return '-';
-  if (format === 'date') return String(value).split(' ')[0];
-  if (format === 'currency') return getCurrencyLabel(value);
-  if (format === 'number') return Number(value).toLocaleString('en-US');
-  if (format === 'money') return `$${Number(value).toLocaleString('en-US')}`;
-  if (format === 'money_iqd') return `${Number(value).toLocaleString('en-US')} د.ع`;
+  if (value === null || value === undefined || value === "") return "-";
+  if (format === "date") return String(value).split(" ")[0];
+  if (format === "currency") return getCurrencyLabel(value);
+  if (format === "number") return Number(value).toLocaleString("en-US");
+  if (format === "money") return `$${Number(value).toLocaleString("en-US")}`;
+  if (format === "money_iqd")
+    return `${Number(value).toLocaleString("en-US")} د.ع`;
   return String(value);
 }
 
@@ -42,8 +43,12 @@ function resolveAssetUrl(path) {
   }
 }
 
-function openPrintWindow(title, body, extraCss = '') {
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1500,height=950');
+function openPrintWindow(title, body, extraCss = "") {
+  const printWindow = window.open(
+    "",
+    "_blank",
+    "noopener,noreferrer,width=1500,height=950"
+  );
   if (!printWindow) {
     window.print();
     return;
@@ -53,7 +58,7 @@ function openPrintWindow(title, body, extraCss = '') {
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <title>${escapeHtml(title || 'طباعة')}</title>
+    <title>${escapeHtml(title || "طباعة")}</title>
     <style>
       * { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; background: #eef2f7; }
@@ -123,31 +128,63 @@ function openPrintWindow(title, body, extraCss = '') {
 
 function getGenericRowClass(row) {
   const transTypeId = Number(row?.TransTypeID || row?.transTypeId || 0);
-  const direction = String(row?.Direction || row?.direction || '').toUpperCase();
+  const direction = String(
+    row?.Direction || row?.direction || ""
+  ).toUpperCase();
 
-  const rt = String(row?.RecordType || row?.recordType || '').toLowerCase();
-  const tn = String(row?.TransTypeName || row?.transTypeName || '').toLowerCase();
+  const rt = String(row?.RecordType || row?.recordType || "").toLowerCase();
+  const tn = String(
+    row?.TransTypeName || row?.transTypeName || ""
+  ).toLowerCase();
 
-  if (transTypeId === 1 || direction === 'IN' || direction === 'DR' || rt === 'invoice' || tn.includes('فاتورة') || tn.includes('استحقاق') || row?.ShipID || row?.shipment_id) return 'tay-row-invoice';
-  if (transTypeId === 2 || direction === 'OUT' || direction === 'CR' || rt === 'payment' || tn.includes('قبض') || tn.includes('دفع')) return 'tay-row-payment';
-  if (transTypeId === 3 || rt === 'debit-note' || tn.includes('إضافة') || tn.includes('اضافة')) return 'tay-row-debit';
+  if (
+    transTypeId === 1 ||
+    direction === "IN" ||
+    direction === "DR" ||
+    rt === "invoice" ||
+    tn.includes("فاتورة") ||
+    tn.includes("استحقاق") ||
+    row?.ShipID ||
+    row?.shipment_id
+  )
+    return "tay-row-invoice";
+  if (
+    transTypeId === 2 ||
+    direction === "OUT" ||
+    direction === "CR" ||
+    rt === "payment" ||
+    tn.includes("قبض") ||
+    tn.includes("دفع")
+  )
+    return "tay-row-payment";
+  if (
+    transTypeId === 3 ||
+    rt === "debit-note" ||
+    tn.includes("إضافة") ||
+    tn.includes("اضافة")
+  )
+    return "tay-row-debit";
 
-  return '';
+  return "";
 }
 
 function getColumnCellClass(column) {
-  return column?.format === 'date' ? 'tay-date-cell' : '';
+  return column?.format === "date" ? "tay-date-cell" : "";
 }
 
-function buildRowsHtml(rows, columns, rowClassResolver = () => '') {
-  return rows.map((row) => `
+function buildRowsHtml(rows, columns, rowClassResolver = () => "") {
+  return rows
+    .map(
+      row => `
     <tr class="${rowClassResolver(row)}">
-      ${columns.map((column) => `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(resolveColumnValue(row, column), column.format))}</td>`).join('')}
+      ${columns.map(column => `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(resolveColumnValue(row, column), column.format))}</td>`).join("")}
     </tr>
-  `).join('');
+  `
+    )
+    .join("");
 }
 
-function buildEmptyRowsHtml(columnCount, message = 'لا توجد بيانات للطباعة.') {
+function buildEmptyRowsHtml(columnCount, message = "لا توجد بيانات للطباعة.") {
   return `
     <tr class="tay-empty-row">
       <td colspan="${Math.max(1, columnCount)}">${escapeHtml(message)}</td>
@@ -156,50 +193,60 @@ function buildEmptyRowsHtml(columnCount, message = 'لا توجد بيانات �
 }
 
 function buildTotalsHtml(columns, totalsRow) {
-  if (!totalsRow) return '';
+  if (!totalsRow) return "";
 
-  const totalsCells = columns.map((column, index) => {
-    if (index === 0) return '<td>المجموع</td>';
-    if (totalsRow[column.key] !== undefined) {
-      return `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(totalsRow[column.key], column.format))}</td>`;
-    }
-    return '<td></td>';
-  }).join('');
+  const totalsCells = columns
+    .map((column, index) => {
+      if (index === 0) return "<td>المجموع</td>";
+      if (totalsRow[column.key] !== undefined) {
+        return `<td class="${getColumnCellClass(column)}">${escapeHtml(formatCellValue(totalsRow[column.key], column.format))}</td>`;
+      }
+      return "<td></td>";
+    })
+    .join("");
 
   return `<tfoot><tr>${totalsCells}</tr></tfoot>`;
 }
 
 function buildSummaryCardsHtml(summaryCards = []) {
-  if (!summaryCards.length) return '';
+  if (!summaryCards.length) return "";
 
   return `
     <div class="tay-summary-grid">
-      ${summaryCards.map((card) => `
+      ${summaryCards
+        .map(
+          card => `
         <div class="tay-summary-card">
           <span>${escapeHtml(card.label)}</span>
           <strong>${escapeHtml(card.value)}</strong>
         </div>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 }
 
 export function buildPrintMetaHtml(metaItems = []) {
-  const visibleItems = (metaItems || []).filter((item) => {
+  const visibleItems = (metaItems || []).filter(item => {
     const value = item?.value;
-    return value !== null && value !== undefined && String(value).trim() !== '';
+    return value !== null && value !== undefined && String(value).trim() !== "";
   });
 
-  if (!visibleItems.length) return '';
+  if (!visibleItems.length) return "";
 
   return `
     <div class="tay-meta-stack">
-      ${visibleItems.map((item) => `
+      ${visibleItems
+        .map(
+          item => `
         <div class="tay-meta-inline">
           <span class="tay-meta-label">${escapeHtml(item.label)}:</span>
-          <span class="${item.tone === 'accent' ? 'tay-meta-value-red' : ''}">${escapeHtml(item.value)}</span>
+          <span class="${item.tone === "accent" ? "tay-meta-value-red" : ""}">${escapeHtml(item.value)}</span>
         </div>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 }
@@ -209,15 +256,17 @@ export function normalizeTabularPrintSections({
   columns = [],
   totalsRow = null,
   sections = [],
-  emptyMessage = 'لا توجد بيانات للطباعة.',
+  emptyMessage = "لا توجد بيانات للطباعة.",
 } = {}) {
-  const providedSections = (sections || []).filter((section) => Array.isArray(section?.columns) && section.columns.length > 0);
+  const providedSections = (sections || []).filter(
+    section => Array.isArray(section?.columns) && section.columns.length > 0
+  );
 
   if (providedSections.length > 0) {
     return providedSections.map((section, index) => ({
       key: section.key || `section-${index + 1}`,
-      title: section.title || '',
-      subtitle: section.subtitle || '',
+      title: section.title || "",
+      subtitle: section.subtitle || "",
       rows: Array.isArray(section.rows) ? section.rows : [],
       columns: section.columns,
       totalsRow: section.totalsRow ?? null,
@@ -226,38 +275,46 @@ export function normalizeTabularPrintSections({
     }));
   }
 
-  return [{
-    key: 'main-section',
-    title: '',
-    subtitle: '',
-    rows: Array.isArray(rows) ? rows : [],
-    columns: Array.isArray(columns) ? columns : [],
-    totalsRow,
-    highlightRows: true,
-    emptyMessage,
-  }];
+  return [
+    {
+      key: "main-section",
+      title: "",
+      subtitle: "",
+      rows: Array.isArray(rows) ? rows : [],
+      columns: Array.isArray(columns) ? columns : [],
+      totalsRow,
+      highlightRows: true,
+      emptyMessage,
+    },
+  ];
 }
 
 function buildTabularSectionHtml(section) {
-  const rowClassResolver = section.highlightRows ? getGenericRowClass : () => '';
+  const rowClassResolver = section.highlightRows
+    ? getGenericRowClass
+    : () => "";
   const rowsHtml = section.rows.length
     ? buildRowsHtml(section.rows, section.columns, rowClassResolver)
     : buildEmptyRowsHtml(section.columns.length, section.emptyMessage);
 
   return `
     <section class="tay-print-section">
-      ${section.title || section.subtitle ? `
+      ${
+        section.title || section.subtitle
+          ? `
         <div class="tay-section-header">
           <div>
-            ${section.title ? `<h2 class="tay-section-title">${escapeHtml(section.title)}</h2>` : ''}
-            ${section.subtitle ? `<div class="tay-section-subtitle">${escapeHtml(section.subtitle)}</div>` : ''}
+            ${section.title ? `<h2 class="tay-section-title">${escapeHtml(section.title)}</h2>` : ""}
+            ${section.subtitle ? `<div class="tay-section-subtitle">${escapeHtml(section.subtitle)}</div>` : ""}
           </div>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
       <div class="tay-table-wrap">
         <table class="tay-table">
           <thead>
-            <tr>${section.columns.map((column) => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join('')}</tr>
+            <tr>${section.columns.map(column => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join("")}</tr>
           </thead>
           <tbody>${rowsHtml}</tbody>
           ${buildTotalsHtml(section.columns, section.totalsRow)}
@@ -270,16 +327,16 @@ function buildTabularSectionHtml(section) {
 function getShellHtml({
   title,
   subtitle,
-  metaHtml = '',
+  metaHtml = "",
   summaryCards = [],
   tableHtml,
-  orientation = 'landscape',
+  orientation = "landscape",
   branded = true,
   watermark = true,
   showFooterMeta = true,
   sectionKey,
 }) {
-  const pageClass = orientation === 'portrait' ? 'portrait' : 'landscape';
+  const pageClass = orientation === "portrait" ? "portrait" : "landscape";
   const today = formatEnglishLongDate(new Date());
   const brand = resolveBrandAssets({ sectionKey });
   const headerUrl = resolveAssetUrl(brand.header);
@@ -287,30 +344,34 @@ function getShellHtml({
   const logoUrl = resolveAssetUrl(brand.logo);
 
   return `
-    <main class="tay-print-shell ${pageClass} ${branded ? 'is-branded' : 'is-plain'}">
+    <main class="tay-print-shell ${pageClass} ${branded ? "is-branded" : "is-plain"}">
       <section class="tay-print-page ${pageClass}">
         ${branded ? `<img class="tay-header-image" src="${headerUrl}" alt="TAY ALRAWI Header" />` : '<div class="tay-plain-header"></div>'}
-        ${branded && watermark ? `
+        ${
+          branded && watermark
+            ? `
           <div class="tay-watermark">
             <img src="${logoUrl}" alt="" />
           </div>
-        ` : ''}
+        `
+            : ""
+        }
         <div class="tay-content ${pageClass}">
           <header class="tay-report-header">
             <div class="tay-title-block">
-              ${subtitle ? `<div class="tay-report-subtitle">${escapeHtml(subtitle)}</div>` : ''}
-              ${title ? `<h1>${escapeHtml(title)}</h1>` : ''}
+              ${subtitle ? `<div class="tay-report-subtitle">${escapeHtml(subtitle)}</div>` : ""}
+              ${title ? `<h1>${escapeHtml(title)}</h1>` : ""}
             </div>
             ${metaHtml}
           </header>
           ${buildSummaryCardsHtml(summaryCards)}
           ${tableHtml}
         </div>
-        <div class="tay-footer ${branded ? 'is-branded' : 'is-plain'}">
+        <div class="tay-footer ${branded ? "is-branded" : "is-plain"}">
           ${branded ? `<img class="tay-footer-image" src="${footerUrl}" alt="TAY ALRAWI Footer" />` : '<div class="tay-plain-footer"></div>'}
-          <div class="tay-footer-overlay ${showFooterMeta ? 'show-meta' : 'hide-meta'}">
-            <span class="tay-footer-slot tay-footer-slot-left">${showFooterMeta ? escapeHtml(today) : ''}</span>
-            <span class="tay-footer-slot tay-footer-slot-right">${showFooterMeta ? 'Page ' : ''}<span class="tay-footer-page"></span></span>
+          <div class="tay-footer-overlay ${showFooterMeta ? "show-meta" : "hide-meta"}">
+            <span class="tay-footer-slot tay-footer-slot-left">${showFooterMeta ? escapeHtml(today) : ""}</span>
+            <span class="tay-footer-slot tay-footer-slot-right">${showFooterMeta ? "Page " : ""}<span class="tay-footer-page"></span></span>
           </div>
         </div>
       </section>
@@ -318,14 +379,44 @@ function getShellHtml({
   `;
 }
 
-function getShellCss({ orientation = 'landscape', highlightRows = true, branded = true } = {}) {
-  const isPortrait = orientation === 'portrait';
-  const pageSize = isPortrait ? 'A4 portrait' : 'A4 landscape';
-  const pageMinHeight = isPortrait ? 'calc(297mm - 12mm)' : 'calc(210mm - 12mm)';
-  const headerHeight = branded ? (isPortrait ? '35mm' : '31mm') : (isPortrait ? '18mm' : '16mm');
-  const footerHeight = branded ? (isPortrait ? '24mm' : '22mm') : (isPortrait ? '14mm' : '12mm');
-  const contentPaddingTop = branded ? (isPortrait ? '56mm' : '52mm') : (isPortrait ? '24mm' : '22mm');
-  const contentPaddingBottom = branded ? (isPortrait ? '28mm' : '26mm') : (isPortrait ? '18mm' : '16mm');
+function getShellCss({
+  orientation = "landscape",
+  highlightRows = true,
+  branded = true,
+} = {}) {
+  const isPortrait = orientation === "portrait";
+  const pageSize = isPortrait ? "A4 portrait" : "A4 landscape";
+  const pageMinHeight = isPortrait
+    ? "calc(297mm - 12mm)"
+    : "calc(210mm - 12mm)";
+  const headerHeight = branded
+    ? isPortrait
+      ? "35mm"
+      : "31mm"
+    : isPortrait
+      ? "18mm"
+      : "16mm";
+  const footerHeight = branded
+    ? isPortrait
+      ? "24mm"
+      : "22mm"
+    : isPortrait
+      ? "14mm"
+      : "12mm";
+  const contentPaddingTop = branded
+    ? isPortrait
+      ? "56mm"
+      : "52mm"
+    : isPortrait
+      ? "24mm"
+      : "22mm";
+  const contentPaddingBottom = branded
+    ? isPortrait
+      ? "28mm"
+      : "26mm"
+    : isPortrait
+      ? "18mm"
+      : "16mm";
 
   return `
     @page { size: ${pageSize}; margin: 6mm; }
@@ -358,7 +449,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       opacity: 0.06;
     }
     .tay-watermark img {
-      width: ${isPortrait ? '88mm' : '96mm'};
+      width: ${isPortrait ? "88mm" : "96mm"};
       max-width: 42%;
       height: auto;
       object-fit: contain;
@@ -379,7 +470,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? '64px' : '58px'};
+      font-size: ${isPortrait ? "64px" : "58px"};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
       line-height: 1.5;
@@ -471,7 +562,7 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       word-break: break-word;
     }
     .tay-table td {
-      font-size: ${isPortrait ? '40px' : '36px'};
+      font-size: ${isPortrait ? "40px" : "36px"};
     }
     .tay-table .tay-date-cell {
       white-space: nowrap;
@@ -484,12 +575,14 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       white-space: nowrap;
       word-break: normal;
       padding: 8px 6px;
-      font-size: ${isPortrait ? '54px' : '50px'};
+      font-size: ${isPortrait ? "54px" : "50px"};
     }
     .tay-table tbody tr:nth-child(even) td {
       background: transparent;
     }
-    ${highlightRows ? `
+    ${
+      highlightRows
+        ? `
       .tay-table tr.tay-row-invoice td {
         border-right: 4px solid rgba(55, 65, 81, 0.8) !important;
       }
@@ -500,7 +593,9 @@ function getShellCss({ orientation = 'landscape', highlightRows = true, branded 
       .tay-table tr.tay-row-debit td {
         border-right: 4px solid rgba(22, 163, 74, 0.8) !important;
       }
-    ` : ''}
+    `
+        : ""
+    }
     .tay-table tfoot td {
       background: #eef1f7;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
@@ -602,7 +697,7 @@ export function printTabularReport({
   sectionKey,
   sections = [],
   metaItems = [],
-  orientation = 'landscape',
+  orientation = "landscape",
   emptyMessage,
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
@@ -615,7 +710,7 @@ export function printTabularReport({
   });
   const metaHtml = buildPrintMetaHtml(metaItems);
 
-  const tableHtml = `<div class="tay-sections">${normalizedSections.map((section) => buildTabularSectionHtml(section)).join('')}</div>`;
+  const tableHtml = `<div class="tay-sections">${normalizedSections.map(section => buildTabularSectionHtml(section)).join("")}</div>`;
 
   const html = getShellHtml({
     title,
@@ -635,9 +730,9 @@ export function printTabularReport({
     html,
     getShellCss({
       orientation,
-      highlightRows: normalizedSections.some((section) => section.highlightRows),
+      highlightRows: normalizedSections.some(section => section.highlightRows),
       branded,
-    }),
+    })
   );
 }
 
@@ -654,27 +749,31 @@ export function printSaudiStatementTemplate({
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
 
-  const totalUsd = `$${Number(totals?.totalInvoicesUSD || 0).toLocaleString('en-US')}`;
-  const totalIqd = `${Number(totals?.totalInvoicesIQD || 0).toLocaleString('en-US')} د.ع`;
-  const balanceUsd = `$${Number(totals?.balanceUSD || 0).toLocaleString('en-US')}`;
-  const balanceIqd = `${Number(totals?.balanceIQD || 0).toLocaleString('en-US')} د.ع`;
+  const totalUsd = `$${Number(totals?.totalInvoicesUSD || 0).toLocaleString("en-US")}`;
+  const totalIqd = `${Number(totals?.totalInvoicesIQD || 0).toLocaleString("en-US")} د.ع`;
+  const balanceUsd = `$${Number(totals?.balanceUSD || 0).toLocaleString("en-US")}`;
+  const balanceIqd = `${Number(totals?.balanceIQD || 0).toLocaleString("en-US")} د.ع`;
 
   const totalsLines = [];
-  if (templateVariant === 'usd') {
-    totalsLines.push({ label: 'الطلب الكلي', value: totalUsd });
-    totalsLines.push({ label: 'مبلغ المحدد', value: balanceUsd });
-  } else if (templateVariant === 'iqd') {
-    totalsLines.push({ label: 'الطلب الكلي', value: totalIqd });
-    totalsLines.push({ label: 'مبلغ المحدد', value: balanceIqd });
+  if (templateVariant === "usd") {
+    totalsLines.push({ label: "الطلب الكلي", value: totalUsd });
+    totalsLines.push({ label: "مبلغ المحدد", value: balanceUsd });
+  } else if (templateVariant === "iqd") {
+    totalsLines.push({ label: "الطلب الكلي", value: totalIqd });
+    totalsLines.push({ label: "مبلغ المحدد", value: balanceIqd });
   } else {
-    totalsLines.push({ label: 'الطلب الكلي دولار', value: totalUsd });
-    totalsLines.push({ label: 'الطلب الكلي دينار', value: totalIqd });
-    totalsLines.push({ label: 'مبلغ المحدد دولار', value: balanceUsd });
-    totalsLines.push({ label: 'مبلغ المحدد دينار', value: balanceIqd });
+    totalsLines.push({ label: "الطلب الكلي دولار", value: totalUsd });
+    totalsLines.push({ label: "الطلب الكلي دينار", value: totalIqd });
+    totalsLines.push({ label: "مبلغ المحدد دولار", value: balanceUsd });
+    totalsLines.push({ label: "مبلغ المحدد دينار", value: balanceIqd });
   }
 
-  const rightLines = totalsLines.filter((line) => !line.label.includes('محدد') && !line.label.includes('متبقي'));
-  const centerLines = totalsLines.filter((line) => line.label.includes('محدد') || line.label.includes('متبقي'));
+  const rightLines = totalsLines.filter(
+    line => !line.label.includes("محدد") && !line.label.includes("متبقي")
+  );
+  const centerLines = totalsLines.filter(
+    line => line.label.includes("محدد") || line.label.includes("متبقي")
+  );
 
   const metaHtml = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
@@ -682,36 +781,44 @@ export function printSaudiStatementTemplate({
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div class="tay-meta-inline">
           <span class="tay-meta-label">اسم التاجر:</span>
-          <span>${escapeHtml(accountName || '---')}</span>
+          <span>${escapeHtml(accountName || "---")}</span>
         </div>
-        ${rightLines.map((line) => `
-          <div class="tay-meta-inline">
-            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
-          </div>
-        `).join('')}
+        <div class="tay-meta-inline">
+          <span class="tay-meta-label">من تاريخ:</span>
+          <span>${escapeHtml(fromDate || "---")}</span>
+        </div>
+        <div class="tay-meta-inline">
+          <span class="tay-meta-label">إلى تاريخ:</span>
+          <span>${escapeHtml(toDate || "---")}</span>
+        </div>
       </div>
 
       <!-- Center Side -->
       <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; height: 100%;">
-        ${centerLines.map((line) => `
+        ${centerLines
+          .map(
+            line => `
           <div class="tay-meta-inline">
             <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
             <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
           </div>
-        `).join('')}
+        `
+          )
+          .join("")}
       </div>
 
       <!-- Left Side -->
       <div style="display: flex; flex-direction: column; gap: 8px; direction: rtl;">
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">من تاريخ:</span>
-          <span>${escapeHtml(fromDate || '---')}</span>
-        </div>
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">إلى تاريخ:</span>
-          <span>${escapeHtml(toDate || '---')}</span>
-        </div>
+        ${rightLines
+          .map(
+            line => `
+          <div class="tay-meta-inline">
+            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
+            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+          </div>
+        `
+          )
+          .join("")}
       </div>
     </div>
   `;
@@ -720,7 +827,7 @@ export function printSaudiStatementTemplate({
     <div class="tay-table-wrap">
       <table class="tay-table">
         <thead>
-          <tr>${columns.map((column) => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join('')}</tr>
+          <tr>${columns.map(column => `<th class="${getColumnCellClass(column)}">${escapeHtml(column.label)}</th>`).join("")}</tr>
         </thead>
         <tbody>${buildRowsHtml(rows, columns, getGenericRowClass)}</tbody>
       </table>
@@ -729,15 +836,19 @@ export function printSaudiStatementTemplate({
 
   const html = getShellHtml({
     title,
-    subtitle: 'كشف حساب',
+    subtitle: "كشف حساب",
     metaHtml,
     tableHtml,
-    orientation: 'landscape',
+    orientation: "landscape",
     branded,
     watermark: branded,
     showFooterMeta: true,
     sectionKey,
   });
 
-  openPrintWindow(title, html, getShellCss({ orientation: 'landscape', highlightRows: true, branded }));
+  openPrintWindow(
+    title,
+    html,
+    getShellCss({ orientation: "landscape", highlightRows: true, branded })
+  );
 }

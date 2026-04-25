@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { companies } from "../../../drizzle/schema";
-import { createQueryResult, getDrizzleTableName } from "../../tests/support/fakeSql";
+import {
+  createQueryResult,
+  getDrizzleTableName,
+} from "../../tests/support/fakeSql";
 import { createRouteHarness } from "../../tests/support/httpRouteHarness";
 
 function createAccountLookupsDb(seedCompanies: Array<Record<string, unknown>>) {
-  const companyRows = seedCompanies.map((row) => ({ ...row }));
+  const companyRows = seedCompanies.map(row => ({ ...row }));
   let companySelectCount = 0;
 
   return {
@@ -31,7 +34,11 @@ function createAccountLookupsDb(seedCompanies: Array<Record<string, unknown>>) {
 
       return {
         values: async (data: Record<string, unknown>) => {
-          const nextId = companyRows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) + 1;
+          const nextId =
+            companyRows.reduce(
+              (max, row) => Math.max(max, Number(row.id || 0)),
+              0
+            ) + 1;
           companyRows.push({
             id: nextId,
             active: 1,
@@ -50,7 +57,9 @@ function createAccountLookupsDb(seedCompanies: Array<Record<string, unknown>>) {
   };
 }
 
-async function loadAccountLookupsHarness(fakeDb: ReturnType<typeof createAccountLookupsDb>) {
+async function loadAccountLookupsHarness(
+  fakeDb: ReturnType<typeof createAccountLookupsDb>
+) {
   vi.resetModules();
 
   vi.doMock("../../db", () => ({
@@ -80,12 +89,16 @@ describe("account lookup caching", () => {
     const harness = await loadAccountLookupsHarness(fakeDb);
 
     try {
-      const firstRead = await harness.request("/lookups/companies", { method: "GET" });
+      const firstRead = await harness.request("/lookups/companies", {
+        method: "GET",
+      });
       expect(firstRead.status).toBe(200);
       expect(firstRead.headers.get("x-cache")).toBe("MISS");
       expect(fakeDb.getCompanySelectCount()).toBe(1);
 
-      const secondRead = await harness.request("/lookups/companies", { method: "GET" });
+      const secondRead = await harness.request("/lookups/companies", {
+        method: "GET",
+      });
       expect(secondRead.status).toBe(200);
       expect(secondRead.headers.get("x-cache")).toBe("HIT");
       expect(fakeDb.getCompanySelectCount()).toBe(1);
@@ -96,7 +109,9 @@ describe("account lookup caching", () => {
       });
       expect(created.status).toBe(200);
 
-      const afterWrite = await harness.request("/lookups/companies", { method: "GET" });
+      const afterWrite = await harness.request("/lookups/companies", {
+        method: "GET",
+      });
       expect(afterWrite.status).toBe(200);
       expect(afterWrite.headers.get("x-cache")).toBe("MISS");
       expect(fakeDb.getCompanySelectCount()).toBe(3);

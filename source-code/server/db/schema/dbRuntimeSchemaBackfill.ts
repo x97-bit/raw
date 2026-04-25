@@ -1,6 +1,8 @@
 import { type RuntimeSchemaConnection } from "./dbRuntimeSchemaHelpers";
 
-export async function backfillRuntimeSupportData(connection: RuntimeSchemaConnection) {
+export async function backfillRuntimeSupportData(
+  connection: RuntimeSchemaConnection
+) {
   await connection.query(`
     INSERT INTO companies (name)
     SELECT DISTINCT TRIM(company_name)

@@ -1,23 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 import {
   buildTransactionDetailItems,
   formatTransactionModalNumber,
   TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS,
-} from './transactionModalConfig';
+} from "./transactionModalConfig";
 
-describe('transactionModalConfig', () => {
-  it('formats numbers consistently for transaction previews', () => {
-    expect(formatTransactionModalNumber(12500)).toBe('12,500');
-    expect(formatTransactionModalNumber(0)).toBe('0');
+describe("transactionModalConfig", () => {
+  it("formats numbers consistently for transaction previews", () => {
+    expect(formatTransactionModalNumber(12500)).toBe("12,500");
+    expect(formatTransactionModalNumber(0)).toBe("0");
   });
 
-  it('builds transaction detail items with extended transport fields', () => {
+  it("builds transaction detail items with extended transport fields", () => {
     const items = buildTransactionDetailItems({
       transaction: {
         TransTypeID: 1,
-        TransDate: '2026-04-08 00:00:00',
-        RefNo: 'INV-10',
-        AccountName: 'أبو حسن',
+        TransDate: "2026-04-08 00:00:00",
+        RefNo: "INV-10",
+        AccountName: "أبو حسن",
         AmountUSD: 450,
         AmountIQD: 120000,
         CostUSD: 300,
@@ -25,41 +25,47 @@ describe('transactionModalConfig', () => {
         SyrCus: 25,
         CarQty: 2,
         TransPrice: 50000,
-        CarrierName: 'الناقل الأول',
-        CompanyName: 'شركة المثال',
+        CarrierName: "الناقل الأول",
+        CompanyName: "شركة المثال",
       },
-      transactionLabel: 'فاتورة',
-      customDetailItems: [{ label: 'حقل إضافي', value: 'قيمة' }],
+      transactionLabel: "فاتورة",
+      customDetailItems: [{ label: "حقل إضافي", value: "قيمة" }],
     });
 
-    expect(items[0]).toEqual({ label: 'التاريخ', value: '2026-04-08' });
-    expect(items.some((item) => item.label === 'الكمرك السوري')).toBe(true);
-    expect(items.some((item) => item.label === 'عدد السيارات')).toBe(true);
-    expect(items.some((item) => item.label === 'اسم الناقل')).toBe(true);
-    expect(items.at(-1)).toEqual({ label: 'حقل إضافي', value: 'قيمة' });
+    expect(items[0]).toEqual({ label: "التاريخ", value: "2026-04-08" });
+    expect(items.some(item => item.label === "الكمرك السوري")).toBe(true);
+    expect(items.some(item => item.label === "عدد السيارات")).toBe(true);
+    expect(items.some(item => item.label === "اسم الناقل")).toBe(true);
+    expect(items.at(-1)).toEqual({ label: "حقل إضافي", value: "قيمة" });
   });
 
-  it('shows only the IQD running liability for transport statements', () => {
+  it("shows only the IQD running liability for transport statements", () => {
     const items = buildTransactionDetailItems({
       transaction: {
         TransTypeID: 2,
-        TransDate: '2026-04-08 00:00:00',
-        RefNo: 'PAY-10',
-        AccountName: 'أبو حسن',
+        TransDate: "2026-04-08 00:00:00",
+        RefNo: "PAY-10",
+        AccountName: "أبو حسن",
         AmountIQD: 120000,
         runningUSD: 450,
         runningIQD: 320000,
       },
-      transactionLabel: 'سند دفع',
-      sectionKey: 'transport-1',
+      transactionLabel: "سند دفع",
+      sectionKey: "transport-1",
     });
 
-    expect(items.some((item) => item.label === 'المتبقي علينا ($)')).toBe(false);
-    expect(items.some((item) => item.label === 'المتبقي علينا (د.ع)' && item.value === '320,000')).toBe(true);
+    expect(items.some(item => item.label === "المتبقي علينا ($)")).toBe(false);
+    expect(
+      items.some(
+        item => item.label === "المتبقي علينا (د.ع)" && item.value === "320,000"
+      )
+    ).toBe(true);
   });
 
-  it('keeps core built-in field labels available for edit rendering', () => {
-    expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.qty).toBe('العدد');
-    expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.trader_note).toBe('ملاحظات التاجر');
+  it("keeps core built-in field labels available for edit rendering", () => {
+    expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.qty).toBe("العدد");
+    expect(TRANSACTION_MODAL_BUILT_IN_FIELD_FALLBACKS.trader_note).toBe(
+      "ملاحظات التاجر"
+    );
   });
 });

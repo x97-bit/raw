@@ -1,40 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCcw } from 'lucide-react';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import PageHeader from '../../components/PageHeader';
-import AuditLogsFiltersPanel from './components/AuditLogsFiltersPanel';
-import AuditLogsStatsGrid from './components/AuditLogsStatsGrid';
-import AuditLogsTable from './components/AuditLogsTable';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshCcw } from "lucide-react";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import PageHeader from "../../components/PageHeader";
+import AuditLogsFiltersPanel from "./components/AuditLogsFiltersPanel";
+import AuditLogsStatsGrid from "./components/AuditLogsStatsGrid";
+import AuditLogsTable from "./components/AuditLogsTable";
 import {
   buildAuditLogsQuery,
   buildAuditStats,
   createAuditFilters,
-} from './auditLogsHelpers';
-import { useAuth } from '../../contexts/AuthContext';
+} from "./auditLogsHelpers";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function AuditLogsPage({ onBack }) {
   const { api } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [filters, setFilters] = useState(() => createAuditFilters());
 
-  const loadAuditLogs = useCallback(async (nextFilters) => {
-    setLoading(true);
-    setMessage('');
+  const loadAuditLogs = useCallback(
+    async nextFilters => {
+      setLoading(true);
+      setMessage("");
 
-    try {
-      const queryString = buildAuditLogsQuery(nextFilters);
-      const result = await api(`/audit-logs?${queryString}`);
-      setRows(Array.isArray(result) ? result : []);
-    } catch (error) {
-      console.error('Error loading audit logs:', error);
-      setMessage(error.message || 'تعذر تحميل سجل العمليات.');
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+      try {
+        const queryString = buildAuditLogsQuery(nextFilters);
+        const result = await api(`/audit-logs?${queryString}`);
+        setRows(Array.isArray(result) ? result : []);
+      } catch (error) {
+        console.error("Error loading audit logs:", error);
+        setMessage(error.message || "تعذر تحميل سجل العمليات.");
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     loadAuditLogs(filters);
@@ -43,7 +46,7 @@ export default function AuditLogsPage({ onBack }) {
   const stats = useMemo(() => buildAuditStats(rows), [rows]);
 
   const handleFilterChange = (key, value) => {
-    setFilters((current) => ({ ...current, [key]: value }));
+    setFilters(current => ({ ...current, [key]: value }));
   };
 
   const handleReset = () => {
@@ -54,17 +57,13 @@ export default function AuditLogsPage({ onBack }) {
 
   return (
     <div className="page-shell">
-      <PageHeader
-        title="سجل العمليات"
-        subtitle="إدارة النظام"
-        onBack={onBack}
-      >
+      <PageHeader title="سجل العمليات" subtitle="إدارة النظام" onBack={onBack}>
         <button
           onClick={() => loadAuditLogs(filters)}
           disabled={loading}
           className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-white/20 disabled:opacity-50"
         >
-          <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
+          <RefreshCcw size={15} className={loading ? "animate-spin" : ""} />
           تحديث
         </button>
       </PageHeader>

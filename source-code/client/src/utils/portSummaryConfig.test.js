@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { EMPTY_PORT_SUMMARY, formatPortSummaryValue, PORT_SECTION_SUMMARY_META } from './portSummaryConfig';
+import { describe, expect, it } from "vitest";
+import {
+  EMPTY_PORT_SUMMARY,
+  formatPortSummaryValue,
+  PORT_SECTION_SUMMARY_META,
+} from "./portSummaryConfig";
 
-describe('portSummaryConfig', () => {
-  it('keeps a stable empty summary shape for port pages', () => {
+describe("portSummaryConfig", () => {
+  it("keeps a stable empty summary shape for port pages", () => {
     expect(EMPTY_PORT_SUMMARY).toMatchObject({
       count: 0,
       shipmentCount: 0,
@@ -13,29 +17,32 @@ describe('portSummaryConfig', () => {
     });
   });
 
-  it('includes the total weight card for Saudi summaries and formats numeric summaries', () => {
-    expect(PORT_SECTION_SUMMARY_META['port-1'].list.some((card) => card.key === 'totalWeight')).toBe(true);
-    expect(PORT_SECTION_SUMMARY_META['port-1'].statement.some((card) => card.key === 'totalWeight')).toBe(true);
-    expect(formatPortSummaryValue(23600, 'number')).toBe('23,600');
+  it("includes the total weight card for Saudi summaries and formats numeric summaries", () => {
+    expect(
+      PORT_SECTION_SUMMARY_META["port-1"].list.some(
+        card => card.key === "totalWeight"
+      )
+    ).toBe(true);
+    expect(
+      PORT_SECTION_SUMMARY_META["port-1"].statement.some(
+        card => card.key === "totalWeight"
+      )
+    ).toBe(true);
+    expect(formatPortSummaryValue(23600, "number")).toBe("23,600");
   });
 
-  it('uses payable wording for transport summaries', () => {
-    expect(PORT_SECTION_SUMMARY_META['transport-1'].list.map((card) => card.key)).toEqual([
-      'totalInvoicesIQD',
-      'totalPaymentsIQD',
-      'balanceIQD',
-    ]);
-    expect(PORT_SECTION_SUMMARY_META['transport-1'].statement.map((card) => card.label)).toEqual([
-      'إجمالي استحقاق النقل',
-      'المسدد',
-      'المتبقي علينا',
-    ]);
+  it("uses payable wording for transport summaries", () => {
+    expect(
+      PORT_SECTION_SUMMARY_META["transport-1"].list.map(card => card.key)
+    ).toEqual(["totalInvoicesIQD", "totalPaymentsIQD", "balanceIQD"]);
+    expect(
+      PORT_SECTION_SUMMARY_META["transport-1"].statement.map(card => card.label)
+    ).toEqual(["إجمالي استحقاق النقل", "المسدد", "المتبقي علينا"]);
   });
 
-  it('shows total order cards in Qaim statement summaries', () => {
-    expect(PORT_SECTION_SUMMARY_META['port-3'].statement.map((card) => card.key)).toEqual([
-      'totalInvoicesUSD',
-      'totalInvoicesIQD',
-    ]);
+  it("shows total order cards in Qaim statement summaries", () => {
+    expect(
+      PORT_SECTION_SUMMARY_META["port-3"].statement.map(card => card.key)
+    ).toEqual(["totalInvoicesUSD", "totalInvoicesIQD"]);
   });
 });

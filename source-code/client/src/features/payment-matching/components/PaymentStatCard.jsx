@@ -1,18 +1,23 @@
-export default function PaymentStatCard({ label, value, sub, variant = 'default' }) {
+export default function PaymentStatCard({
+  label,
+  value,
+  sub,
+  variant = "default",
+}) {
   const variants = {
-    default: 'border-gray-100',
-    success: 'border-emerald-100 bg-emerald-50/30',
-    warning: 'border-amber-100 bg-amber-50/30',
-    danger: 'border-red-100 bg-red-50/30',
-    info: 'border-orange-100 bg-orange-50/30',
+    default: "border-gray-100",
+    success: "border-emerald-100 bg-emerald-50/30",
+    warning: "border-amber-100 bg-amber-50/30",
+    danger: "border-red-100 bg-red-50/30",
+    info: "border-orange-100 bg-orange-50/30",
   };
 
   const textColors = {
-    default: 'text-primary-900',
-    success: 'text-emerald-700',
-    warning: 'text-amber-700',
-    danger: 'text-red-700',
-    info: 'text-orange-700',
+    default: "text-primary-900",
+    success: "text-emerald-700",
+    warning: "text-amber-700",
+    danger: "text-red-700",
+    info: "text-orange-700",
   };
 
   return (

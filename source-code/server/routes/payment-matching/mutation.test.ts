@@ -1,12 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createQueryResult, filterRowsByCondition, getDrizzleTableName } from "../../tests/support/fakeSql";
+import {
+  createQueryResult,
+  filterRowsByCondition,
+  getDrizzleTableName,
+} from "../../tests/support/fakeSql";
 import { createRouteHarness } from "../../tests/support/httpRouteHarness";
 
 function sumMatchingAmounts(rows: Array<Record<string, unknown>>) {
   return [
     {
-      amountUsd: rows.reduce((total, row) => total + Number(row.amountUSD || 0), 0),
-      amountIqd: rows.reduce((total, row) => total + Number(row.amountIQD || 0), 0),
+      amountUsd: rows.reduce(
+        (total, row) => total + Number(row.amountUSD || 0),
+        0
+      ),
+      amountIqd: rows.reduce(
+        (total, row) => total + Number(row.amountIQD || 0),
+        0
+      ),
     },
   ];
 }
@@ -15,8 +25,8 @@ function createPaymentMatchingDb(options: {
   transactionsRows: Array<Record<string, unknown>>;
   matchingRows?: Array<Record<string, unknown>>;
 }) {
-  const transactionsRows = options.transactionsRows.map((row) => ({ ...row }));
-  const matchingRows = (options.matchingRows || []).map((row) => ({ ...row }));
+  const transactionsRows = options.transactionsRows.map(row => ({ ...row }));
+  const matchingRows = (options.matchingRows || []).map(row => ({ ...row }));
 
   return {
     transactionsRows,
@@ -31,9 +41,10 @@ function createPaymentMatchingDb(options: {
           if (getDrizzleTableName(table) === "payment_matching") {
             if (selection) {
               return {
-                where: async (condition: unknown) => sumMatchingAmounts(
-                  filterRowsByCondition(matchingRows, condition as never),
-                ),
+                where: async (condition: unknown) =>
+                  sumMatchingAmounts(
+                    filterRowsByCondition(matchingRows, condition as never)
+                  ),
               };
             }
 
@@ -51,7 +62,11 @@ function createPaymentMatchingDb(options: {
 
       return {
         values: async (data: Record<string, unknown>) => {
-          const nextId = matchingRows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) + 1;
+          const nextId =
+            matchingRows.reduce(
+              (max, row) => Math.max(max, Number(row.id || 0)),
+              0
+            ) + 1;
           matchingRows.push({
             id: nextId,
             ...data,
@@ -67,7 +82,9 @@ function createPaymentMatchingDb(options: {
 
       return {
         where: async (condition: unknown) => {
-          const matches = new Set(filterRowsByCondition(matchingRows, condition as never));
+          const matches = new Set(
+            filterRowsByCondition(matchingRows, condition as never)
+          );
           for (let index = matchingRows.length - 1; index >= 0; index -= 1) {
             if (matches.has(matchingRows[index])) {
               matchingRows.splice(index, 1);
@@ -80,14 +97,20 @@ function createPaymentMatchingDb(options: {
   };
 }
 
-async function loadPaymentMatchingHarness(fakeDb: ReturnType<typeof createPaymentMatchingDb>) {
+async function loadPaymentMatchingHarness(
+  fakeDb: ReturnType<typeof createPaymentMatchingDb>
+) {
   vi.resetModules();
 
   vi.doMock("../../db", () => ({
     getDb: vi.fn().mockResolvedValue(fakeDb),
   }));
   vi.doMock("../../_core/appAuth", () => ({
-    authMiddleware: (req: Record<string, unknown>, _res: unknown, next: () => void) => {
+    authMiddleware: (
+      req: Record<string, unknown>,
+      _res: unknown,
+      next: () => void
+    ) => {
       req.appUser = { id: 88, role: "admin", username: "tester" };
       next();
     },
@@ -108,8 +131,20 @@ describe("payment matching routes integration", () => {
   it("creates a valid invoice-payment match and stores the allocation", async () => {
     const fakeDb = createPaymentMatchingDb({
       transactionsRows: [
-        { id: 10, direction: "IN", accountId: 7, amountUsd: "100", amountIqd: "0" },
-        { id: 11, direction: "OUT", accountId: 7, amountUsd: "80", amountIqd: "0" },
+        {
+          id: 10,
+          direction: "IN",
+          accountId: 7,
+          amountUsd: "100",
+          amountIqd: "0",
+        },
+        {
+          id: 11,
+          direction: "OUT",
+          accountId: 7,
+          amountUsd: "80",
+          amountIqd: "0",
+        },
       ],
     });
     const harness = await loadPaymentMatchingHarness(fakeDb);
@@ -145,12 +180,36 @@ describe("payment matching routes integration", () => {
   it("rejects matches that exceed the remaining invoice or payment balance", async () => {
     const fakeDb = createPaymentMatchingDb({
       transactionsRows: [
-        { id: 20, direction: "IN", accountId: 7, amountUsd: "100", amountIqd: "0" },
-        { id: 21, direction: "OUT", accountId: 7, amountUsd: "90", amountIqd: "0" },
+        {
+          id: 20,
+          direction: "IN",
+          accountId: 7,
+          amountUsd: "100",
+          amountIqd: "0",
+        },
+        {
+          id: 21,
+          direction: "OUT",
+          accountId: 7,
+          amountUsd: "90",
+          amountIqd: "0",
+        },
       ],
       matchingRows: [
-        { id: 1, invoiceId: 20, paymentId: 999, amountUSD: "70", amountIQD: "0" },
-        { id: 2, invoiceId: 998, paymentId: 21, amountUSD: "70", amountIQD: "0" },
+        {
+          id: 1,
+          invoiceId: 20,
+          paymentId: 999,
+          amountUSD: "70",
+          amountIQD: "0",
+        },
+        {
+          id: 2,
+          invoiceId: 998,
+          paymentId: 21,
+          amountUSD: "70",
+          amountIQD: "0",
+        },
       ],
     });
     const harness = await loadPaymentMatchingHarness(fakeDb);

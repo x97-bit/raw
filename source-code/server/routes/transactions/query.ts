@@ -3,9 +3,15 @@ import { and, eq, inArray, like, or, sql, type SQL } from "drizzle-orm";
 import { transactions } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
-import { getDb } from "../../db";
-import { getDirectionAliases, getStoredDirectionValue } from "../../utils/direction";
-import { enrichTransactions, type TransactionEnrichmentRow } from "../../utils/transactionEnrichment";
+import { getDb } from "../../db/db";
+import {
+  getDirectionAliases,
+  getStoredDirectionValue,
+} from "../../utils/direction";
+import {
+  enrichTransactions,
+  type TransactionEnrichmentRow,
+} from "../../utils/transactionEnrichment";
 
 type DecimalLike = string | number | null | undefined;
 
@@ -43,6 +49,7 @@ type TransactionQueryResultRow = {
   totalCount: DecimalLike;
   shipmentCount: DecimalLike;
   totalWeight: DecimalLike;
+  totalMeters: DecimalLike;
   totalInvoicesUSD: DecimalLike;
   totalInvoicesIQD: DecimalLike;
   totalPaymentsUSD: DecimalLike;
@@ -63,7 +70,9 @@ function readQueryString(value: unknown): string | undefined {
 
   if (Array.isArray(value)) {
     const [firstValue] = value;
-    return typeof firstValue === "string" ? readQueryString(firstValue) : undefined;
+    return typeof firstValue === "string"
+      ? readQueryString(firstValue)
+      : undefined;
   }
 
   return undefined;
@@ -99,12 +108,14 @@ function toNullableInteger(value: DecimalLike) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-export function normalizeTransactionQueryResult(rawRows: TransactionQueryResultRow[]) {
+export function normalizeTransactionQueryResult(
+  rawRows: TransactionQueryResultRow[]
+) {
   const summarySource = rawRows[0];
 
   const rows: TransactionEnrichmentRow[] = rawRows
-    .filter((row) => row.id !== null && row.id !== undefined)
-    .map((row) => ({
+    .filter(row => row.id !== null && row.id !== undefined)
+    .map(row => ({
       id: Number(row.id),
       refNo: row.refNo ?? null,
       direction: String(row.direction ?? ""),
@@ -144,6 +155,7 @@ export function normalizeTransactionQueryResult(rawRows: TransactionQueryResultR
       count: toNumber(summarySource?.totalCount),
       shipmentCount: toNumber(summarySource?.shipmentCount),
       totalWeight: toNumber(summarySource?.totalWeight),
+      totalMeters: toNumber(summarySource?.totalMeters),
       totalInvoicesUSD: toNumber(summarySource?.totalInvoicesUSD),
       totalInvoicesIQD: toNumber(summarySource?.totalInvoicesIQD),
       totalPaymentsUSD: toNumber(summarySource?.totalPaymentsUSD),
@@ -159,62 +171,82 @@ export function normalizeTransactionQueryResult(rawRows: TransactionQueryResultR
 }
 
 export function registerTransactionQueryRoutes(router: Router) {
-  router.get("/transactions", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.get(
+    "/transactions",
+    authMiddleware,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const { portId, port, accountType, type, accountId, startDate, endDate, search, limit, offset } = req.query;
-      const conditions: SQL<unknown>[] = [];
-      const resolvedPortId = readQueryString(portId) ?? readQueryString(port);
-      const resolvedAccountType = readQueryString(accountType);
-      const resolvedSearch = readQueryString(search);
-      const resolvedAccountId = parsePositiveIntegerQuery(accountId);
-      const resolvedLimit = parsePositiveIntegerQuery(limit);
-      const resolvedOffset = parseNonNegativeIntegerQuery(offset);
-      const resolvedStartDate = readQueryString(startDate);
-      const resolvedEndDate = readQueryString(endDate);
+        const {
+          portId,
+          port,
+          accountType,
+          type,
+          accountId,
+          startDate,
+          endDate,
+          search,
+          limit,
+          offset,
+        } = req.query;
+        const conditions: SQL<unknown>[] = [];
+        const resolvedPortId = readQueryString(portId) ?? readQueryString(port);
+        const resolvedAccountType = readQueryString(accountType);
+        const resolvedSearch = readQueryString(search);
+        const resolvedAccountId = parsePositiveIntegerQuery(accountId);
+        const resolvedLimit = parsePositiveIntegerQuery(limit);
+        const resolvedOffset = parseNonNegativeIntegerQuery(offset);
+        const resolvedStartDate = readQueryString(startDate);
+        const resolvedEndDate = readQueryString(endDate);
 
-      if (resolvedPortId && resolvedPortId !== "null") {
-        conditions.push(eq(transactions.portId, resolvedPortId));
-      }
-      if (resolvedAccountType) {
-        conditions.push(eq(transactions.accountType, resolvedAccountType));
-      }
-      if (type) {
-        const direction = getStoredDirectionValue(type);
-        conditions.push(inArray(transactions.direction, getDirectionAliases(direction)));
-      }
-      if (resolvedAccountId) {
-        conditions.push(eq(transactions.accountId, resolvedAccountId));
-      }
-      if (resolvedStartDate) {
-        conditions.push(sql`${transactions.transDate} >= ${resolvedStartDate}`);
-      }
-      if (resolvedEndDate) {
-        conditions.push(sql`${transactions.transDate} <= ${resolvedEndDate}`);
-      }
-      if (resolvedSearch) {
-        const searchCondition = or(
-          like(transactions.refNo, `%${resolvedSearch}%`),
-          like(transactions.notes, `%${resolvedSearch}%`),
-          like(transactions.traderNote, `%${resolvedSearch}%`),
-        );
-        if (searchCondition) {
-          conditions.push(searchCondition);
+        if (resolvedPortId && resolvedPortId !== "null") {
+          conditions.push(eq(transactions.portId, resolvedPortId));
         }
-      }
-      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-      const whereFragment = whereClause ? sql`WHERE ${whereClause}` : sql``;
-      const paginationFragment = resolvedLimit !== undefined && resolvedOffset !== undefined
-        ? sql`LIMIT ${resolvedLimit} OFFSET ${resolvedOffset}`
-        : resolvedLimit !== undefined
-          ? sql`LIMIT ${resolvedLimit}`
-          : resolvedOffset !== undefined
-            ? sql`LIMIT 18446744073709551615 OFFSET ${resolvedOffset}`
-            : sql``;
+        if (resolvedAccountType) {
+          conditions.push(eq(transactions.accountType, resolvedAccountType));
+        }
+        if (type) {
+          const direction = getStoredDirectionValue(type);
+          conditions.push(
+            inArray(transactions.direction, getDirectionAliases(direction))
+          );
+        }
+        if (resolvedAccountId) {
+          conditions.push(eq(transactions.accountId, resolvedAccountId));
+        }
+        if (resolvedStartDate) {
+          conditions.push(
+            sql`${transactions.transDate} >= ${resolvedStartDate}`
+          );
+        }
+        if (resolvedEndDate) {
+          conditions.push(sql`${transactions.transDate} <= ${resolvedEndDate}`);
+        }
+        if (resolvedSearch) {
+          const searchCondition = or(
+            like(transactions.refNo, `%${resolvedSearch}%`),
+            like(transactions.notes, `%${resolvedSearch}%`),
+            like(transactions.traderNote, `%${resolvedSearch}%`)
+          );
+          if (searchCondition) {
+            conditions.push(searchCondition);
+          }
+        }
+        const whereClause =
+          conditions.length > 0 ? and(...conditions) : undefined;
+        const whereFragment = whereClause ? sql`WHERE ${whereClause}` : sql``;
+        const paginationFragment =
+          resolvedLimit !== undefined && resolvedOffset !== undefined
+            ? sql`LIMIT ${resolvedLimit} OFFSET ${resolvedOffset}`
+            : resolvedLimit !== undefined
+              ? sql`LIMIT ${resolvedLimit}`
+              : resolvedOffset !== undefined
+                ? sql`LIMIT 18446744073709551615 OFFSET ${resolvedOffset}`
+                : sql``;
 
-      const rawRows = await db.execute(sql`
+        const rawRows = (await db.execute(sql`
         WITH filtered AS (
           SELECT
             transactions.id AS id,
@@ -266,6 +298,12 @@ export function registerTransactionQueryRoutes(router: Router) {
               THEN ABS(COALESCE(CAST(filtered.weight AS DECIMAL(15,2)), 0))
               ELSE 0
             END) OVER() AS totalWeight,
+            SUM(CASE
+              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
+                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
+              THEN ABS(COALESCE(CAST(filtered.meters AS DECIMAL(15,2)), 0))
+              ELSE 0
+            END) OVER() AS totalMeters,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalInvoicesUSD,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalInvoicesIQD,
             SUM(CASE WHEN UPPER(filtered.direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalPaymentsUSD,
@@ -301,6 +339,7 @@ export function registerTransactionQueryRoutes(router: Router) {
             COALESCE(MAX(totalCount), 0) AS totalCount,
             COALESCE(MAX(shipmentCount), 0) AS shipmentCount,
             COALESCE(MAX(totalWeight), 0) AS totalWeight,
+            COALESCE(MAX(totalMeters), 0) AS totalMeters,
             COALESCE(MAX(totalInvoicesUSD), 0) AS totalInvoicesUSD,
             COALESCE(MAX(totalInvoicesIQD), 0) AS totalInvoicesIQD,
             COALESCE(MAX(totalPaymentsUSD), 0) AS totalPaymentsUSD,
@@ -322,6 +361,7 @@ export function registerTransactionQueryRoutes(router: Router) {
           summary.totalCount,
           summary.shipmentCount,
           summary.totalWeight,
+          summary.totalMeters,
           summary.totalInvoicesUSD,
           summary.totalInvoicesIQD,
           summary.totalPaymentsUSD,
@@ -335,18 +375,19 @@ export function registerTransactionQueryRoutes(router: Router) {
         FROM summary
         LEFT JOIN paged ON TRUE
         ORDER BY paged.id ASC
-      `) as unknown as TransactionQueryResultRow[];
+      `)) as unknown as TransactionQueryResultRow[];
 
-      const normalized = normalizeTransactionQueryResult(rawRows);
-      const enrichedRows = await enrichTransactions(db, normalized.rows);
+        const normalized = normalizeTransactionQueryResult(rawRows);
+        const enrichedRows = await enrichTransactions(db, normalized.rows);
 
-      return res.json({
-        transactions: enrichedRows,
-        total: normalized.total,
-        summary: normalized.summary,
-      });
-    } catch (error) {
-      return respondRouteError(res, error);
+        return res.json({
+          transactions: enrichedRows,
+          total: normalized.total,
+          summary: normalized.summary,
+        });
+      } catch (error) {
+        return respondRouteError(res, error);
+      }
     }
-  });
+  );
 }

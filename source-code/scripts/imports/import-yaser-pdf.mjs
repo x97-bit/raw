@@ -47,7 +47,11 @@ function loadDatabaseUrl() {
 }
 
 function extractPdfRows(pdfPath) {
-  const tempOutputPath = path.join(DATABASE_DIR, "tmp", "yaser-pdf-extracted.json");
+  const tempOutputPath = path.join(
+    DATABASE_DIR,
+    "tmp",
+    "yaser-pdf-extracted.json"
+  );
   ensureDir(path.dirname(tempOutputPath));
   const pythonCode = `
 import fitz, json, re, sys
@@ -66,13 +70,19 @@ with open(output_path, 'w', encoding='utf-8') as handle:
     json.dump(rows, handle, ensure_ascii=False)
 `.trim();
 
-  const result = spawnSync("python", ["-c", pythonCode, pdfPath, tempOutputPath], {
-    encoding: "utf8",
-    maxBuffer: 20 * 1024 * 1024,
-  });
+  const result = spawnSync(
+    "python",
+    ["-c", pythonCode, pdfPath, tempOutputPath],
+    {
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
 
   if (result.status !== 0) {
-    throw new Error(`Python PDF extraction failed: ${result.stderr || result.stdout || "unknown error"}`);
+    throw new Error(
+      `Python PDF extraction failed: ${result.stderr || result.stdout || "unknown error"}`
+    );
   }
 
   return JSON.parse(fs.readFileSync(tempOutputPath, "utf8"));
@@ -132,7 +142,9 @@ function toIsoDate(value) {
 }
 
 function compactSpaces(value) {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeCommonArabicFragments(value) {
@@ -146,11 +158,18 @@ function normalizeCommonArabicFragments(value) {
 function normalizeNotes(value) {
   const normalized = normalizeArabic(value);
   if (!normalized) return null;
-  if (normalized.includes("قباس") && normalized.includes("بلط")) return "طلب سابق";
+  if (normalized.includes("قباس") && normalized.includes("بلط"))
+    return "طلب سابق";
   if (normalized === "لصاو") return "واصل";
-  if (normalized.includes("لصاو") && normalized.includes("لداع")) return "واصل من ياسر عادل";
-  if (normalized.includes("قرف") && normalized.includes("ددع")) return "فرق عدد الاغنام";
-  return compactSpaces(humanizeRtlText(value)) || compactSpaces(cleanCell(value)) || null;
+  if (normalized.includes("لصاو") && normalized.includes("لداع"))
+    return "واصل من ياسر عادل";
+  if (normalized.includes("قرف") && normalized.includes("ددع"))
+    return "فرق عدد الاغنام";
+  return (
+    compactSpaces(humanizeRtlText(value)) ||
+    compactSpaces(cleanCell(value)) ||
+    null
+  );
 }
 
 function normalizeGoodType(value) {
@@ -158,14 +177,22 @@ function normalizeGoodType(value) {
   if (!normalized) return null;
   if (normalized.includes("زعام")) return "ماعز";
   if (normalized.includes("غ") || normalized.includes("ن")) return "غنم";
-  return compactSpaces(humanizeRtlText(value)) || compactSpaces(cleanCell(value)) || null;
+  return (
+    compactSpaces(humanizeRtlText(value)) ||
+    compactSpaces(cleanCell(value)) ||
+    null
+  );
 }
 
 function normalizePort(value) {
   const normalized = normalizeArabic(value);
   if (!normalized) return null;
   if (normalized.includes("ك") || normalized.includes("ت")) return "كويت";
-  return compactSpaces(humanizeRtlText(value)) || compactSpaces(cleanCell(value)) || null;
+  return (
+    compactSpaces(humanizeRtlText(value)) ||
+    compactSpaces(cleanCell(value)) ||
+    null
+  );
 }
 
 function normalizeVehiclePlate(value) {
@@ -173,12 +200,15 @@ function normalizeVehiclePlate(value) {
   if (!cleaned) return null;
   const parts = String(value ?? "")
     .split(/\r?\n+/)
-    .map((part) => normalizeCommonArabicFragments(compactSpaces(cleanCell(part))))
+    .map(part => normalizeCommonArabicFragments(compactSpaces(cleanCell(part))))
     .filter(Boolean);
 
   if (parts.length === 0) return null;
   if (parts.length === 1) return parts[0];
-  const suffix = normalizeCommonArabicFragments(compactSpaces(humanizeRtlText(parts.slice(1).join(" ")))) || parts.slice(1).join(" / ");
+  const suffix =
+    normalizeCommonArabicFragments(
+      compactSpaces(humanizeRtlText(parts.slice(1).join(" ")))
+    ) || parts.slice(1).join(" / ");
   return suffix ? `${parts[0]} / ${suffix}` : parts[0];
 }
 
@@ -190,7 +220,8 @@ function scoreText(a, b) {
   for (const char of new Set(left)) {
     if (right.includes(char)) common += 1;
   }
-  const diversityScore = common / Math.max(new Set(left).size, new Set(right).size, 1);
+  const diversityScore =
+    common / Math.max(new Set(left).size, new Set(right).size, 1);
   const prefixScore = left.slice(0, 2) === right.slice(0, 2) ? 0.15 : 0;
   return diversityScore + prefixScore;
 }
@@ -264,17 +295,30 @@ function normalizeCompanyName(value) {
 function pickDriverName(rawValue, driverCandidates) {
   const normalized = normalizeArabic(rawValue);
   if (!normalized) return { value: null, confidence: 0, source: "empty" };
-  if (DRIVER_MANUAL_MAP[normalized]) return { value: DRIVER_MANUAL_MAP[normalized], confidence: 1, source: "manual" };
+  if (DRIVER_MANUAL_MAP[normalized])
+    return {
+      value: DRIVER_MANUAL_MAP[normalized],
+      confidence: 1,
+      source: "manual",
+    };
 
   const readable = compactSpaces(humanizeRtlText(rawValue));
   const variants = buildTextCandidates(rawValue);
-  let best = { value: readable || compactSpaces(cleanCell(rawValue)), confidence: 0, source: "humanized" };
+  let best = {
+    value: readable || compactSpaces(cleanCell(rawValue)),
+    confidence: 0,
+    source: "humanized",
+  };
 
   for (const variant of variants) {
     for (const candidate of driverCandidates) {
       const similarity = scoreText(variant, candidate.norm);
       if (similarity > best.confidence) {
-        best = { value: candidate.raw, confidence: similarity, source: "lookup" };
+        best = {
+          value: candidate.raw,
+          confidence: similarity,
+          source: "lookup",
+        };
       }
     }
   }
@@ -349,45 +393,60 @@ function sameDistribution(left, right) {
   const leftKeys = Object.keys(left).sort();
   const rightKeys = Object.keys(right).sort();
   if (leftKeys.length !== rightKeys.length) return false;
-  return leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key]);
+  return leftKeys.every(
+    (key, index) => key === rightKeys[index] && left[key] === right[key]
+  );
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.file) {
-    throw new Error("Usage: node scripts/imports/import-yaser-pdf.mjs --file \"C:\\path\\to\\yaser.pdf\" [--apply]");
+    throw new Error(
+      'Usage: node scripts/imports/import-yaser-pdf.mjs --file "C:\\path\\to\\yaser.pdf" [--apply]'
+    );
   }
 
   const pdfPath = path.resolve(args.file);
-  if (!fs.existsSync(pdfPath)) throw new Error(`PDF file not found: ${pdfPath}`);
+  if (!fs.existsSync(pdfPath))
+    throw new Error(`PDF file not found: ${pdfPath}`);
 
   ensureDir(BACKUPS_DIR);
   ensureDir(REPORTS_DIR);
 
   const extractedRows = extractPdfRows(pdfPath);
   const databaseUrl = loadDatabaseUrl();
-  const connection = await mysql.createConnection(buildMySqlConnectionOptions(databaseUrl));
+  const connection = await mysql.createConnection(
+    buildMySqlConnectionOptions(databaseUrl)
+  );
 
   try {
     const [existingRows] = await connection.query(
       `select * from special_accounts where type in ('yaser', 'partnership') order by date asc, id asc`
     );
-    const [drivers] = await connection.query(`select name from drivers order by name asc`);
+    const [drivers] = await connection.query(
+      `select name from drivers order by name asc`
+    );
 
-    const driverCandidates = drivers.map((row) => ({
+    const driverCandidates = drivers.map(row => ({
       raw: row.name,
       norm: normalizeArabic(row.name),
     }));
 
-    const parsedRows = extractedRows.map((entry) => buildExtractedRecord(entry, driverCandidates));
+    const parsedRows = extractedRows.map(entry =>
+      buildExtractedRecord(entry, driverCandidates)
+    );
     const extractedByDate = countByDate(parsedRows, "date");
     const existingByDate = countByDate(existingRows, "date");
 
     if (existingRows.length !== parsedRows.length) {
-      throw new Error(`Row count mismatch: DB=${existingRows.length}, PDF=${parsedRows.length}`);
+      throw new Error(
+        `Row count mismatch: DB=${existingRows.length}, PDF=${parsedRows.length}`
+      );
     }
     if (!sameDistribution(existingByDate, extractedByDate)) {
-      throw new Error("Date distribution mismatch between DB rows and PDF rows");
+      throw new Error(
+        "Date distribution mismatch between DB rows and PDF rows"
+      );
     }
 
     const mergedRows = existingRows.map((row, index) => {
@@ -426,8 +485,12 @@ async function main() {
     });
 
     const lowConfidenceDrivers = mergedRows
-      .filter((row) => row.extracted.driverSource !== "manual" && row.extracted.driverSource !== "lookup")
-      .map((row) => ({
+      .filter(
+        row =>
+          row.extracted.driverSource !== "manual" &&
+          row.extracted.driverSource !== "lookup"
+      )
+      .map(row => ({
         id: row.id,
         date: row.date,
         driverName: row.driverName,
@@ -440,10 +503,11 @@ async function main() {
       mode: args.apply ? "apply" : "dry-run",
       totalRows: mergedRows.length,
       dateDistribution: extractedByDate,
-      migratedFromLegacyType: existingRows.filter((row) => row.type === "yaser").length,
+      migratedFromLegacyType: existingRows.filter(row => row.type === "yaser")
+        .length,
       lowConfidenceDriverRows: lowConfidenceDrivers.length,
       lowConfidenceDriverSamples: lowConfidenceDrivers.slice(0, 20),
-      sampleRows: mergedRows.slice(0, 10).map((row) => ({
+      sampleRows: mergedRows.slice(0, 10).map(row => ({
         id: row.id,
         date: row.date,
         driverName: row.driverName,
@@ -461,15 +525,27 @@ async function main() {
       })),
     };
 
-    const reportPath = path.join(REPORTS_DIR, `yaser-pdf-import-${timestampForFile()}.json`);
+    const reportPath = path.join(
+      REPORTS_DIR,
+      `yaser-pdf-import-${timestampForFile()}.json`
+    );
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), "utf8");
 
     if (!args.apply) {
-      console.log(JSON.stringify({ message: "dry-run complete", reportPath, report }, null, 2));
+      console.log(
+        JSON.stringify(
+          { message: "dry-run complete", reportPath, report },
+          null,
+          2
+        )
+      );
       return;
     }
 
-    const backupPath = path.join(BACKUPS_DIR, `pre-yaser-pdf-import-${timestampForFile()}.json`);
+    const backupPath = path.join(
+      BACKUPS_DIR,
+      `pre-yaser-pdf-import-${timestampForFile()}.json`
+    );
     fs.writeFileSync(backupPath, JSON.stringify(existingRows, null, 2), "utf8");
 
     await connection.beginTransaction();
@@ -537,7 +613,13 @@ async function main() {
     );
 
     await connection.commit();
-    console.log(JSON.stringify({ message: "apply complete", reportPath, backupPath, report }, null, 2));
+    console.log(
+      JSON.stringify(
+        { message: "apply complete", reportPath, backupPath, report },
+        null,
+        2
+      )
+    );
   } catch (error) {
     try {
       await connection.rollback();
@@ -548,7 +630,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error?.stack || String(error));
   process.exit(1);
 });

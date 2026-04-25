@@ -44,15 +44,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "id": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -95,15 +91,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "account_types_typeId_unique": {
           "unique": false,
-          "columns": [
-            "typeId"
-          ]
+          "columns": ["typeId"]
         }
       },
       "foreignKeys": [],
@@ -216,9 +208,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -321,15 +311,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "username": {
           "unique": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "foreignKeys": [],
@@ -372,9 +358,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -447,22 +431,15 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "idx_entity": {
           "unique": false,
-          "columns": [
-            "entity_type",
-            "entity_id"
-          ]
+          "columns": ["entity_type", "entity_id"]
         },
         "idx_field": {
           "unique": false,
-          "columns": [
-            "custom_field_id"
-          ]
+          "columns": ["custom_field_id"]
         }
       },
       "foreignKeys": [],
@@ -575,15 +552,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "field_key": {
           "unique": false,
-          "columns": [
-            "field_key"
-          ]
+          "columns": ["field_key"]
         }
       },
       "foreignKeys": [],
@@ -816,9 +789,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -871,9 +842,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -976,9 +945,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1061,16 +1028,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "uq_section_field": {
           "unique": false,
-          "columns": [
-            "section_key",
-            "field_key"
-          ]
+          "columns": ["section_key", "field_key"]
         }
       },
       "foreignKeys": [],
@@ -1103,9 +1065,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1148,9 +1108,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1233,9 +1191,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1288,15 +1244,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "portId": {
           "unique": false,
-          "columns": [
-            "portId"
-          ]
+          "columns": ["portId"]
         }
       },
       "foreignKeys": [],
@@ -1399,9 +1351,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1724,9 +1674,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],
@@ -1829,15 +1777,11 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         },
         "users_openId_unique": {
           "unique": false,
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "foreignKeys": [],
@@ -1880,9 +1824,7 @@
       "indexes": {
         "PRIMARY": {
           "unique": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "foreignKeys": [],

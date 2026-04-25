@@ -3,7 +3,7 @@ export function normalizeStringOptions(options = []) {
   const normalized = [];
 
   for (const option of options) {
-    const value = String(option ?? '').trim();
+    const value = String(option ?? "").trim();
     if (!value) continue;
     if (seen.has(value)) continue;
     seen.add(value);
@@ -13,18 +13,22 @@ export function normalizeStringOptions(options = []) {
   return normalized;
 }
 
-export function normalizeAutocompleteOptions(options = [], { labelKey = 'name', valueKey = 'id' } = {}) {
+export function normalizeAutocompleteOptions(
+  options = [],
+  { labelKey = "name", valueKey = "id" } = {}
+) {
   const seen = new Set();
   const normalized = [];
 
   for (const option of options) {
-    const label = String(option?.[labelKey] ?? '').trim();
+    const label = String(option?.[labelKey] ?? "").trim();
     const value = option?.[valueKey];
-    const hasValue = value !== undefined && value !== null && String(value).trim() !== '';
+    const hasValue =
+      value !== undefined && value !== null && String(value).trim() !== "";
 
     if (!label && !hasValue) continue;
 
-    const dedupeKey = `${hasValue ? String(value) : ''}::${label}`;
+    const dedupeKey = `${hasValue ? String(value) : ""}::${label}`;
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
 

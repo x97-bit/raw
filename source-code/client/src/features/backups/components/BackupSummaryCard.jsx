@@ -1,10 +1,20 @@
-export default function BackupSummaryCard({ title, value, hint, icon: Icon, accent = '#648ea9' }) {
+export default function BackupSummaryCard({
+  title,
+  value,
+  hint,
+  icon: Icon,
+  accent = "#648ea9",
+}) {
   return (
     <div className="surface-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 text-right">
-          <div className="text-xs font-bold tracking-wide text-[#91a0ad]">{title}</div>
-          <div className="mt-2 text-[1.75rem] font-black tracking-tight text-white">{value}</div>
+          <div className="text-xs font-bold tracking-wide text-[#91a0ad]">
+            {title}
+          </div>
+          <div className="mt-2 text-[1.75rem] font-black tracking-tight text-white">
+            {value}
+          </div>
           <div className="mt-2 text-sm text-[#b7c3ce]">{hint}</div>
         </div>
         <div

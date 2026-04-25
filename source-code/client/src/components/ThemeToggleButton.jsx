@@ -1,9 +1,9 @@
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
 
-export default function ThemeToggleButton({ compact = false, className = '' }) {
+export default function ThemeToggleButton({ compact = false, className = "" }) {
   const { isDark, toggleTheme } = useTheme();
-  const nextLabel = isDark ? 'الوضع الفاتح' : 'الوضع الداكن';
+  const nextLabel = isDark ? "الوضع الفاتح" : "الوضع الداكن";
   const Icon = isDark ? Sun : Moon;
 
   return (
@@ -12,15 +12,13 @@ export default function ThemeToggleButton({ compact = false, className = '' }) {
       onClick={toggleTheme}
       title={nextLabel}
       aria-label={nextLabel}
-      className={`theme-toggle ${compact ? 'theme-toggle--compact' : ''} ${className}`.trim()}
+      className={`theme-toggle ${compact ? "theme-toggle--compact" : ""} ${className}`.trim()}
     >
       <span className="theme-toggle__icon">
         <Icon size={16} strokeWidth={1.9} />
       </span>
       {!compact && (
-        <span className="theme-toggle__label">
-          {isDark ? 'فاتح' : 'داكن'}
-        </span>
+        <span className="theme-toggle__label">{isDark ? "فاتح" : "داكن"}</span>
       )}
     </button>
   );

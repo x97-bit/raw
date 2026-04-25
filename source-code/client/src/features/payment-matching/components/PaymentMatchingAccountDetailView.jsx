@@ -1,17 +1,17 @@
-import EmptyTableRow from '../../../components/EmptyTableRow';
-import PageHeader from '../../../components/PageHeader';
+import EmptyTableRow from "../../../components/EmptyTableRow";
+import PageHeader from "../../../components/PageHeader";
 import {
   PAYMENT_STATUS_CONFIG,
   PAYMENT_SUMMARY_VARIANTS,
-} from '../../../utils/paymentMatchingConfig';
+} from "../../../utils/paymentMatchingConfig";
 import {
   formatOutstandingAmount,
   formatPaidAmount,
   formatPaymentMatchingNumber,
-} from '../paymentMatchingPageHelpers';
-import PaymentStatCard from './PaymentStatCard';
-import PaymentStatusBadge from './PaymentStatusBadge';
-import PaymentMatchingShipmentDetailModal from './PaymentMatchingShipmentDetailModal';
+} from "../paymentMatchingPageHelpers";
+import PaymentStatCard from "./PaymentStatCard";
+import PaymentStatusBadge from "./PaymentStatusBadge";
+import PaymentMatchingShipmentDetailModal from "./PaymentMatchingShipmentDetailModal";
 
 export default function PaymentMatchingAccountDetailView({
   selectedAccount,
@@ -26,18 +26,33 @@ export default function PaymentMatchingAccountDetailView({
 }) {
   return (
     <div className="page-shell">
-      <PageHeader title={selectedAccount.AccountName} subtitle="تفاصيل التسديد" onBack={onBack} />
+      <PageHeader
+        title={selectedAccount.AccountName}
+        subtitle="تفاصيل التسديد"
+        onBack={onBack}
+      />
 
       <div className="space-y-5 p-5">
         {accountDetail && (
           <div className="grid grid-cols-3 gap-3">
-            {accountDetail.shipments.map((shipment) => (
+            {accountDetail.shipments.map(shipment => (
               <PaymentStatCard
                 key={shipment.payment_status}
-                label={PAYMENT_STATUS_CONFIG[shipment.payment_status]?.label || shipment.payment_status}
+                label={
+                  PAYMENT_STATUS_CONFIG[shipment.payment_status]?.label ||
+                  shipment.payment_status
+                }
                 value={shipment.count}
-                variant={PAYMENT_SUMMARY_VARIANTS[shipment.payment_status] || 'default'}
-                sub={shipment.remaining_usd ? `متبقي $${formatPaymentMatchingNumber(shipment.remaining_usd)}` : (shipment.remaining_iqd ? `متبقي ${formatPaymentMatchingNumber(shipment.remaining_iqd)} د.ع` : '')}
+                variant={
+                  PAYMENT_SUMMARY_VARIANTS[shipment.payment_status] || "default"
+                }
+                sub={
+                  shipment.remaining_usd
+                    ? `متبقي $${formatPaymentMatchingNumber(shipment.remaining_usd)}`
+                    : shipment.remaining_iqd
+                      ? `متبقي ${formatPaymentMatchingNumber(shipment.remaining_iqd)} د.ع`
+                      : ""
+                }
               />
             ))}
           </div>
@@ -46,7 +61,9 @@ export default function PaymentMatchingAccountDetailView({
         <div className="surface-card overflow-hidden p-0">
           <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-3.5">
             <div className="h-5 w-1 rounded-full bg-accent-500" />
-            <span className="font-bold text-primary-900">الشحنات ({accountShipments.total})</span>
+            <span className="font-bold text-primary-900">
+              الشحنات ({accountShipments.total})
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -62,23 +79,48 @@ export default function PaymentMatchingAccountDetailView({
                 </tr>
               </thead>
               <tbody>
-                {accountShipments.rows.map((row) => (
+                {accountShipments.rows.map(row => (
                   <tr
                     key={row.shipment_id}
                     onClick={() => onOpenShipment(row.shipment_id)}
-                    className={`cursor-pointer border-b border-gray-50 transition-colors hover:bg-primary-50/50 ${row.payment_status === 'paid' ? 'opacity-50' : ''}`}
+                    className={`cursor-pointer border-b border-gray-50 transition-colors hover:bg-primary-50/50 ${row.payment_status === "paid" ? "opacity-50" : ""}`}
                   >
-                    <td className="whitespace-nowrap px-3 py-2.5">{row.trans_date?.split(' ')[0]}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{row.ref_no}</td>
-                    <td className="px-3 py-2.5">{row.amount_usd ? `$${formatPaymentMatchingNumber(row.amount_usd)}` : '-'}</td>
-                    <td className="px-3 py-2.5">{row.amount_iqd ? formatPaymentMatchingNumber(row.amount_iqd) : '-'}</td>
-                    <td className="px-3 py-2.5 font-medium text-emerald-600">{formatPaidAmount(row.paid_usd, row.paid_iqd)}</td>
-                    <td className="px-3 py-2.5 font-bold text-red-600">{formatOutstandingAmount(row.remaining_usd, row.remaining_iqd)}</td>
-                    <td className="px-3 py-2.5"><PaymentStatusBadge status={row.payment_status} /></td>
+                    <td className="whitespace-nowrap px-3 py-2.5">
+                      {row.trans_date?.split(" ")[0]}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-xs text-gray-500">
+                      {row.ref_no}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {row.amount_usd
+                        ? `$${formatPaymentMatchingNumber(row.amount_usd)}`
+                        : "-"}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {row.amount_iqd
+                        ? formatPaymentMatchingNumber(row.amount_iqd)
+                        : "-"}
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-emerald-600">
+                      {formatPaidAmount(row.paid_usd, row.paid_iqd)}
+                    </td>
+                    <td className="px-3 py-2.5 font-bold text-red-600">
+                      {formatOutstandingAmount(
+                        row.remaining_usd,
+                        row.remaining_iqd
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <PaymentStatusBadge status={row.payment_status} />
+                    </td>
                   </tr>
                 ))}
                 {accountShipments.rows.length === 0 && (
-                  <EmptyTableRow colSpan={7} message="لا توجد شحنات" className="px-4 py-8 text-center text-gray-400" />
+                  <EmptyTableRow
+                    colSpan={7}
+                    message="لا توجد شحنات"
+                    className="px-4 py-8 text-center text-gray-400"
+                  />
                 )}
               </tbody>
             </table>

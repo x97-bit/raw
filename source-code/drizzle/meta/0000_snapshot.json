@@ -34,17 +34,13 @@
       "compositePrimaryKeys": {
         "account_types_id": {
           "name": "account_types_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "account_types_typeId_unique": {
           "name": "account_types_typeId_unique",
-          "columns": [
-            "typeId"
-          ]
+          "columns": ["typeId"]
         }
       },
       "checkConstraint": {}
@@ -131,9 +127,7 @@
       "compositePrimaryKeys": {
         "accounts_id": {
           "name": "accounts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -217,17 +211,13 @@
       "compositePrimaryKeys": {
         "app_users_id": {
           "name": "app_users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "app_users_username_unique": {
           "name": "app_users_username_unique",
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "checkConstraint": {}
@@ -263,9 +253,7 @@
       "compositePrimaryKeys": {
         "cash_state_id": {
           "name": "cash_state_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -323,9 +311,7 @@
       "compositePrimaryKeys": {
         "custom_field_values_id": {
           "name": "custom_field_values_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -414,17 +400,13 @@
       "compositePrimaryKeys": {
         "custom_fields_id": {
           "name": "custom_fields_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "custom_fields_field_key_unique": {
           "name": "custom_fields_field_key_unique",
-          "columns": [
-            "field_key"
-          ]
+          "columns": ["field_key"]
         }
       },
       "checkConstraint": {}
@@ -602,9 +584,7 @@
       "compositePrimaryKeys": {
         "debts_id": {
           "name": "debts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -648,9 +628,7 @@
       "compositePrimaryKeys": {
         "drivers_id": {
           "name": "drivers_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -733,9 +711,7 @@
       "compositePrimaryKeys": {
         "expenses_id": {
           "name": "expenses_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -804,9 +780,7 @@
       "compositePrimaryKeys": {
         "field_config_id": {
           "name": "field_config_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -835,9 +809,7 @@
       "compositePrimaryKeys": {
         "goods_types_id": {
           "name": "goods_types_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -873,9 +845,7 @@
       "compositePrimaryKeys": {
         "governorates_id": {
           "name": "governorates_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -942,9 +912,7 @@
       "compositePrimaryKeys": {
         "payment_matching_id": {
           "name": "payment_matching_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -987,17 +955,13 @@
       "compositePrimaryKeys": {
         "ports_id": {
           "name": "ports_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "ports_portId_unique": {
           "name": "ports_portId_unique",
-          "columns": [
-            "portId"
-          ]
+          "columns": ["portId"]
         }
       },
       "checkConstraint": {}
@@ -1079,9 +1043,7 @@
       "compositePrimaryKeys": {
         "special_accounts_id": {
           "name": "special_accounts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1323,9 +1285,7 @@
       "compositePrimaryKeys": {
         "transactions_id": {
           "name": "transactions_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1408,17 +1368,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}
@@ -1454,9 +1410,7 @@
       "compositePrimaryKeys": {
         "vehicles_id": {
           "name": "vehicles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

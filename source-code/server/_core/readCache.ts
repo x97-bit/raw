@@ -11,19 +11,25 @@ type ReadCacheOptions = {
 
 function normalizeCacheValue(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return value.map((entry) => normalizeCacheValue(entry));
+    return value.map(entry => normalizeCacheValue(entry));
   }
 
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, normalizeCacheValue(entry)]),
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        normalizeCacheValue(entry),
+      ])
     );
   }
 
   return value;
 }
 
-export function buildRequestCacheKey(pathname: string, query: Record<string, unknown> = {}) {
+export function buildRequestCacheKey(
+  pathname: string,
+  query: Record<string, unknown> = {}
+) {
   const params = new URLSearchParams();
 
   for (const key of Object.keys(query).sort()) {

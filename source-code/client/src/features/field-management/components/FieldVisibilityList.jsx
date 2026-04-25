@@ -1,6 +1,14 @@
-import { Check, Eye, EyeOff, GripVertical, Pencil, Save, X } from 'lucide-react';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import { normalizeFieldLabel } from '../../../utils/fieldConfigMetadata';
+import {
+  Check,
+  Eye,
+  EyeOff,
+  GripVertical,
+  Pencil,
+  Save,
+  X,
+} from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import { normalizeFieldLabel } from "../../../utils/fieldConfigMetadata";
 
 export default function FieldVisibilityList({
   loading,
@@ -34,12 +42,16 @@ export default function FieldVisibilityList({
   return (
     <div className="surface-card rounded-xl shadow-sm border border-white/[0.06] overflow-hidden p-0">
       <div className="px-4 py-3 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between">
-        <h3 className="font-bold text-[#eef3f7]">إعدادات الظهور - {currentConfigLabel}</h3>
+        <h3 className="font-bold text-[#eef3f7]">
+          إعدادات الظهور - {currentConfigLabel}
+        </h3>
         <div className="flex items-center gap-3">
           <span className="text-xs text-[#91a0ad] bg-white/[0.04] px-2 py-1 rounded-full">
             عدد الحقول الظاهرة
           </span>
-          <span className="text-xs text-[#91a0ad]">{visibleCount} من {fieldConfigs.length} حقل</span>
+          <span className="text-xs text-[#91a0ad]">
+            {visibleCount} من {fieldConfigs.length} حقل
+          </span>
         </div>
       </div>
 
@@ -48,16 +60,18 @@ export default function FieldVisibilityList({
           <div
             key={field.key}
             draggable
-            onDragStart={(event) => onDragStart(event, index)}
-            onDragEnter={(event) => onDragEnter(event, index)}
+            onDragStart={event => onDragStart(event, index)}
+            onDragEnter={event => onDragEnter(event, index)}
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
             onDragLeave={onDragLeave}
             className={`flex items-center gap-3 px-4 py-3 transition-all cursor-grab active:cursor-grabbing select-none ${
-              field.visible ? 'bg-transparent hover:bg-white/[0.02]' : 'bg-white/[0.02] opacity-75'
-            } ${dragOverIndex === index ? 'border-t-2 border-[#7bd3eb] bg-[#7bd3eb]/[0.1]' : ''} ${
-              dragIndex === index ? 'opacity-50' : ''
-            } ${touchDragIndex === index ? 'ring-2 ring-[#7bd3eb] bg-[#7bd3eb]/[0.1]' : ''}`}
+              field.visible
+                ? "bg-transparent hover:bg-white/[0.02]"
+                : "bg-white/[0.02] opacity-75"
+            } ${dragOverIndex === index ? "border-t-2 border-[#7bd3eb] bg-[#7bd3eb]/[0.1]" : ""} ${
+              dragIndex === index ? "opacity-50" : ""
+            } ${touchDragIndex === index ? "ring-2 ring-[#7bd3eb] bg-[#7bd3eb]/[0.1]" : ""}`}
           >
             <div className="flex items-center text-[#91a0ad] hover:text-[#c8d4df] transition-colors cursor-grab active:cursor-grabbing">
               <GripVertical size={18} />
@@ -69,18 +83,27 @@ export default function FieldVisibilityList({
 
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`font-medium ${field.visible ? 'text-[#eef3f7]' : 'text-[#91a0ad] line-through'}`}>
-                  {normalizeFieldLabel(field.displayLabel, field.baseLabel || field.label)}
+                <span
+                  className={`font-medium ${field.visible ? "text-[#eef3f7]" : "text-[#91a0ad] line-through"}`}
+                >
+                  {normalizeFieldLabel(
+                    field.displayLabel,
+                    field.baseLabel || field.label
+                  )}
                 </span>
                 {field.isCustom ? (
-                  <span className="text-xs bg-[#7bd3eb]/[0.16] text-[#dce8f2] border border-[#7bd3eb]/[0.22] px-2 py-0.5 rounded-full">مخصص</span>
+                  <span className="text-xs bg-[#7bd3eb]/[0.16] text-[#dce8f2] border border-[#7bd3eb]/[0.22] px-2 py-0.5 rounded-full">
+                    مخصص
+                  </span>
                 ) : (
-                  <span className="text-xs bg-white/[0.06] text-[#91a0ad] px-2 py-0.5 rounded-full">أساسي</span>
+                  <span className="text-xs bg-white/[0.06] text-[#91a0ad] px-2 py-0.5 rounded-full">
+                    أساسي
+                  </span>
                 )}
                 {editingDisplayLabelKey !== field.key && (
                   <button
                     type="button"
-                    onClick={(event) => {
+                    onClick={event => {
                       event.stopPropagation();
                       onStartDisplayLabelEdit(field);
                     }}
@@ -101,11 +124,14 @@ export default function FieldVisibilityList({
                     <input
                       type="text"
                       value={editingDisplayLabelValue}
-                      onClick={(event) => event.stopPropagation()}
-                      onChange={(event) => onEditingDisplayLabelValueChange(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') onSaveDisplayLabelEdit(field);
-                        if (event.key === 'Escape') onCancelDisplayLabelEdit();
+                      onClick={event => event.stopPropagation()}
+                      onChange={event =>
+                        onEditingDisplayLabelValueChange(event.target.value)
+                      }
+                      onKeyDown={event => {
+                        if (event.key === "Enter")
+                          onSaveDisplayLabelEdit(field);
+                        if (event.key === "Escape") onCancelDisplayLabelEdit();
                       }}
                       placeholder={field.baseLabel || field.label}
                       className="input-field w-full"
@@ -114,7 +140,7 @@ export default function FieldVisibilityList({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={(event) => {
+                        onClick={event => {
                           event.stopPropagation();
                           onSaveDisplayLabelEdit(field);
                         }}
@@ -125,7 +151,7 @@ export default function FieldVisibilityList({
                       </button>
                       <button
                         type="button"
-                        onClick={(event) => {
+                        onClick={event => {
                           event.stopPropagation();
                           onCancelDisplayLabelEdit();
                         }}
@@ -137,7 +163,7 @@ export default function FieldVisibilityList({
                       {!!field.displayLabel && (
                         <button
                           type="button"
-                          onClick={(event) => {
+                          onClick={event => {
                             event.stopPropagation();
                             onResetDisplayLabelValue();
                           }}
@@ -151,7 +177,9 @@ export default function FieldVisibilityList({
                 </div>
               ) : (
                 <div className="mt-2 text-xs text-[#91a0ad]">
-                  {!!field.displayLabel ? 'يوجد اسم عرض مخصص لهذا الحقل.' : 'يُستخدم الاسم الأساسي لهذا الحقل.'}
+                  {!!field.displayLabel
+                    ? "يوجد اسم عرض مخصص لهذا الحقل."
+                    : "يُستخدم الاسم الأساسي لهذا الحقل."}
                 </div>
               )}
 
@@ -164,34 +192,54 @@ export default function FieldVisibilityList({
 
             <div className="flex flex-col gap-0.5 sm:hidden">
               <button
-                onClick={(event) => {
+                onClick={event => {
                   event.stopPropagation();
                   onMoveTouchItem(index, index - 1);
                 }}
                 disabled={index === 0}
                 className="text-[#91a0ad] hover:text-white disabled:opacity-30 transition-colors p-0.5"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6" /></svg>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 15l-6-6-6 6" />
+                </svg>
               </button>
               <button
-                onClick={(event) => {
+                onClick={event => {
                   event.stopPropagation();
                   onMoveTouchItem(index, index + 1);
                 }}
                 disabled={index === fieldConfigs.length - 1}
                 className="text-[#91a0ad] hover:text-white disabled:opacity-30 transition-colors p-0.5"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </button>
             </div>
 
             <button
-              onClick={(event) => {
+              onClick={event => {
                 event.stopPropagation();
                 onToggleVisibility(field.key);
               }}
               className={`p-2 rounded-lg transition-all ${
-                field.visible ? 'bg-[#8eb8ad]/[0.16] text-[#b9d8cf] hover:bg-[#8eb8ad]/[0.22] ring-1 ring-[#8eb8ad]/[0.2]' : 'bg-white/[0.04] text-[#64727f] hover:bg-white/[0.1] hover:text-[#91a0ad]'
+                field.visible
+                  ? "bg-[#8eb8ad]/[0.16] text-[#b9d8cf] hover:bg-[#8eb8ad]/[0.22] ring-1 ring-[#8eb8ad]/[0.2]"
+                  : "bg-white/[0.04] text-[#64727f] hover:bg-white/[0.1] hover:text-[#91a0ad]"
               }`}
             >
               {field.visible ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -207,7 +255,7 @@ export default function FieldVisibilityList({
           className="w-full btn-primary py-3 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <Save size={18} />
-          {saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}
+          {saving ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
         </button>
       </div>
     </div>

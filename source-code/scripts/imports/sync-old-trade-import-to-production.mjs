@@ -34,7 +34,7 @@ const LOOKUP_TABLES = [
 ];
 
 function arg(name) {
-  const exact = process.argv.find((value) => value.startsWith(`${name}=`));
+  const exact = process.argv.find(value => value.startsWith(`${name}=`));
   if (exact) return exact.slice(name.length + 1);
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] || null : null;
@@ -45,7 +45,9 @@ function has(name) {
 }
 
 async function tableCount(connection, table, databaseName) {
-  const [rows] = await connection.query(`SELECT COUNT(*) AS c FROM \`${databaseName}\`.\`${table}\``);
+  const [rows] = await connection.query(
+    `SELECT COUNT(*) AS c FROM \`${databaseName}\`.\`${table}\``
+  );
   return Number(rows[0]?.c || 0);
 }
 
@@ -54,7 +56,13 @@ async function getDatabaseName(connection) {
   return rows[0]?.db || "";
 }
 
-async function loadMissingLookupRows(connection, sourceDb, targetDb, table, column) {
+async function loadMissingLookupRows(
+  connection,
+  sourceDb,
+  targetDb,
+  table,
+  column
+) {
   const [rows] = await connection.query(
     `
       SELECT s.*
@@ -71,7 +79,10 @@ async function loadMissingLookupRows(connection, sourceDb, targetDb, table, colu
 
 async function backupTarget(connection, targetDb, payload) {
   await fs.mkdir(BACKUP_DIR, { recursive: true });
-  const backupPath = path.join(BACKUP_DIR, `pre-import-production-sync-${stamp}.json`);
+  const backupPath = path.join(
+    BACKUP_DIR,
+    `pre-import-production-sync-${stamp}.json`
+  );
   await fs.writeFile(
     backupPath,
     JSON.stringify(
@@ -93,7 +104,10 @@ async function backupTarget(connection, targetDb, payload) {
 
 async function writeReport(report) {
   await fs.mkdir(REPORT_DIR, { recursive: true });
-  const reportPath = path.join(REPORT_DIR, `import-production-sync-${stamp}.json`);
+  const reportPath = path.join(
+    REPORT_DIR,
+    `import-production-sync-${stamp}.json`
+  );
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
   return reportPath;
 }
@@ -103,12 +117,16 @@ async function main() {
     throw new Error("DATABASE_URL is missing in source-code/.env");
   }
 
-  const target = await mysql.createConnection(buildMySqlConnectionOptions(TARGET_URL));
+  const target = await mysql.createConnection(
+    buildMySqlConnectionOptions(TARGET_URL)
+  );
 
   try {
     const targetDb = await getDatabaseName(target);
     if (!targetDb) {
-      throw new Error("Could not determine target database name from DATABASE_URL");
+      throw new Error(
+        "Could not determine target database name from DATABASE_URL"
+      );
     }
 
     if (targetDb === SOURCE_DB) {
@@ -117,7 +135,10 @@ async function main() {
 
     const sourceCounts = {};
     const targetCounts = {};
-    for (const table of [...CORE_TABLES, ...LOOKUP_TABLES.map((item) => item.table)]) {
+    for (const table of [
+      ...CORE_TABLES,
+      ...LOOKUP_TABLES.map(item => item.table),
+    ]) {
       sourceCounts[table] = await tableCount(target, table, SOURCE_DB);
       targetCounts[table] = await tableCount(target, table, targetDb);
     }
@@ -142,7 +163,7 @@ async function main() {
       };
     }
 
-    const allCoreMatch = Object.values(coreDelta).every((item) => item.matches);
+    const allCoreMatch = Object.values(coreDelta).every(item => item.matches);
 
     const backupPath = await backupTarget(target, targetDb, {
       sourceCounts,
@@ -153,7 +174,9 @@ async function main() {
     });
 
     if (!allCoreMatch) {
-      throw new Error("Core production tables do not match staging counts. Refusing add-only sync.");
+      throw new Error(
+        "Core production tables do not match staging counts. Refusing add-only sync."
+      );
     }
 
     let applied = {};
@@ -212,7 +235,11 @@ async function main() {
     }
 
     const targetCountsAfter = {};
-    for (const table of [...CORE_TABLES, ...LOOKUP_TABLES.map((item) => item.table), "audit_logs"]) {
+    for (const table of [
+      ...CORE_TABLES,
+      ...LOOKUP_TABLES.map(item => item.table),
+      "audit_logs",
+    ]) {
       targetCountsAfter[table] = await tableCount(target, table, targetDb);
     }
 
@@ -228,7 +255,10 @@ async function main() {
       targetCountsAfter,
       coreDelta,
       missingLookups: Object.fromEntries(
-        Object.entries(missingLookups).map(([table, rows]) => [table, rows.map((row) => row.name ?? row.id)])
+        Object.entries(missingLookups).map(([table, rows]) => [
+          table,
+          rows.map(row => row.name ?? row.id),
+        ])
       ),
       applied,
       backupPath,
@@ -241,7 +271,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error);
   process.exit(1);
 });

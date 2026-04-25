@@ -1,1 +1,1 @@
-export { default } from '../features/backups/BackupsPageContent';
+export { default } from "../features/backups/BackupsPageContent";

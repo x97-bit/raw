@@ -1,7 +1,7 @@
-import { useAuth } from '../../contexts/AuthContext';
-import PageHeader from '../../components/PageHeader';
-import ExportButtons from '../../components/ExportButtons';
-import useTrialBalancePageData from './useTrialBalancePageData';
+import { useAuth } from "../../contexts/AuthContext";
+import PageHeader from "../../components/PageHeader";
+import ExportButtons from "../../components/ExportButtons";
+import useTrialBalancePageData from "./useTrialBalancePageData";
 import {
   buildTrialBalanceColumns,
   buildTrialBalanceExportSummary,
@@ -9,10 +9,10 @@ import {
   buildTrialBalanceTotalsRow,
   groupTrialBalanceRows,
   hasTrialBalancePeriodFilter,
-} from './trialBalanceHelpers';
-import TrialBalanceFiltersBar from './components/TrialBalanceFiltersBar';
-import TrialBalanceSummaryGrid from './components/TrialBalanceSummaryGrid';
-import TrialBalanceTable from './components/TrialBalanceTable';
+} from "./trialBalanceHelpers";
+import TrialBalanceFiltersBar from "./components/TrialBalanceFiltersBar";
+import TrialBalanceSummaryGrid from "./components/TrialBalanceSummaryGrid";
+import TrialBalanceTable from "./components/TrialBalanceTable";
 
 export default function TrialBalancePage({ onBack }) {
   const { api } = useAuth();
@@ -42,7 +42,7 @@ export default function TrialBalancePage({ onBack }) {
           <ExportButtons
             inHeader
             rows={data.rows}
-            columns={columns.map((column) => ({
+            columns={columns.map(column => ({
               key: column.dataKey,
               label: column.label,
               format: column.format,

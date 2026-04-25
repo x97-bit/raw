@@ -1,23 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import ExportButtons from '../../components/ExportButtons';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import PageHeader from '../../components/PageHeader';
-import ExpenseFormModal from './components/ExpenseFormModal';
-import ExpensesOverviewCards from './components/ExpensesOverviewCards';
-import ExpensesTable from './components/ExpensesTable';
-import ExpensesTotalsBar from './components/ExpensesTotalsBar';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import ExportButtons from "../../components/ExportButtons";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import PageHeader from "../../components/PageHeader";
+import ExpenseFormModal from "./components/ExpenseFormModal";
+import ExpensesOverviewCards from "./components/ExpensesOverviewCards";
+import ExpensesTable from "./components/ExpensesTable";
+import ExpensesTotalsBar from "./components/ExpensesTotalsBar";
 import {
   buildExpenseExportColumns,
   createExpenseFormFromRow,
   createInitialExpenseForm,
   EXPENSE_COLUMNS,
-} from './expensesConfig';
-import {
-  filterExpensesByPort,
-  sumExpenseAmounts,
-} from './expensesHelpers';
-import { useAuth } from '../../contexts/AuthContext';
+} from "./expensesConfig";
+import { filterExpensesByPort, sumExpenseAmounts } from "./expensesHelpers";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ExpensesPage({ onBack }) {
   const { api, can } = useAuth();
@@ -27,28 +24,28 @@ export default function ExpensesPage({ onBack }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({});
   const [editId, setEditId] = useState(null);
-  const [filterPort, setFilterPort] = useState('');
+  const [filterPort, setFilterPort] = useState("");
 
   const filteredExpenses = useMemo(
     () => filterExpensesByPort(data.expenses, filterPort),
-    [data.expenses, filterPort],
+    [data.expenses, filterPort]
   );
   const { totalUSD, totalIQD } = useMemo(
     () => sumExpenseAmounts(filteredExpenses),
-    [filteredExpenses],
+    [filteredExpenses]
   );
   const exportColumns = useMemo(
     () => buildExpenseExportColumns(EXPENSE_COLUMNS),
-    [],
+    []
   );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api('/reports/expenses-summary');
+      const result = await api("/reports/expenses-summary");
       setData(result);
     } catch (error) {
-      console.error('Error loading expenses:', error);
+      console.error("Error loading expenses:", error);
     } finally {
       setLoading(false);
     }
@@ -59,7 +56,9 @@ export default function ExpensesPage({ onBack }) {
   }, [load]);
 
   useEffect(() => {
-    api('/accounts').then(setAccounts).catch(() => setAccounts([]));
+    api("/accounts")
+      .then(setAccounts)
+      .catch(() => setAccounts([]));
   }, [api]);
 
   const closeForm = () => {
@@ -74,7 +73,7 @@ export default function ExpensesPage({ onBack }) {
     setShowForm(true);
   };
 
-  const handleEdit = (expense) => {
+  const handleEdit = expense => {
     setForm(createExpenseFormFromRow(expense));
     setEditId(expense.id);
     setShowForm(true);
@@ -82,30 +81,33 @@ export default function ExpensesPage({ onBack }) {
 
   const handleSave = async () => {
     if (editId) {
-      await api(`/expenses/${editId}`, { method: 'PUT', body: JSON.stringify(form) });
+      await api(`/expenses/${editId}`, {
+        method: "PUT",
+        body: JSON.stringify(form),
+      });
     } else {
-      await api('/expenses', { method: 'POST', body: JSON.stringify(form) });
+      await api("/expenses", { method: "POST", body: JSON.stringify(form) });
     }
 
     closeForm();
     await load();
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('هل تريد حذف هذا المصروف؟')) {
+  const handleDelete = async id => {
+    if (!window.confirm("هل تريد حذف هذا المصروف؟")) {
       return;
     }
 
-    await api(`/expenses/${id}`, { method: 'DELETE' });
+    await api(`/expenses/${id}`, { method: "DELETE" });
     await load();
   };
 
   const handleFormChange = (key, value) => {
-    setForm((current) => {
+    setForm(current => {
       const next = { ...current, [key]: value };
-      if (key === 'chargeTarget' && value !== 'trader') {
+      if (key === "chargeTarget" && value !== "trader") {
         next.accountId = null;
-        next.accountName = '';
+        next.accountName = "";
       }
       return next;
     });
@@ -113,11 +115,7 @@ export default function ExpensesPage({ onBack }) {
 
   return (
     <div className="page-shell">
-      <PageHeader
-        title="المصاريف"
-        subtitle="الصفحة الرئيسية"
-        onBack={onBack}
-      >
+      <PageHeader title="المصاريف" subtitle="الصفحة الرئيسية" onBack={onBack}>
         {filteredExpenses.length > 0 && (
           <ExportButtons
             inHeader

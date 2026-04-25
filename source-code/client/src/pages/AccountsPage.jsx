@@ -1,1 +1,1 @@
-export { default } from '../features/special-accounts/AccountsPageContent';
+export { default } from "../features/special-accounts/AccountsPageContent";

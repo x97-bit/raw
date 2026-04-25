@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { INVALID_HOST_ERROR, apiBodyParserErrorMiddleware, apiSecurityMiddleware } from "./apiSecurity";
+import {
+  INVALID_HOST_ERROR,
+  apiBodyParserErrorMiddleware,
+  apiSecurityMiddleware,
+} from "./apiSecurity";
 
 function createRequest(overrides: Record<string, unknown> = {}) {
   const headers = Object.fromEntries(
-    Object.entries((overrides.headers as Record<string, string> | undefined) || {}).map(([key, value]) => [
-      key.toLowerCase(),
-      value,
-    ]),
+    Object.entries(
+      (overrides.headers as Record<string, string> | undefined) || {}
+    ).map(([key, value]) => [key.toLowerCase(), value])
   );
 
   return {
@@ -37,7 +40,10 @@ describe("apiSecurityMiddleware", () => {
     apiSecurityMiddleware(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store, max-age=0");
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Cache-Control",
+      "no-store, max-age=0"
+    );
     expect(res.setHeader).toHaveBeenCalledWith("Pragma", "no-cache");
     expect(res.setHeader).toHaveBeenCalledWith("Expires", "0");
   });
@@ -59,7 +65,9 @@ describe("apiSecurityMiddleware", () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: "Cross-site requests are not allowed." });
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Cross-site requests are not allowed.",
+    });
   });
 
   it("requires json payloads for mutating requests with a body", () => {
@@ -79,7 +87,9 @@ describe("apiSecurityMiddleware", () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(415);
-    expect(res.json).toHaveBeenCalledWith({ error: "Requests with a body must use application/json." });
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Requests with a body must use application/json.",
+    });
   });
 
   it("rejects suspicious host headers before handling api requests", () => {
@@ -144,7 +154,9 @@ describe("apiBodyParserErrorMiddleware", () => {
     apiBodyParserErrorMiddleware(error as any, {} as any, res, next);
 
     expect(res.status).toHaveBeenCalledWith(413);
-    expect(res.json).toHaveBeenCalledWith({ error: "Request payload is too large." });
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Request payload is too large.",
+    });
     expect(next).not.toHaveBeenCalled();
   });
 });

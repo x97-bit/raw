@@ -62,7 +62,9 @@ describe("assertImportableBackupPayload", () => {
       },
     });
 
-    expect(() => assertImportableBackupPayload(backup)).toThrow(RequestValidationError);
+    expect(() => assertImportableBackupPayload(backup)).toThrow(
+      RequestValidationError
+    );
   });
 
   it("rejects backup payloads with an unsupported format", () => {
@@ -75,28 +77,36 @@ describe("assertImportableBackupPayload", () => {
       },
     });
 
-    expect(() => assertImportableBackupPayload(backup)).toThrow(RequestValidationError);
+    expect(() => assertImportableBackupPayload(backup)).toThrow(
+      RequestValidationError
+    );
   });
 });
 
 describe("validateBackupImportPayload", () => {
   it("rejects backup imports with too many tables", () => {
     const backup = Object.fromEntries(
-      Array.from({ length: 81 }, (_, index) => [`table_${index + 1}`, []]),
+      Array.from({ length: 81 }, (_, index) => [`table_${index + 1}`, []])
     );
 
-    expect(() => validateBackupImportPayload(backup)).toThrow(RequestValidationError);
+    expect(() => validateBackupImportPayload(backup)).toThrow(
+      RequestValidationError
+    );
   });
 
   it("rejects backup imports with invalid table names", () => {
-    expect(() => validateBackupImportPayload({
-      "transactions;drop": [],
-    })).toThrow(RequestValidationError);
+    expect(() =>
+      validateBackupImportPayload({
+        "transactions;drop": [],
+      })
+    ).toThrow(RequestValidationError);
   });
 
   it("rejects backup imports when a row is not an object", () => {
-    expect(() => validateBackupImportPayload({
-      transactions: [null],
-    })).toThrow(RequestValidationError);
+    expect(() =>
+      validateBackupImportPayload({
+        transactions: [null],
+      })
+    ).toThrow(RequestValidationError);
   });
 });

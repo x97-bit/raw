@@ -27,14 +27,21 @@ async function pathExists(targetPath) {
 function assertInsideProjectRoot(targetPath) {
   const resolvedPath = path.resolve(targetPath);
   const normalizedRoot = `${projectRoot}${path.sep}`;
-  if (resolvedPath !== projectRoot && !resolvedPath.startsWith(normalizedRoot)) {
-    throw new Error(`Refusing to remove path outside project root: ${resolvedPath}`);
+  if (
+    resolvedPath !== projectRoot &&
+    !resolvedPath.startsWith(normalizedRoot)
+  ) {
+    throw new Error(
+      `Refusing to remove path outside project root: ${resolvedPath}`
+    );
   }
   return resolvedPath;
 }
 
 async function removeGeneratedPath(relativePath) {
-  const absolutePath = assertInsideProjectRoot(path.join(projectRoot, relativePath));
+  const absolutePath = assertInsideProjectRoot(
+    path.join(projectRoot, relativePath)
+  );
   if (!(await pathExists(absolutePath))) {
     return null;
   }
@@ -64,12 +71,12 @@ async function main() {
   }
 
   console.log("Removed generated paths:");
-  removedPaths.forEach((removedPath) => {
+  removedPaths.forEach(removedPath => {
     console.log(`- ${path.relative(projectRoot, removedPath) || removedPath}`);
   });
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

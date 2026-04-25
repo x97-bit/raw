@@ -1,6 +1,7 @@
 # Project Structure
 
 ## Top Level
+
 - `client/`: the live React application, including entry HTML, source code, and static assets.
 - `server/`: the Express API, route registration, runtime middleware, and server utilities.
 - `shared/`: cross-runtime shared code such as common error types and portable helpers.
@@ -17,6 +18,7 @@
 - `node_modules/`: installed packages. Not hand-maintained.
 
 ## Client
+
 - `client/src/main.jsx`: the only live browser entrypoint used by `client/index.html`.
 - `client/src/App.jsx`: the live app shell, auth gate, and stack-navigation coordinator.
 - `client/src/pages/`: thin page coordinators that wire navigation, auth, and feature state together.
@@ -42,6 +44,7 @@
 - `client/src/utils/`: reusable formatting, export, config, and presentation helpers shared across multiple screens.
 
 ## Server
+
 - `server/apiRoutes.ts`: a thin central route registrar only.
 - `server/routes/`: domain route modules. Current route layout:
   - `auth-users/`
@@ -62,6 +65,7 @@
 - `server/db.ts`: database bootstrap and connection helpers.
 
 ## Scripts
+
 - `scripts/runtime/`: canonical runtime entrypoints used by package scripts.
   - `scripts/runtime/dev-server.mjs`
   - `scripts/runtime/start-server.mjs`
@@ -72,6 +76,7 @@
 - `scripts/archive/`: legacy or uncertain scripts kept intentionally for safe review and deferred deletion, not for day-to-day workflow.
 
 ## Structure Rules
+
 - Keep page files thin and move feature-specific state and derived logic into `features/<domain>/`.
 - Keep route registration in `server/routes/` and move reusable business logic into `server/utils/` or `server/_core/`.
 - Prefer subfolders when one domain grows into multiple route or view files, as with `reports/` and `payment-matching/`.

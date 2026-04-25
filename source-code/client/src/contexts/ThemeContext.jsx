@@ -1,25 +1,32 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const THEME_STORAGE_KEY = 'alrawi-ui-theme';
+const THEME_STORAGE_KEY = "alrawi-ui-theme";
 
 function normalizeTheme(theme) {
-  return theme === 'light' ? 'light' : 'dark';
+  return theme === "light" ? "light" : "dark";
 }
 
 export function readInitialTheme() {
-  if (typeof window === 'undefined') {
-    return 'dark';
+  if (typeof window === "undefined") {
+    return "dark";
   }
 
   try {
     return normalizeTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
   } catch {
-    return 'dark';
+    return "dark";
   }
 }
 
 export function applyTheme(theme) {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return;
   }
 
@@ -27,12 +34,12 @@ export function applyTheme(theme) {
   const root = document.documentElement;
 
   root.dataset.theme = nextTheme;
-  root.classList.toggle('dark', nextTheme === 'dark');
+  root.classList.toggle("dark", nextTheme === "dark");
   root.style.colorScheme = nextTheme;
 }
 
 const ThemeContext = createContext({
-  theme: 'dark',
+  theme: "dark",
   isDark: true,
   setTheme: () => {},
   toggleTheme: () => {},
@@ -51,27 +58,30 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
-  const setTheme = useCallback((nextTheme) => {
-    setThemeState((currentTheme) => normalizeTheme(
-      typeof nextTheme === 'function' ? nextTheme(currentTheme) : nextTheme,
-    ));
+  const setTheme = useCallback(nextTheme => {
+    setThemeState(currentTheme =>
+      normalizeTheme(
+        typeof nextTheme === "function" ? nextTheme(currentTheme) : nextTheme
+      )
+    );
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+    setThemeState(currentTheme => (currentTheme === "dark" ? "light" : "dark"));
   }, []);
 
-  const value = useMemo(() => ({
-    theme,
-    isDark: theme === 'dark',
-    setTheme,
-    toggleTheme,
-  }), [setTheme, theme, toggleTheme]);
+  const value = useMemo(
+    () => ({
+      theme,
+      isDark: theme === "dark",
+      setTheme,
+      toggleTheme,
+    }),
+    [setTheme, theme, toggleTheme]
+  );
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 

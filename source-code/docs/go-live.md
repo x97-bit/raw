@@ -1,6 +1,7 @@
 # Go-Live Checklist
 
 ## What You Need
+
 - A GitHub repository for this project
 - A Railway account
 - A custom domain name
@@ -9,6 +10,7 @@
 - Real values for any optional integrations you actually use
 
 ## Recommended Shape
+
 - 1 Node.js app instance
 - 1 MySQL database
 - 1 custom domain with HTTPS
@@ -16,6 +18,7 @@
 This project currently uses in-memory rate limiting, so a single app instance is the safest production shape for now.
 
 ## Railway Steps
+
 1. Push this folder as the repository root
 2. Create a new Railway project from the GitHub repo
 3. Add a MySQL service
@@ -26,6 +29,7 @@ This project currently uses in-memory rate limiting, so a single app instance is
 8. Add your custom domain after the smoke test passes
 
 ## Required Environment Variables
+
 - `NODE_ENV=production`
 - `HOST=0.0.0.0`
 - `PORT=3000`
@@ -35,6 +39,7 @@ This project currently uses in-memory rate limiting, so a single app instance is
 - `DATABASE_URL=mysql://username:password@host:3306/database_name`
 
 ## Optional Environment Variables
+
 - `VITE_APP_ID`
 - `OAUTH_SERVER_URL`
 - `OWNER_OPEN_ID`
@@ -44,6 +49,7 @@ This project currently uses in-memory rate limiting, so a single app instance is
 Leave the optional OAuth values empty if you are only using the local username/password flow.
 
 ## Pre-Deploy Checks
+
 Run these before the first deployment:
 
 ```powershell
@@ -62,6 +68,7 @@ pnpm start
 Railway is configured to use a direct production start command from [railway.json](C:/Users/lenovo/OneDrive/Desktop/v0.05/v0.5/source-code/railway.json) so signals reach Node correctly during deploys and restarts.
 
 ## Health Check
+
 Use this path for the hosting provider health check:
 
 ```text
@@ -71,11 +78,13 @@ Use this path for the hosting provider health check:
 Expected response:
 
 ```json
-{"ok":true}
+{ "ok": true }
 ```
 
 ## First Production Smoke Test
+
 After deployment:
+
 - Open the main app URL
 - Open `/healthz`
 - Log in with an admin account
@@ -85,6 +94,7 @@ After deployment:
 - Confirm the MySQL database receives the new records
 
 ## Operations Notes
+
 - Turn on automatic database backups before real use
 - Keep `APP_ACCESS_TOKEN_SECRET` and `APP_REFRESH_TOKEN_SECRET` only in provider secrets, never in git
 - Do not scale the app to multiple instances until rate limiting moves to a shared store such as Redis

@@ -1,61 +1,70 @@
-import { Suspense, lazy, useState } from 'react';
-import AppSidebar from './components/AppSidebar';
-import ErrorBoundary from './components/ErrorBoundary';
-import LoadingSpinner from './components/LoadingSpinner';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { Suspense, lazy, useState } from "react";
+import AppSidebar from "./components/AppSidebar";
+import ErrorBoundary from "./components/ErrorBoundary";
+import LoadingSpinner from "./components/LoadingSpinner";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AppShellProvider, useAppShell } from "./contexts/AppShellContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import {
   ADMIN_ONLY_PAGES,
   createMainPageEntry,
   resolveMainPageNavigation,
   resolveSectionActionNavigation,
-} from './features/navigation/stackNavigation';
-import LoginPage from './pages/LoginPage';
-import MainPage from './pages/MainPage';
-import SectionPage from './pages/SectionPage';
+} from "./features/navigation/stackNavigation";
+import LoginPage from "./pages/LoginPage";
+import MainPage from "./pages/MainPage";
+import SectionPage from "./pages/SectionPage";
 
 const pageComponents = {
-  debts: lazy(() => import('./pages/DebtsPage')),
-  reports: lazy(() => import('./pages/ReportsPage')),
-  accounts: lazy(() => import('./pages/AccountsPage')),
-  profile: lazy(() => import('./pages/ProfilePage')),
-  users: lazy(() => import('./pages/UsersPage')),
-  backups: lazy(() => import('./pages/BackupsPage')),
-  'trial-balance': lazy(() => import('./pages/TrialBalancePage')),
-  'payment-matching': lazy(() => import('./pages/PaymentMatchingPage')),
-  'field-management': lazy(() => import('./pages/FieldManagementPage')),
-  expenses: lazy(() => import('./pages/ExpensesPage')),
-  'defaults-management': lazy(() => import('./pages/DefaultsManagementPage')),
-  'audit-logs': lazy(() => import('./pages/AuditLogsPage')),
-  'port-work': lazy(() => import('./pages/PortPage')),
+  debts: lazy(() => import("./pages/DebtsPage")),
+  reports: lazy(() => import("./pages/ReportsPage")),
+  accounts: lazy(() => import("./pages/AccountsPage")),
+  profile: lazy(() => import("./pages/ProfilePage")),
+  users: lazy(() => import("./pages/UsersPage")),
+  backups: lazy(() => import("./pages/BackupsPage")),
+  "trial-balance": lazy(() => import("./pages/TrialBalancePage")),
+  "payment-matching": lazy(() => import("./pages/PaymentMatchingPage")),
+  "field-management": lazy(() => import("./pages/FieldManagementPage")),
+  expenses: lazy(() => import("./pages/ExpensesPage")),
+  "defaults-management": lazy(() => import("./pages/DefaultsManagementPage")),
+  "audit-logs": lazy(() => import("./pages/AuditLogsPage")),
+  "port-work": lazy(() => import("./pages/PortPage")),
 };
 
 function renderLazyPage(pageKey, node) {
   return (
     <ErrorBoundary key={pageKey}>
-      <Suspense fallback={<LoadingSpinner fullScreen />}>
-        {node}
-      </Suspense>
+      <Suspense fallback={<LoadingSpinner fullScreen />}>{node}</Suspense>
     </ErrorBoundary>
   );
 }
 
 function resolveActiveSidebarItem(current) {
-  if (!current) return 'main';
-  if (current.page === 'main') return 'main';
-  if (current.page === 'profile') return 'profile';
+  if (!current) return "main";
+  if (current.page === "main") return "main";
+  if (current.page === "profile") return "profile";
   if (current.sectionId) return current.sectionId;
   return current.page;
 }
 
-function AppShellFrame({ activeItemId, onSelectItem, onGoHome, onProfileClick, children }) {
+function AppShellFrame({
+  activeItemId,
+  onSelectItem,
+  onGoHome,
+  onProfileClick,
+  children,
+}) {
   const { isDesktop, sidebarCollapsed } = useAppShell();
   const contentMarginRight = isDesktop ? (sidebarCollapsed ? 88 : 288) : 0;
 
   return (
     <>
-      <AppSidebar activeItemId={activeItemId} onSelectItem={onSelectItem} onGoHome={onGoHome} onProfileClick={onProfileClick} />
+      <AppSidebar
+        activeItemId={activeItemId}
+        onSelectItem={onSelectItem}
+        onGoHome={onGoHome}
+        onProfileClick={onProfileClick}
+      />
       <div
         className="min-w-0 transition-[margin] duration-300 ease-out"
         style={{ marginRight: contentMarginRight }}
@@ -71,20 +80,20 @@ function AppContent() {
   const [navStack, setNavStack] = useState([createMainPageEntry()]);
 
   const navigate = (page, data = {}) => {
-    setNavStack((currentStack) => [...currentStack, { page, ...data }]);
+    setNavStack(currentStack => [...currentStack, { page, ...data }]);
   };
 
   const goBack = () => {
-    setNavStack((currentStack) => (
+    setNavStack(currentStack =>
       currentStack.length > 1 ? currentStack.slice(0, -1) : currentStack
-    ));
+    );
   };
 
   const goHome = () => {
     setNavStack([createMainPageEntry()]);
   };
 
-  const handleMainPageNavigate = (sectionId) => {
+  const handleMainPageNavigate = sectionId => {
     const target = resolveMainPageNavigation(sectionId);
     if (target) {
       navigate(target.page, target);
@@ -98,7 +107,7 @@ function AppContent() {
     }
   };
 
-  const handleSidebarSelect = (sectionId) => {
+  const handleSidebarSelect = sectionId => {
     const target = resolveMainPageNavigation(sectionId);
     if (!target) {
       return;
@@ -109,11 +118,11 @@ function AppContent() {
 
   const handleProfileClick = () => {
     if (can.manageUsers) {
-      setNavStack([createMainPageEntry(), { page: 'users' }]);
+      setNavStack([createMainPageEntry(), { page: "users" }]);
       return;
     }
 
-    setNavStack([createMainPageEntry(), { page: 'profile' }]);
+    setNavStack([createMainPageEntry(), { page: "profile" }]);
   };
 
   const renderMainPage = () => <MainPage onNavigate={handleMainPageNavigate} />;
@@ -129,9 +138,14 @@ function AppContent() {
   const current = navStack[navStack.length - 1];
   const activeItemId = resolveActiveSidebarItem(current);
 
-  const wrapWithShell = (node) => (
+  const wrapWithShell = node => (
     <AppShellProvider>
-      <AppShellFrame activeItemId={activeItemId} onSelectItem={handleSidebarSelect} onGoHome={goHome} onProfileClick={handleProfileClick}>
+      <AppShellFrame
+        activeItemId={activeItemId}
+        onSelectItem={handleSidebarSelect}
+        onGoHome={goHome}
+        onProfileClick={handleProfileClick}
+      >
         {node}
       </AppShellFrame>
     </AppShellProvider>
@@ -139,9 +153,9 @@ function AppContent() {
 
   let pageNode = renderMainPage();
 
-  if (current.page === 'main') {
+  if (current.page === "main") {
     pageNode = renderMainPage();
-  } else if (current.page === 'section') {
+  } else if (current.page === "section") {
     pageNode = (
       <SectionPage
         sectionId={current.sectionId}
@@ -149,11 +163,11 @@ function AppContent() {
         onAction={handleSectionAction}
       />
     );
-  } else if (current.page === 'port-work') {
-    const PortPage = pageComponents['port-work'];
+  } else if (current.page === "port-work") {
+    const PortPage = pageComponents["port-work"];
 
     pageNode = renderLazyPage(
-      `port-work:${current.portId || ''}:${current.view || ''}:${current.formType || ''}`,
+      `port-work:${current.portId || ""}:${current.view || ""}:${current.formType || ""}`,
       <PortPage
         portId={current.portId}
         portName={current.portName}
@@ -172,7 +186,10 @@ function AppContent() {
     } else if (ADMIN_ONLY_PAGES.has(current.page) && !can.manageUsers) {
       pageNode = renderMainPage();
     } else {
-      pageNode = renderLazyPage(current.page, <PageComponent onBack={goBack} />);
+      pageNode = renderLazyPage(
+        current.page,
+        <PageComponent onBack={goBack} />
+      );
     }
   }
 

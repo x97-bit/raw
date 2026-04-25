@@ -7,9 +7,12 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import apiRoutes from "../apiRoutes";
-import { apiBodyParserErrorMiddleware, apiSecurityMiddleware } from "./apiSecurity";
+import {
+  apiBodyParserErrorMiddleware,
+  apiSecurityMiddleware,
+} from "./apiSecurity";
 import { securityHeadersMiddleware } from "./securityHeaders";
-import { closeDb } from "../db";
+import { closeDb } from "../db/db";
 import { parseTrustProxySetting } from "./trustProxy";
 
 const API_BODY_LIMIT = process.env.API_BODY_LIMIT || "25mb";
@@ -46,11 +49,13 @@ async function startServer() {
   app.use(securityHeadersMiddleware);
   // Keep payloads bounded while allowing administrative backup imports.
   app.use(express.json({ limit: API_BODY_LIMIT }));
-  app.use(express.urlencoded({
-    limit: API_BODY_LIMIT,
-    extended: false,
-    parameterLimit: URLENCODED_PARAMETER_LIMIT,
-  }));
+  app.use(
+    express.urlencoded({
+      limit: API_BODY_LIMIT,
+      extended: false,
+      parameterLimit: URLENCODED_PARAMETER_LIMIT,
+    })
+  );
   app.use(apiBodyParserErrorMiddleware);
   app.use("/api", apiSecurityMiddleware);
   app.get("/healthz", (_req, res) => {

@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
-import BrandLogo from '../components/BrandLogo';
-import SidebarToggleButton from '../components/SidebarToggleButton';
-import ThemeToggleButton from '../components/ThemeToggleButton';
-import { formatBaghdadDate, formatBaghdadTime } from '../features/main-page/baghdadTime';
+import { useEffect, useState } from "react";
+import BrandLogo from "../components/BrandLogo";
+import SidebarToggleButton from "../components/SidebarToggleButton";
+import ThemeToggleButton from "../components/ThemeToggleButton";
+import {
+  formatBaghdadDate,
+  formatBaghdadTime,
+} from "../features/main-page/baghdadTime";
 
 export default function MainPage() {
   const [mounted, setMounted] = useState(false);
@@ -25,7 +28,10 @@ export default function MainPage() {
   const timeStr = formatBaghdadTime(now);
 
   return (
-    <div className="page-shell min-h-screen" style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+    <div
+      className="page-shell min-h-screen"
+      style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.35s ease" }}
+    >
       <div className="absolute left-3 top-3 z-30 flex items-center gap-2 sm:left-4 sm:top-4">
         <div className="pointer-events-auto">
           <SidebarToggleButton compact />
@@ -46,13 +52,13 @@ export default function MainPage() {
               <div
                 className="text-[3rem] font-black tracking-[0.18em] tabular-nums sm:text-[4rem]"
                 dir="ltr"
-                style={{ color: 'var(--hero-title)' }}
+                style={{ color: "var(--hero-title)" }}
               >
                 {timeStr}
               </div>
               <div
                 className="mt-3 text-[15px] font-semibold tracking-[0.18em] sm:text-[17px]"
-                style={{ color: 'var(--hero-muted)' }}
+                style={{ color: "var(--hero-muted)" }}
               >
                 {dateStr}
               </div>

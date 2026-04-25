@@ -1,1 +1,1 @@
-export { default } from '../features/defaults-management/DefaultsManagementPageContent';
+export { default } from "../features/defaults-management/DefaultsManagementPageContent";

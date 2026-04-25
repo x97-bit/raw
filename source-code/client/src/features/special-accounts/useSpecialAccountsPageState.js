@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyLoadedSpecialFieldConfigs,
   buildSpecialAccountQuery,
   createSpecialAccountFilters,
-} from './specialAccountsPageHelpers';
+} from "./specialAccountsPageHelpers";
 import {
   buildVisibleSpecialColumns,
   createInitialSpecialFieldState,
@@ -11,10 +11,11 @@ import {
   getInitialSpecialForm,
   SPECIAL_ACCOUNT_DEFS,
   SPECIAL_FORM_FIELDS,
-} from '../../utils/specialAccountsConfig';
+} from "../../utils/specialAccountsConfig";
+import { buildSpecialPartnerTotals } from "../../utils/specialPartnerMath";
 
 export default function useSpecialAccountsPageState({ api }) {
-  const [view, setView] = useState('main');
+  const [view, setView] = useState("main");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState(createSpecialAccountFilters());
@@ -23,7 +24,8 @@ export default function useSpecialAccountsPageState({ api }) {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
+  const [isPaymentMode, setIsPaymentMode] = useState(false);
   const [fieldState, setFieldState] = useState(createInitialSpecialFieldState);
   const filtersRef = useRef(createSpecialAccountFilters());
 
@@ -34,13 +36,18 @@ export default function useSpecialAccountsPageState({ api }) {
   const loadFieldConfigs = useCallback(async () => {
     try {
       const [haiderConfig, partnerConfig] = await Promise.all([
-        api('/field-config/special-haider').catch(() => null),
-        api('/field-config/special-partner').catch(() => null),
+        api("/field-config/special-haider").catch(() => null),
+        api("/field-config/special-partner").catch(() => null),
       ]);
 
-      setFieldState((current) => applyLoadedSpecialFieldConfigs(current, haiderConfig, partnerConfig));
+      setFieldState(current =>
+        applyLoadedSpecialFieldConfigs(current, haiderConfig, partnerConfig)
+      );
     } catch (error) {
-      console.log('No field configs for special accounts, using defaults', error);
+      console.log(
+        "No field configs for special accounts, using defaults",
+        error
+      );
     }
   }, [api]);
 
@@ -48,93 +55,145 @@ export default function useSpecialAccountsPageState({ api }) {
     loadFieldConfigs();
   }, [loadFieldConfigs]);
 
-  const openAccount = useCallback(async (accountId, nextFilters) => {
-    const accountDef = SPECIAL_ACCOUNT_DEFS[accountId];
-    if (!accountDef) return;
+  const openAccount = useCallback(
+    async (accountId, nextFilters) => {
+      const accountDef = SPECIAL_ACCOUNT_DEFS[accountId];
+      if (!accountDef) return;
 
-    setLoading(true);
-    setView(accountId);
+      setLoading(true);
+      setView(accountId);
 
-    try {
-      const query = buildSpecialAccountQuery(nextFilters || filtersRef.current);
-      const response = await api(`${accountDef.endpoint}${query ? `?${query}` : ''}`);
-      setData(response);
-    } catch (error) {
-      console.error('Error loading special account:', error);
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+      try {
+        const query = buildSpecialAccountQuery(
+          nextFilters || filtersRef.current
+        );
+        const response = await api(
+          `${accountDef.endpoint}${query ? `?${query}` : ""}`
+        );
+        setData(response);
+      } catch (error) {
+        console.error("Error loading special account:", error);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
 
   const resetView = useCallback(() => {
-    setView('main');
+    setView("main");
     setData(null);
     setShowForm(false);
     setEditingRecord(null);
-    setMessage('');
+    setMessage("");
   }, []);
 
-  const activeDef = view === 'main' ? null : SPECIAL_ACCOUNT_DEFS[view];
-  const activeRows = activeDef ? (data?.[activeDef.rowsKey] || []) : [];
+  const activeDef = view === "main" ? null : SPECIAL_ACCOUNT_DEFS[view];
+  const activeRows = activeDef ? data?.[activeDef.rowsKey] || [] : [];
   const activeFieldConfig = activeDef ? fieldState[activeDef.sectionKey] : null;
 
   const visibleColumns = useMemo(() => {
     if (!activeDef || !activeFieldConfig) return [];
-    return buildVisibleSpecialColumns(activeDef.columns, activeFieldConfig.visibleKeys, activeFieldConfig.configMap);
+    return buildVisibleSpecialColumns(
+      activeDef.columns,
+      activeFieldConfig.visibleKeys,
+      activeFieldConfig.configMap
+    );
   }, [activeDef, activeFieldConfig]);
 
   const filteredRows = useMemo(() => {
     if (!activeDef) return [];
-    return filterSpecialAccountRows(activeRows, filters.search, visibleColumns, activeDef.searchKeys, {
-      batchName: activeDef.id === 'haider' ? filters.batchName : '',
-    });
-  }, [activeDef, activeRows, filters.batchName, filters.search, visibleColumns]);
+    return filterSpecialAccountRows(
+      activeRows,
+      filters.search,
+      visibleColumns,
+      activeDef.searchKeys,
+      {
+        batchName: activeDef.id === "haider" ? filters.batchName : "",
+      }
+    );
+  }, [
+    activeDef,
+    activeRows,
+    filters.batchName,
+    filters.search,
+    visibleColumns,
+  ]);
+
+  const displayRows = useMemo(() => {
+    if (activeDef?.id === "partnership-yaser") {
+      const groups = {};
+      filteredRows.forEach(row => {
+        const date = row?.TransDate
+          ? row.TransDate.split(" ")[0]
+          : "بدون تاريخ";
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(row);
+      });
+
+      const result = [];
+      for (const date of Object.keys(groups)) {
+        const groupRows = groups[date];
+        result.push(...groupRows);
+        const totals = buildSpecialPartnerTotals(groupRows);
+        result.push({
+          id: `summary-${date}`,
+          isDailySummary: true,
+          date,
+          totals,
+        });
+      }
+      return result;
+    }
+    return filteredRows;
+  }, [activeDef, filteredRows]);
 
   const batchOptions = useMemo(() => {
-    if (activeDef?.id !== 'haider') return [];
+    if (activeDef?.id !== "haider") return [];
 
-    return [...new Set(
-      activeRows
-        .map((row) => String(row?.BatchName || '').trim())
-        .filter(Boolean),
-    )].sort((left, right) => left.localeCompare(right, 'ar'));
+    return [
+      ...new Set(
+        activeRows
+          .map(row => String(row?.BatchName || "").trim())
+          .filter(Boolean)
+      ),
+    ].sort((left, right) => left.localeCompare(right, "ar"));
   }, [activeDef, activeRows]);
 
   const derivedTotals = useMemo(
     () => (activeDef ? activeDef.buildTotals(filteredRows) : null),
-    [activeDef, filteredRows],
+    [activeDef, filteredRows]
   );
 
   const summaryCards = useMemo(
-    () => (activeDef && derivedTotals ? activeDef.buildSummaryCards(derivedTotals) : []),
-    [activeDef, derivedTotals],
+    () =>
+      activeDef && derivedTotals
+        ? activeDef.buildSummaryCards(derivedTotals)
+        : [],
+    [activeDef, derivedTotals]
   );
 
   const exportColumns = useMemo(
-    () => visibleColumns.map((column) => ({ key: column.dataKey, label: column.label, format: column.format })),
-    [visibleColumns],
+    () =>
+      visibleColumns.map(column => ({
+        key: column.dataKey,
+        label: column.label,
+        format: column.format,
+      })),
+    [visibleColumns]
   );
 
-
   const exportRows = useMemo(() => {
-    if (activeDef?.id !== 'partnership-yaser') return filteredRows;
-    return filteredRows.map((row) => ({
-      ...row,
-      AmountUSD_Partner: Number(row?.AmountUSD_Partner || 0)
-        + Number(row?.CLR || 0)
-        + Number(row?.DifferenceIQD || 0)
-        + Number(row?.TaxiWater || 0)
-        + Number(row?.TX || 0),
-    }));
-  }, [activeDef, filteredRows]);
+    return displayRows;
+  }, [displayRows]);
 
   const printContext = useMemo(() => {
     if (!activeDef || !derivedTotals) return null;
     return {
       accountName: activeDef.label,
-      fromDate: filters.from || '---',
-      toDate: filters.to || '---',
+      fromDate: filters.from || "---",
+      toDate: filters.to || "---",
       totals: derivedTotals,
     };
   }, [activeDef, derivedTotals, filters.from, filters.to]);
@@ -148,10 +207,21 @@ export default function useSpecialAccountsPageState({ api }) {
     setShowForm(true);
   }, [activeDef]);
 
-  const openEditModal = useCallback((record) => {
+  const openEditModal = useCallback(
+    record => {
+      if (!activeDef) return;
+      setEditingRecord(record);
+      setForm(getInitialSpecialForm(activeDef.id, activeDef.label, record));
+      setShowForm(true);
+    },
+    [activeDef]
+  );
+
+  const openPaymentModal = useCallback(() => {
     if (!activeDef) return;
-    setEditingRecord(record);
-    setForm(getInitialSpecialForm(activeDef.id, activeDef.label, record));
+    setEditingRecord(null);
+    setForm(getInitialSpecialForm(activeDef.id, activeDef.label));
+    setIsPaymentMode(true);
     setShowForm(true);
   }, [activeDef]);
 
@@ -159,10 +229,11 @@ export default function useSpecialAccountsPageState({ api }) {
     setShowForm(false);
     setEditingRecord(null);
     setForm({});
+    setIsPaymentMode(false);
   }, []);
 
   const handleFormChange = useCallback((fieldKey, value) => {
-    setForm((current) => ({ ...current, [fieldKey]: value }));
+    setForm(current => ({ ...current, [fieldKey]: value }));
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -170,46 +241,73 @@ export default function useSpecialAccountsPageState({ api }) {
 
     setSaving(true);
     try {
-      const endpoint = editingRecord ? `/special/${editingRecord.id}` : '/special';
+      const endpoint = editingRecord
+        ? `/special/${editingRecord.id}`
+        : "/special";
       const payload = { ...form };
-      if (activeDef.id === 'partnership-yaser') {
-        payload.taxiWater = form.taxiAndOfficer ?? '';
+
+      if (isPaymentMode) {
+        [
+          "amountUSD",
+          "amountIQD",
+          "costUSD",
+          "costIQD",
+          "amountUSDPartner",
+          "differenceIQD",
+          "clr",
+          "taxiAndOfficer",
+          "tx",
+          "taxiWater",
+        ].forEach(key => {
+          if (payload[key]) {
+            payload[key] = -Math.abs(Number(payload[key]));
+          }
+        });
+      }
+
+      if (activeDef.id === "partnership-yaser") {
+        payload.taxiWater = payload.taxiAndOfficer ?? "";
         payload.tx = 0;
         delete payload.taxiAndOfficer;
       }
       await api(endpoint, {
-        method: editingRecord ? 'PUT' : 'POST',
+        method: editingRecord ? "PUT" : "POST",
         body: JSON.stringify(payload),
       });
-      setMessage(editingRecord ? 'تم تحديث السجل بنجاح.' : 'تمت إضافة السجل بنجاح.');
+      setMessage(
+        editingRecord ? "تم تحديث السجل بنجاح." : "تمت إضافة السجل بنجاح."
+      );
       closeForm();
       await openAccount(activeDef.id);
     } catch (error) {
-      console.error('Error saving special account:', error);
-      setMessage(error.message || 'تعذر حفظ السجل.');
+      console.error("Error saving special account:", error);
+      setMessage(error.message || "تعذر حفظ السجل.");
     } finally {
       setSaving(false);
     }
   }, [activeDef, api, closeForm, editingRecord, form, openAccount]);
 
-  const handleDelete = useCallback(async (record) => {
-    if (!record || !window.confirm('هل تريد حذف هذا السجل؟')) return;
+  const handleDelete = useCallback(
+    async record => {
+      if (!record || !window.confirm("هل تريد حذف هذا السجل؟")) return;
 
-    setDeletingId(record.id);
-    try {
-      await api(`/special/${record.id}`, { method: 'DELETE' });
-      setMessage('تم حذف السجل بنجاح.');
-      await openAccount(activeDef.id);
-    } catch (error) {
-      console.error('Error deleting special account:', error);
-      setMessage(error.message || 'تعذر حذف السجل.');
-    } finally {
-      setDeletingId(null);
-    }
-  }, [activeDef, api, openAccount]);
+      setDeletingId(record.id);
+      try {
+        await api(`/special/${record.id}`, { method: "DELETE" });
+        setMessage("تم حذف السجل بنجاح.");
+        await openAccount(activeDef.id);
+      } catch (error) {
+        console.error("Error deleting special account:", error);
+        setMessage(error.message || "تعذر حذف السجل.");
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [activeDef, api, openAccount]
+  );
 
   const handleFilterChange = useCallback((key, value) => {
-    setFilters((current) => ({ ...current, [key]: value }));
+    setFilters(current => ({ ...current, [key]: value }));
   }, []);
 
   const handleResetFilters = useCallback(() => {
@@ -225,7 +323,7 @@ export default function useSpecialAccountsPageState({ api }) {
     derivedTotals,
     editingRecord,
     exportColumns,
-    filteredRows,
+    filteredRows: displayRows,
     exportRows,
     filters,
     form,
@@ -238,9 +336,11 @@ export default function useSpecialAccountsPageState({ api }) {
     handleSave,
     loading,
     message,
+    isPaymentMode,
     openAccount,
     openCreateModal,
     openEditModal,
+    openPaymentModal,
     resetView,
     saving,
     setMessage,

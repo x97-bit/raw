@@ -1,11 +1,16 @@
-import mysql from 'mysql2/promise';
-import { buildMySqlConnectionOptions } from '../../shared/scriptMysqlConfig.mjs';
+import mysql from "mysql2/promise";
+import { buildMySqlConnectionOptions } from "../../shared/scriptMysqlConfig.mjs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
+if (!DATABASE_URL) {
+  console.error("DATABASE_URL not set");
+  process.exit(1);
+}
 
 async function run() {
-  const conn = await mysql.createConnection(buildMySqlConnectionOptions(DATABASE_URL));
+  const conn = await mysql.createConnection(
+    buildMySqlConnectionOptions(DATABASE_URL)
+  );
 
   const tables = [
     `CREATE TABLE IF NOT EXISTS field_config (
@@ -38,7 +43,7 @@ async function run() {
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       INDEX idx_entity (entity_type, entity_id),
       INDEX idx_field (custom_field_id)
-    )`
+    )`,
   ];
 
   for (const sql of tables) {
@@ -48,35 +53,41 @@ async function run() {
 
   // Seed default field configs for all sections
   const sections = [
-    'port-1', 'port-2', 'port-3',  // السعودية, المنذرية, القائم
-    'transport-1', 'transport-2', 'transport-3',
-    'partnership-1', 'partnership-2', 'partnership-3'
+    "port-1",
+    "port-2",
+    "port-3", // السعودية, المنذرية, القائم
+    "transport-1",
+    "transport-2",
+    "transport-3",
+    "partnership-1",
+    "partnership-2",
+    "partnership-3",
   ];
 
   const defaultFields = [
-    { key: 'ref_no', order: 1 },
-    { key: 'direction', order: 2 },
-    { key: 'trans_date', order: 3 },
-    { key: 'account_name', order: 4 },
-    { key: 'currency', order: 5 },
-    { key: 'driver_name', order: 6 },
-    { key: 'vehicle_plate', order: 7 },
-    { key: 'good_type', order: 8 },
-    { key: 'weight', order: 9 },
-    { key: 'meters', order: 10 },
-    { key: 'cost_usd', order: 11 },
-    { key: 'amount_usd', order: 12 },
-    { key: 'cost_iqd', order: 13 },
-    { key: 'amount_iqd', order: 14 },
-    { key: 'fee_usd', order: 15 },
-    { key: 'gov_name', order: 16 },
-    { key: 'notes', order: 17 },
+    { key: "ref_no", order: 1 },
+    { key: "direction", order: 2 },
+    { key: "trans_date", order: 3 },
+    { key: "account_name", order: 4 },
+    { key: "currency", order: 5 },
+    { key: "driver_name", order: 6 },
+    { key: "vehicle_plate", order: 7 },
+    { key: "good_type", order: 8 },
+    { key: "weight", order: 9 },
+    { key: "meters", order: 10 },
+    { key: "cost_usd", order: 11 },
+    { key: "amount_usd", order: 12 },
+    { key: "cost_iqd", order: 13 },
+    { key: "amount_iqd", order: 14 },
+    { key: "fee_usd", order: 15 },
+    { key: "gov_name", order: 16 },
+    { key: "notes", order: 17 },
   ];
 
   for (const section of sections) {
     for (const field of defaultFields) {
       // fee_usd only visible for port-1 (السعودية) by default
-      const visible = (field.key === 'fee_usd' && section !== 'port-1') ? 0 : 1;
+      const visible = field.key === "fee_usd" && section !== "port-1" ? 0 : 1;
       await conn.execute(
         `INSERT IGNORE INTO field_config (section_key, field_key, visible, sort_order) VALUES (?, ?, ?, ?)`,
         [section, field.key, visible, field.order]
@@ -89,4 +100,7 @@ async function run() {
   console.log("✓ Migration complete!");
 }
 
-run().catch(e => { console.error(e); process.exit(1); });
+run().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

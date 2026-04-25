@@ -4,7 +4,14 @@ import mysql from "mysql2/promise";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const exportPath = path.resolve(__dirname, "..", "..", "database", "exports", "alrawi-database-export.json");
+const exportPath = path.resolve(
+  __dirname,
+  "..",
+  "..",
+  "database",
+  "exports",
+  "alrawi-database-export.json"
+);
 
 const DB_NAME = process.env.LOCAL_DB_NAME || "alrawi_db";
 const DB_HOST = process.env.LOCAL_DB_HOST || "localhost";
@@ -20,8 +27,14 @@ function normalizeValue(value, dataType) {
     return JSON.stringify(value);
   }
 
-  if ((dataType === "timestamp" || dataType === "datetime") && typeof value === "string") {
-    return value.replace("T", " ").replace("Z", "").replace(/\.\d{3}$/, "");
+  if (
+    (dataType === "timestamp" || dataType === "datetime") &&
+    typeof value === "string"
+  ) {
+    return value
+      .replace("T", " ")
+      .replace("Z", "")
+      .replace(/\.\d{3}$/, "");
   }
 
   if (dataType === "date" && typeof value === "string") {
@@ -32,9 +45,11 @@ function normalizeValue(value, dataType) {
 }
 
 function buildInsertQuery(tableName, columns, rowCount) {
-  const columnSql = columns.map((column) => `\`${column}\``).join(", ");
+  const columnSql = columns.map(column => `\`${column}\``).join(", ");
   const valueGroup = `(${columns.map(() => "?").join(", ")})`;
-  const valuesSql = Array.from({ length: rowCount }, () => valueGroup).join(", ");
+  const valuesSql = Array.from({ length: rowCount }, () => valueGroup).join(
+    ", "
+  );
   return `INSERT INTO \`${tableName}\` (${columnSql}) VALUES ${valuesSql}`;
 }
 
@@ -47,7 +62,9 @@ async function main() {
   const schemaEntries = Object.entries(exported.schema);
   const dataEntries = Object.entries(exported.data);
 
-  console.log(`Rebuilding local database '${DB_NAME}' from ${path.basename(exportPath)}...`);
+  console.log(
+    `Rebuilding local database '${DB_NAME}' from ${path.basename(exportPath)}...`
+  );
 
   const adminConn = await mysql.createConnection({
     host: DB_HOST,
@@ -87,7 +104,9 @@ async function main() {
       }
 
       const columns = tableSchemaColumns(exported.schema[tableName]);
-      const dataTypes = new Map(columns.map((column) => [column.name, column.dataType]));
+      const dataTypes = new Map(
+        columns.map(column => [column.name, column.dataType])
+      );
       const insertColumns = Object.keys(rows[0]);
       const chunkSize = 100;
 
@@ -123,9 +142,13 @@ async function main() {
 }
 
 async function ensureSchemaPatches(conn) {
-  const [fieldConfigColumns] = await conn.query("SHOW COLUMNS FROM `field_config` LIKE 'display_label'");
+  const [fieldConfigColumns] = await conn.query(
+    "SHOW COLUMNS FROM `field_config` LIKE 'display_label'"
+  );
   if (Array.isArray(fieldConfigColumns) && fieldConfigColumns.length === 0) {
-    await conn.query("ALTER TABLE `field_config` ADD COLUMN `display_label` VARCHAR(255) NULL AFTER `sort_order`");
+    await conn.query(
+      "ALTER TABLE `field_config` ADD COLUMN `display_label` VARCHAR(255) NULL AFTER `sort_order`"
+    );
     console.log("Patched table: field_config.display_label");
   }
 }
@@ -134,7 +157,7 @@ function tableSchemaColumns(tableSchema) {
   return Array.isArray(tableSchema?.columns) ? tableSchema.columns : [];
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error("Failed to rebuild local database.");
   console.error(error);
   process.exit(1);

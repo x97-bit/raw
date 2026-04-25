@@ -1,1 +1,1 @@
-export { default } from '../features/audit-logs/AuditLogsPageContent';
+export { default } from "../features/audit-logs/AuditLogsPageContent";

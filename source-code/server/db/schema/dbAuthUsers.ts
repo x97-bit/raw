@@ -1,12 +1,15 @@
 import { eq } from "drizzle-orm";
-import type { InsertUser } from "../drizzle/schema";
-import { users } from "../drizzle/schema";
-import { ENV } from "./_core/env";
+import type { InsertUser } from "../../../drizzle/schema";
+import { users } from "../../../drizzle/schema";
+import { ENV } from "../../_core/env";
 import type { AppDb } from "./dbTypes";
 
 type GetDbFn = () => Promise<AppDb | null>;
 
-export async function upsertUserWithDb(getDb: GetDbFn, user: InsertUser): Promise<void> {
+export async function upsertUserWithDb(
+  getDb: GetDbFn,
+  user: InsertUser
+): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
   }
@@ -72,6 +75,10 @@ export async function getUserByOpenIdWithDb(getDb: GetDbFn, openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }

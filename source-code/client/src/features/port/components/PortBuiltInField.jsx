@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
-import AutocompleteInput from '../../../components/AutocompleteInput';
-import { isTransportSectionScope } from '../portPageHelpers';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useMemo, useState } from "react";
+import AutocompleteInput from "../../../components/AutocompleteInput";
+import { isTransportSectionScope } from "../portPageHelpers";
+import { useAuth } from "../../../contexts/AuthContext";
 
-const INPUT_CLASS = 'input-field';
-const TEXTAREA_CLASS = 'input-field min-h-[112px] resize-y';
-const LABEL_CLASS = 'mb-1 block text-sm font-medium text-utility-muted';
+const INPUT_CLASS = "input-field";
+const TEXTAREA_CLASS = "input-field min-h-[112px] resize-y";
+const LABEL_CLASS = "mb-1 block text-sm font-medium text-utility-muted";
 
 export default function PortBuiltInField({
   field,
@@ -33,17 +33,23 @@ export default function PortBuiltInField({
   sectionKey,
 }) {
   const enrichedAccounts = useMemo(() => {
-    if (sectionKey !== 'transport-1') return accounts;
-    const preferred = ['ابراهيم سعد رمضان', 'عبدالعزيز', 'صباح اسماعيل'];
+    if (sectionKey !== "transport-1") return accounts;
+    const preferred = ["ابراهيم سعد رمضان", "عبدالعزيز", "صباح اسماعيل"];
     const exists = new Set(accounts.map(a => a.AccountName.trim()));
-    const missing = preferred.filter(p => !exists.has(p)).map((p, i) => ({ AccountID: `preset-${i}`, AccountName: p, isPreset: true }));
+    const missing = preferred
+      .filter(p => !exists.has(p))
+      .map((p, i) => ({
+        AccountID: `preset-${i}`,
+        AccountName: p,
+        isPreset: true,
+      }));
     return [...missing, ...accounts];
   }, [accounts, sectionKey]);
 
-  const addAccount = async (name) => {
+  const addAccount = async name => {
     try {
-      const newAcc = await api('/accounts', {
-        method: 'POST',
+      const newAcc = await api("/accounts", {
+        method: "POST",
         body: JSON.stringify({
           AccountName: name,
           AccountTypeID: accountType || 1,
@@ -53,26 +59,26 @@ export default function PortBuiltInField({
 
       if (newAcc.existing) {
         setTraderText(name);
-        setField('AccountID', newAcc.id);
+        setField("AccountID", newAcc.id);
         setMsg(`التاجر موجود مسبقًا، تم اختياره: ${name}`);
         return;
       }
 
       const newAccount = { AccountID: newAcc.id, AccountName: name };
-      setAccounts((prev) => [...prev, newAccount]);
+      setAccounts(prev => [...prev, newAccount]);
       setTraderText(name);
-      setField('AccountID', newAcc.id);
+      setField("AccountID", newAcc.id);
       setMsg(`تم إضافة التاجر بنجاح: ${name}`);
     } catch (error) {
       console.error(error);
-      setMsg('حدث خطأ أثناء إضافة التاجر');
+      setMsg("حدث خطأ أثناء إضافة التاجر");
     }
   };
 
-  const addMerchant = async (name) => {
+  const addMerchant = async name => {
     try {
-      const newAcc = await api('/accounts', {
-        method: 'POST',
+      const newAcc = await api("/accounts", {
+        method: "POST",
         body: JSON.stringify({
           AccountName: name,
           AccountTypeID: 1,
@@ -81,37 +87,50 @@ export default function PortBuiltInField({
       });
       const accountRow = { AccountID: newAcc.id, AccountName: name };
       if (setMerchants) {
-        setMerchants((prev) => (prev.some((item) => String(item.AccountID) === String(accountRow.AccountID)) ? prev : [...prev, accountRow]));
+        setMerchants(prev =>
+          prev.some(
+            item => String(item.AccountID) === String(accountRow.AccountID)
+          )
+            ? prev
+            : [...prev, accountRow]
+        );
       }
-      setField('TraderNote', name);
+      setField("TraderNote", name);
       setMsg(`تم إضافة التاجر بنجاح: ${name}`);
     } catch (error) {
       console.error(error);
-      setMsg('حدث خطأ أثناء إضافة التاجر');
+      setMsg("حدث خطأ أثناء إضافة التاجر");
     }
   };
 
-  const addCompany = async (name) => {
+  const addCompany = async name => {
     try {
-      const newCompany = await api('/lookups/companies', {
-        method: 'POST',
+      const newCompany = await api("/lookups/companies", {
+        method: "POST",
         body: JSON.stringify({ CompanyName: name }),
       });
-      const companyRow = { CompanyID: newCompany.id, CompanyName: newCompany.CompanyName };
-      setCompanies((prev) => (prev.some((item) => item.CompanyID === companyRow.CompanyID) ? prev : [...prev, companyRow]));
-      setField('_companyText', companyRow.CompanyName);
-      setField('CompanyID', companyRow.CompanyID);
-      setField('CompanyName', companyRow.CompanyName);
+      const companyRow = {
+        CompanyID: newCompany.id,
+        CompanyName: newCompany.CompanyName,
+      };
+      setCompanies(prev =>
+        prev.some(item => item.CompanyID === companyRow.CompanyID)
+          ? prev
+          : [...prev, companyRow]
+      );
+      setField("_companyText", companyRow.CompanyName);
+      setField("CompanyID", companyRow.CompanyID);
+      setField("CompanyName", companyRow.CompanyName);
     } catch (error) {
       console.error(error);
-      setMsg('حدث خطأ أثناء إضافة الشركة');
+      setMsg("حدث خطأ أثناء إضافة الشركة");
     }
   };
 
-  const addCarrier = async (name) => {
+  const addCarrier = async name => {
     try {
-      const newAcc = await api('/accounts', {
-        method: 'POST',
+      const newAcc = await api("/accounts", {
+        method: "POST",
         body: JSON.stringify({
           AccountName: name,
           AccountTypeID: accountType || 1,
@@ -119,29 +138,41 @@ export default function PortBuiltInField({
         }),
       });
       const accountRow = { AccountID: newAcc.id, AccountName: name };
-      setAccounts((prev) => (prev.some((item) => String(item.AccountID) === String(accountRow.AccountID)) ? prev : [...prev, accountRow]));
-      setField('_carrierText', name);
-      setField('CarrierID', newAcc.id);
-      setField('CarrierName', name);
+      setAccounts(prev =>
+        prev.some(
+          item => String(item.AccountID) === String(accountRow.AccountID)
+        )
+          ? prev
+          : [...prev, accountRow]
+      );
+      setField("_carrierText", name);
+      setField("CarrierID", newAcc.id);
+      setField("CarrierName", name);
       setMsg(`تم إضافة الناقل بنجاح: ${name}`);
     } catch (error) {
       console.error(error);
-      setMsg('حدث خطأ أثناء إضافة الناقل');
+      setMsg("حدث خطأ أثناء إضافة الناقل");
     }
   };
 
   switch (field.key) {
-    case 'ref_no':
+    case "ref_no":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="text"
-            value={form.RefNo || ''}
+            value={form.RefNo || ""}
             placeholder={
               isTransportSectionScope({ portId, accountType })
-                ? (type === 1 ? 'سيولد رقم استحقاق النقل تلقائيًا' : 'سيولد رقم سند الدفع تلقائيًا')
-                : (type === 3 ? 'سيولد رقم سند الإضافة تلقائيًا' : (type === 1 ? 'سيولد رقم الفاتورة تلقائيًا' : 'سيولد رقم سند القبض تلقائيًا'))
+                ? type === 1
+                  ? "سيولد رقم استحقاق النقل تلقائيًا"
+                  : "سيولد رقم سند الدفع تلقائيًا"
+                : type === 3
+                  ? "سيولد رقم سند الإضافة تلقائيًا"
+                  : type === 1
+                    ? "سيولد رقم الفاتورة تلقائيًا"
+                    : "سيولد رقم سند القبض تلقائيًا"
             }
             className={`${INPUT_CLASS} bg-utility-soft-bg text-utility-muted opacity-80`}
             disabled
@@ -149,21 +180,21 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'trans_date':
+    case "trans_date":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label} *</label>
           <input
             type="date"
-            value={form.TransDate || ''}
-            onChange={(event) => setField('TransDate', event.target.value)}
+            value={form.TransDate || ""}
+            onChange={event => setField("TransDate", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'account_name': {
-      const isTransport = sectionKey === 'transport-1';
+    case "account_name": {
+      const isTransport = sectionKey === "transport-1";
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label} *</label>
@@ -174,17 +205,17 @@ export default function PortBuiltInField({
             valueKey="AccountID"
             dropdownSide="top"
             addNewLabel={isTransport ? "إضافة ناقل جديد" : "إضافة تاجر جديد"}
-            onChange={(text) => {
+            onChange={text => {
               setTraderText(text);
-              setField('AccountID', null);
+              setField("AccountID", null);
             }}
-            onSelect={(account) => {
+            onSelect={account => {
               setTraderText(account.AccountName);
               if (account.isPreset) {
-                setField('AccountID', null);
+                setField("AccountID", null);
                 addAccount(account.AccountName);
               } else {
-                setField('AccountID', account.AccountID);
+                setField("AccountID", account.AccountID);
               }
             }}
             onAddNew={addAccount}
@@ -196,13 +227,13 @@ export default function PortBuiltInField({
       );
     }
 
-    case 'currency':
+    case "currency":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <select
-            value={form.Currency || 'USD'}
-            onChange={(event) => setField('Currency', event.target.value)}
+            value={form.Currency || "USD"}
+            onChange={event => setField("Currency", event.target.value)}
             className={INPUT_CLASS}
           >
             <option value="USD">دولار</option>
@@ -212,25 +243,28 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'driver_name':
+    case "driver_name":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <AutocompleteInput
-            value={form._driverText || ''}
-            options={drivers.map((driver) => ({ AccountID: driver.DriverID, AccountName: driver.DriverName }))}
+            value={form._driverText || ""}
+            options={drivers.map(driver => ({
+              AccountID: driver.DriverID,
+              AccountName: driver.DriverName,
+            }))}
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
-            onChange={(text) => {
-              setField('_driverText', text);
-              setField('DriverID', null);
-              setField('_newDriverName', text);
+            onChange={text => {
+              setField("_driverText", text);
+              setField("DriverID", null);
+              setField("_newDriverName", text);
             }}
-            onSelect={(driver) => {
-              setField('_driverText', driver.AccountName);
-              setField('DriverID', driver.AccountID);
-              setField('_newDriverName', '');
+            onSelect={driver => {
+              setField("_driverText", driver.AccountName);
+              setField("DriverID", driver.AccountID);
+              setField("_newDriverName", "");
             }}
             placeholder="اكتب اسم السائق..."
             className={INPUT_CLASS}
@@ -238,30 +272,33 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'vehicle_plate':
+    case "vehicle_plate":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <AutocompleteInput
-            value={form._vehicleText || ''}
-            options={vehicles.map((vehicle) => ({ AccountID: vehicle.VehicleID, AccountName: vehicle.PlateNumber }))}
+            value={form._vehicleText || ""}
+            options={vehicles.map(vehicle => ({
+              AccountID: vehicle.VehicleID,
+              AccountName: vehicle.PlateNumber,
+            }))}
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
-            onChange={(text) => {
-              setField('_vehicleText', text);
-              setField('VehicleID', null);
-              setField('_newPlateNumber', text);
+            onChange={text => {
+              setField("_vehicleText", text);
+              setField("VehicleID", null);
+              setField("_newPlateNumber", text);
             }}
-            onSelect={(vehicle) => {
-              setField('_vehicleText', vehicle.AccountName);
-              setField('VehicleID', vehicle.AccountID);
-              setField('_newPlateNumber', '');
+            onSelect={vehicle => {
+              setField("_vehicleText", vehicle.AccountName);
+              setField("VehicleID", vehicle.AccountID);
+              setField("_newPlateNumber", "");
             }}
-            onAddNew={(text) => {
-              setField('_vehicleText', text);
-              setField('VehicleID', null);
-              setField('_newPlateNumber', text);
+            onAddNew={text => {
+              setField("_vehicleText", text);
+              setField("VehicleID", null);
+              setField("_newPlateNumber", text);
             }}
             addNewLabel="إضافة رقم سيارة جديد"
             placeholder="اكتب رقم السيارة..."
@@ -270,30 +307,33 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'good_type':
+    case "good_type":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <AutocompleteInput
-            value={form._goodText || ''}
-            options={goods.map((good) => ({ AccountID: good.GoodTypeID, AccountName: good.TypeName }))}
+            value={form._goodText || ""}
+            options={goods.map(good => ({
+              AccountID: good.GoodTypeID,
+              AccountName: good.TypeName,
+            }))}
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
-            onChange={(text) => {
-              setField('_goodText', text);
-              setField('GoodTypeID', null);
-              setField('_newGoodType', text);
+            onChange={text => {
+              setField("_goodText", text);
+              setField("GoodTypeID", null);
+              setField("_newGoodType", text);
             }}
-            onSelect={(good) => {
-              setField('_goodText', good.AccountName);
-              setField('GoodTypeID', good.AccountID);
-              setField('_newGoodType', '');
+            onSelect={good => {
+              setField("_goodText", good.AccountName);
+              setField("GoodTypeID", good.AccountID);
+              setField("_newGoodType", "");
             }}
-            onAddNew={(text) => {
-              setField('_goodText', text);
-              setField('GoodTypeID', null);
-              setField('_newGoodType', text);
+            onAddNew={text => {
+              setField("_goodText", text);
+              setField("GoodTypeID", null);
+              setField("_newGoodType", text);
             }}
             addNewLabel="إضافة نوع بضاعة جديد"
             placeholder="اكتب نوع البضاعة..."
@@ -302,32 +342,33 @@ export default function PortBuiltInField({
         </div>
       );
 
-
-
-    case 'gov_name':
+    case "gov_name":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <AutocompleteInput
-            value={form._govText || ''}
-            options={govs.map((gov) => ({ AccountID: gov.GovID, AccountName: gov.GovName }))}
+            value={form._govText || ""}
+            options={govs.map(gov => ({
+              AccountID: gov.GovID,
+              AccountName: gov.GovName,
+            }))}
             labelKey="AccountName"
             valueKey="AccountID"
             dropdownSide="top"
-            onChange={(text) => {
-              setField('_govText', text);
-              setField('GovID', null);
-              setField('_newGovName', text);
+            onChange={text => {
+              setField("_govText", text);
+              setField("GovID", null);
+              setField("_newGovName", text);
             }}
-            onSelect={(gov) => {
-              setField('_govText', gov.AccountName);
-              setField('GovID', gov.AccountID);
-              setField('_newGovName', '');
+            onSelect={gov => {
+              setField("_govText", gov.AccountName);
+              setField("GovID", gov.AccountID);
+              setField("_newGovName", "");
             }}
-            onAddNew={(text) => {
-              setField('_govText', text);
-              setField('GovID', null);
-              setField('_newGovName', text);
+            onAddNew={text => {
+              setField("_govText", text);
+              setField("GovID", null);
+              setField("_newGovName", text);
             }}
             addNewLabel="إضافة محافظة جديدة"
             placeholder="اكتب اسم المحافظة..."
@@ -336,178 +377,184 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'weight':
+    case "weight":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="any"
-            value={form.Weight || ''}
-            onChange={(event) => setNumericField('Weight', event.target.value)}
+            value={form.Weight || ""}
+            onChange={event => setNumericField("Weight", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'meters':
+    case "meters":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="any"
-            value={form.Meters || ''}
-            onChange={(event) => setNumericField('Meters', event.target.value)}
+            value={form.Meters || ""}
+            onChange={event => setNumericField("Meters", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'qty':
+    case "qty":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
-            value={form.Qty || ''}
-            onChange={(event) => setNumericField('Qty', event.target.value, parseInt)}
+            value={form.Qty || ""}
+            onChange={event =>
+              setNumericField("Qty", event.target.value, parseInt)
+            }
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'cost_usd':
-      return (
-        <div key={field.key}>
-          <label className={LABEL_CLASS}>{label}</label>
-          <input
-            type="number"
-            step="0.01"
-            value={form.CostUSD || ''}
-            onChange={(event) => setNumericField('CostUSD', event.target.value)}
-            className={INPUT_CLASS}
-          />
-        </div>
-      );
-
-    case 'cost_iqd':
+    case "cost_usd":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="0.01"
-            value={form.CostIQD || ''}
-            onChange={(event) => setNumericField('CostIQD', event.target.value)}
+            value={form.CostUSD || ""}
+            onChange={event => setNumericField("CostUSD", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'amount_usd':
+    case "cost_iqd":
+      return (
+        <div key={field.key}>
+          <label className={LABEL_CLASS}>{label}</label>
+          <input
+            type="number"
+            step="0.01"
+            value={form.CostIQD || ""}
+            onChange={event => setNumericField("CostIQD", event.target.value)}
+            className={INPUT_CLASS}
+          />
+        </div>
+      );
+
+    case "amount_usd":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label} *</label>
           <input
             type="number"
             step="0.01"
-            value={form.AmountUSD || ''}
-            onChange={(event) => setNumericField('AmountUSD', event.target.value)}
+            value={form.AmountUSD || ""}
+            onChange={event => setNumericField("AmountUSD", event.target.value)}
             className={`${INPUT_CLASS} text-xl font-bold`}
           />
         </div>
       );
 
-    case 'amount_iqd':
+    case "amount_iqd":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="0.01"
-            value={form.AmountIQD || ''}
-            onChange={(event) => setNumericField('AmountIQD', event.target.value)}
+            value={form.AmountIQD || ""}
+            onChange={event => setNumericField("AmountIQD", event.target.value)}
             className={`${INPUT_CLASS} text-xl font-bold`}
           />
         </div>
       );
 
-    case 'fee_usd':
+    case "fee_usd":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="0.01"
-            value={form.FeeUSD || ''}
-            onChange={(event) => setNumericField('FeeUSD', event.target.value)}
+            value={form.FeeUSD || ""}
+            onChange={event => setNumericField("FeeUSD", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'syr_cus':
+    case "syr_cus":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="0.01"
-            value={form.SyrCus || ''}
-            onChange={(event) => setNumericField('SyrCus', event.target.value)}
+            value={form.SyrCus || ""}
+            onChange={event => setNumericField("SyrCus", event.target.value)}
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'car_qty':
+    case "car_qty":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
-            value={form.CarQty || ''}
-            onChange={(event) => setNumericField('CarQty', event.target.value, parseInt)}
+            value={form.CarQty || ""}
+            onChange={event =>
+              setNumericField("CarQty", event.target.value, parseInt)
+            }
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'trans_price':
+    case "trans_price":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <input
             type="number"
             step="0.01"
-            value={form.TransPrice || ''}
-            onChange={(event) => setNumericField('TransPrice', event.target.value)}
+            value={form.TransPrice || ""}
+            onChange={event =>
+              setNumericField("TransPrice", event.target.value)
+            }
             className={INPUT_CLASS}
           />
         </div>
       );
 
-    case 'company_name':
+    case "company_name":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <AutocompleteInput
-            value={form._companyText || form.CompanyName || ''}
+            value={form._companyText || form.CompanyName || ""}
             options={companies}
             labelKey="CompanyName"
             valueKey="CompanyID"
             dropdownSide="top"
             addNewLabel="إضافة شركة جديدة"
-            onChange={(text) => {
-              setField('_companyText', text);
-              setField('CompanyID', null);
-              setField('CompanyName', text);
+            onChange={text => {
+              setField("_companyText", text);
+              setField("CompanyID", null);
+              setField("CompanyName", text);
             }}
-            onSelect={(company) => {
-              setField('_companyText', company.CompanyName);
-              setField('CompanyID', company.CompanyID);
-              setField('CompanyName', company.CompanyName);
+            onSelect={company => {
+              setField("_companyText", company.CompanyName);
+              setField("CompanyID", company.CompanyID);
+              setField("CompanyName", company.CompanyName);
             }}
             onAddNew={addCompany}
             placeholder="اكتب اسم الشركة..."
@@ -516,23 +563,23 @@ export default function PortBuiltInField({
         </div>
       );
 
-    case 'trader_note':
-      if (sectionKey === 'transport-1') {
+    case "trader_note":
+      if (sectionKey === "transport-1") {
         return (
           <div key={field.key}>
             <label className={LABEL_CLASS}>{label}</label>
             <AutocompleteInput
-              value={form.TraderNote || ''}
+              value={form.TraderNote || ""}
               options={merchants || []}
               labelKey="AccountName"
               valueKey="AccountID"
               dropdownSide="top"
               addNewLabel="إضافة تاجر جديد"
-              onChange={(text) => {
-                setField('TraderNote', text);
+              onChange={text => {
+                setField("TraderNote", text);
               }}
-              onSelect={(merchant) => {
-                setField('TraderNote', merchant.AccountName);
+              onSelect={merchant => {
+                setField("TraderNote", merchant.AccountName);
               }}
               onAddNew={addMerchant}
               placeholder={`اكتب ${label}...`}
@@ -545,21 +592,21 @@ export default function PortBuiltInField({
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <textarea
-            value={form.TraderNote || ''}
-            onChange={(event) => setField('TraderNote', event.target.value)}
+            value={form.TraderNote || ""}
+            onChange={event => setField("TraderNote", event.target.value)}
             className={TEXTAREA_CLASS}
             rows="4"
           />
         </div>
       );
 
-    case 'notes':
+    case "notes":
       return (
         <div key={field.key}>
           <label className={LABEL_CLASS}>{label}</label>
           <textarea
-            value={form.Notes || ''}
-            onChange={(event) => setField('Notes', event.target.value)}
+            value={form.Notes || ""}
+            onChange={event => setField("Notes", event.target.value)}
             className={TEXTAREA_CLASS}
             rows="4"
           />

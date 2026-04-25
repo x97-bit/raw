@@ -7,14 +7,18 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
 export async function setupVite(app: Express, server: Server) {
-  const configuredServer = typeof viteConfig.server === "object" && viteConfig.server !== null
-    ? viteConfig.server
-    : {};
+  const configuredServer =
+    typeof viteConfig.server === "object" && viteConfig.server !== null
+      ? viteConfig.server
+      : {};
   const serverOptions = {
     ...configuredServer,
     middlewareMode: true,
     hmr: {
-      ...(typeof configuredServer.hmr === "object" && configuredServer.hmr !== null ? configuredServer.hmr : {}),
+      ...(typeof configuredServer.hmr === "object" &&
+      configuredServer.hmr !== null
+        ? configuredServer.hmr
+        : {}),
       server,
     },
   };

@@ -1,7 +1,7 @@
-import { Plus } from 'lucide-react';
-import AutocompleteInput from '../../../components/AutocompleteInput';
-import DebtFormField from './DebtFormField';
-import DebtModalShell from './DebtModalShell';
+import { Plus } from "lucide-react";
+import AutocompleteInput from "../../../components/AutocompleteInput";
+import DebtFormField from "./DebtFormField";
+import DebtModalShell from "./DebtModalShell";
 
 export default function DebtFormModal({
   editingDebt,
@@ -19,14 +19,16 @@ export default function DebtFormModal({
 }) {
   return (
     <DebtModalShell
-      title={editingDebt ? 'تعديل دين' : 'إضافة دين جديد'}
+      title={editingDebt ? "تعديل دين" : "إضافة دين جديد"}
       subtitle="نموذج إدخال موحد يدعم الأنواع المختلفة من الديون."
       widthClass="w-[min(72rem,calc(100vw-1.5rem))]"
       onClose={onClose}
     >
       <div className="space-y-5 p-6">
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">اسم الحساب</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            اسم الحساب
+          </label>
           <AutocompleteInput
             value={accountText}
             options={accountOptions}
@@ -43,8 +45,13 @@ export default function DebtFormModal({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {formFields.map((field) => (
-            <DebtFormField key={field.key} field={field} value={form[field.key]} onChange={onFormChange} />
+          {formFields.map(field => (
+            <DebtFormField
+              key={field.key}
+              field={field}
+              value={form[field.key]}
+              onChange={onFormChange}
+            />
           ))}
         </div>
 
@@ -59,10 +66,10 @@ export default function DebtFormModal({
           >
             <Plus size={16} />
             {saving
-              ? 'جارٍ الحفظ...'
+              ? "جارٍ الحفظ..."
               : editingDebt
-                ? 'حفظ التعديلات'
-                : 'حفظ الدين'}
+                ? "حفظ التعديلات"
+                : "حفظ الدين"}
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
-import { Key, Plus, UserCog } from 'lucide-react';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import { USER_ROLE_CONFIG } from '../usersManagementConfig';
+import { Key, Plus, UserCog } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import { USER_ROLE_CONFIG } from "../usersManagementConfig";
 
 export default function UsersListCard({
   users,
@@ -22,7 +22,10 @@ export default function UsersListCard({
         </div>
 
         {onCreate && (
-          <button onClick={onCreate} className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+          <button
+            onClick={onCreate}
+            className="btn-primary flex items-center gap-2 px-4 py-2 text-sm"
+          >
             <Plus size={15} />
             <span>إضافة مستخدم</span>
           </button>
@@ -37,10 +40,14 @@ export default function UsersListCard({
             لا يوجد مستخدمون بعد
           </div>
           <p className="max-w-md text-sm leading-7 text-slate-500">
-            ابدأ بإضافة أول مستخدم حتى تتمكن من توزيع الصلاحيات وإدارة الوصول داخل النظام.
+            ابدأ بإضافة أول مستخدم حتى تتمكن من توزيع الصلاحيات وإدارة الوصول
+            داخل النظام.
           </p>
           {onCreate && (
-            <button onClick={onCreate} className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+            <button
+              onClick={onCreate}
+              className="btn-primary flex items-center gap-2 px-4 py-2 text-sm"
+            >
               <Plus size={15} />
               <span>إضافة أول مستخدم</span>
             </button>
@@ -48,24 +55,31 @@ export default function UsersListCard({
         </div>
       ) : (
         <div className="divide-y divide-slate-100">
-          {users.map((user) => {
-            const roleConfig = USER_ROLE_CONFIG[user.Role] || USER_ROLE_CONFIG.user;
+          {users.map(user => {
+            const roleConfig =
+              USER_ROLE_CONFIG[user.Role] || USER_ROLE_CONFIG.user;
             const Icon = roleConfig.icon;
 
             return (
               <div
                 key={user.UserID}
-                className={`flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50/70 ${!user.IsActive ? 'opacity-45' : ''}`}
+                className={`flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50/70 ${!user.IsActive ? "opacity-45" : ""}`}
               >
                 <div className="flex flex-wrap items-center gap-3.5">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${roleConfig.color}`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${roleConfig.color}`}
+                  >
                     <Icon size={18} />
                   </div>
                   <div className="text-right">
-                    <h4 className="text-sm font-bold text-slate-800">{user.FullName}</h4>
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {user.FullName}
+                    </h4>
                     <p className="text-xs text-slate-400">@{user.Username}</p>
                   </div>
-                  <span className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${roleConfig.color}`}>
+                  <span
+                    className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${roleConfig.color}`}
+                  >
                     {roleConfig.label}
                   </span>
                   {!user.IsActive && (

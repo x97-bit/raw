@@ -35,31 +35,36 @@ export function getSpecialPartnerRowAmountForIqd(row) {
 }
 
 export function buildSpecialPartnerTotals(rows) {
-  const totals = rows.reduce((acc, row) => {
-    acc.count += 1;
-    acc.totalAmountUSD += getSpecialPartnerRowAmountOn(row);
-    acc.totalAmountIQD += toNumber(row?.AmountIQD);
-    acc.totalPartnerBaseUSD += getSpecialPartnerRowPartnerBase(row);
-    acc.totalDifferenceIQD += getSpecialPartnerRowDifference(row);
-    acc.totalCLR += getSpecialPartnerRowClearance(row);
-    acc.totalTaxiAndOfficer += getSpecialPartnerRowTaxiAndOfficer(row);
-    acc.totalTX += toNumber(row?.TX);
-    acc.totalTaxiWater += toNumber(row?.TaxiWater);
-    return acc;
-  }, {
-    count: 0,
-    totalAmountUSD: 0,
-    totalAmountIQD: 0,
-    totalPartnerBaseUSD: 0,
-    totalDifferenceIQD: 0,
-    totalCLR: 0,
-    totalTaxiAndOfficer: 0,
-    totalTX: 0,
-    totalTaxiWater: 0,
-  });
+  const totals = rows.reduce(
+    (acc, row) => {
+      acc.count += 1;
+      acc.totalAmountUSD += getSpecialPartnerRowAmountOn(row);
+      acc.totalAmountIQD += toNumber(row?.AmountIQD);
+      acc.totalPartnerBaseUSD += getSpecialPartnerRowPartnerBase(row);
+      acc.totalDifferenceIQD += getSpecialPartnerRowDifference(row);
+      acc.totalCLR += getSpecialPartnerRowClearance(row);
+      acc.totalTaxiAndOfficer += getSpecialPartnerRowTaxiAndOfficer(row);
+      acc.totalTX += toNumber(row?.TX);
+      acc.totalTaxiWater += toNumber(row?.TaxiWater);
+      return acc;
+    },
+    {
+      count: 0,
+      totalAmountUSD: 0,
+      totalAmountIQD: 0,
+      totalPartnerBaseUSD: 0,
+      totalDifferenceIQD: 0,
+      totalCLR: 0,
+      totalTaxiAndOfficer: 0,
+      totalTX: 0,
+      totalTaxiWater: 0,
+    }
+  );
 
-  totals.totalPartnerExtras = totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
-  totals.totalPartnerUSD = totals.totalPartnerBaseUSD + totals.totalPartnerExtras;
+  totals.totalPartnerExtras =
+    totals.totalCLR + totals.totalDifferenceIQD + totals.totalTaxiAndOfficer;
+  totals.totalPartnerUSD =
+    totals.totalPartnerBaseUSD + totals.totalPartnerExtras;
   totals.totalPartnerIQD = totals.totalPartnerExtras;
   totals.totalNetUSD = totals.totalAmountUSD - totals.totalPartnerUSD;
   totals.totalNetIQD = totals.totalAmountIQD - totals.totalPartnerIQD;

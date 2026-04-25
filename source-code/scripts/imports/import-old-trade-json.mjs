@@ -12,8 +12,15 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const DATABASE_DIR = path.join(REPO_ROOT, "database");
 const REPORT_DIR = path.join(REPO_ROOT, "database", "import-reports");
 const BACKUP_DIR = path.join(DATABASE_DIR, "backups");
-const DEFAULT_SOURCE_JSON = path.join(REPO_ROOT, "old db", "AlrawiApp_all_data (1).json");
-const SOURCE_JSON = path.resolve(process.cwd(), arg("--source-json") || DEFAULT_SOURCE_JSON);
+const DEFAULT_SOURCE_JSON = path.join(
+  REPO_ROOT,
+  "old db",
+  "AlrawiApp_all_data (1).json"
+);
+const SOURCE_JSON = path.resolve(
+  process.cwd(),
+  arg("--source-json") || DEFAULT_SOURCE_JSON
+);
 const DATABASE_URL = arg("--database-url") || process.env.DATABASE_URL || "";
 const APPLY = has("--apply");
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -94,7 +101,7 @@ const SOURCE_TABLE_MAP = {
 };
 
 function arg(name) {
-  const exact = process.argv.find((value) => value.startsWith(`${name}=`));
+  const exact = process.argv.find(value => value.startsWith(`${name}=`));
   if (exact) return exact.slice(name.length + 1);
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] || null : null;
@@ -105,7 +112,10 @@ function has(name) {
 }
 
 function t(value) {
-  return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  return String(value ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function k(value) {
@@ -151,7 +161,9 @@ function requiredDate(value, issues, context = {}) {
 }
 
 function money(value) {
-  return value === null || value === undefined || t(value) === "" ? null : value;
+  return value === null || value === undefined || t(value) === ""
+    ? null
+    : value;
 }
 
 function joinParts(parts) {
@@ -203,7 +215,9 @@ function normalizeRow(row) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return row;
   }
-  return Object.fromEntries(Object.entries(row).map(([key, value]) => [normalizeKey(key), value]));
+  return Object.fromEntries(
+    Object.entries(row).map(([key, value]) => [normalizeKey(key), value])
+  );
 }
 
 function hasMeaningfulTransactionData(row) {
@@ -233,9 +247,12 @@ function splitDestinationCompany(note) {
 }
 
 function legacyFallbackAccountName(sectionKey, legacyId) {
-  if (sectionKey === "port-1") return `حساب قديم السعودية ${legacyId || "بدون-معرف"}`;
-  if (sectionKey === "port-2") return `حساب قديم المنذرية ${legacyId || "بدون-معرف"}`;
-  if (sectionKey === "port-3") return `حساب قديم القائم ${legacyId || "بدون-معرف"}`;
+  if (sectionKey === "port-1")
+    return `حساب قديم السعودية ${legacyId || "بدون-معرف"}`;
+  if (sectionKey === "port-2")
+    return `حساب قديم المنذرية ${legacyId || "بدون-معرف"}`;
+  if (sectionKey === "port-3")
+    return `حساب قديم القائم ${legacyId || "بدون-معرف"}`;
   return `حساب قديم ${legacyId || "بدون-معرف"}`;
 }
 
@@ -256,7 +273,10 @@ function collector() {
 
 function loadTables(parsed) {
   return Object.fromEntries(
-    Object.entries(parsed).map(([name, rows]) => [name, Array.isArray(rows) ? rows.map(normalizeRow) : []]),
+    Object.entries(parsed).map(([name, rows]) => [
+      name,
+      Array.isArray(rows) ? rows.map(normalizeRow) : [],
+    ])
   );
 }
 
@@ -271,7 +291,7 @@ async function countTable(conn, table) {
 
 async function snapshotTarget(conn) {
   const [tableRows] = await conn.query("SHOW TABLES");
-  const names = tableRows.map((row) => row[Object.keys(row)[0]]);
+  const names = tableRows.map(row => row[Object.keys(row)[0]]);
   const data = {};
   const counts = {};
 
@@ -287,7 +307,10 @@ async function snapshotTarget(conn) {
 async function backupTarget(conn) {
   await fs.mkdir(BACKUP_DIR, { recursive: true });
   const snap = await snapshotTarget(conn);
-  const backupPath = path.join(BACKUP_DIR, `pre-old-trade-json-import-${stamp}.json`);
+  const backupPath = path.join(
+    BACKUP_DIR,
+    `pre-old-trade-json-import-${stamp}.json`
+  );
   await fs.writeFile(
     backupPath,
     JSON.stringify(
@@ -300,9 +323,9 @@ async function backupTarget(conn) {
         data: snap.data,
       },
       null,
-      2,
+      2
     ),
-    "utf8",
+    "utf8"
   );
   return backupPath;
 }
@@ -319,7 +342,10 @@ function traderNameForTransport(id, ctx) {
 async function insertLookups(conn, table, rows, mapper) {
   const ids = new Map();
   for (const row of rows) {
-    const [res] = await conn.query(`INSERT INTO \`${table}\` SET ?`, mapper(row));
+    const [res] = await conn.query(
+      `INSERT INTO \`${table}\` SET ?`,
+      mapper(row)
+    );
     ids.set(k(row.name), res.insertId);
   }
   return ids;
@@ -339,7 +365,14 @@ function buildApplyPayload(src) {
   const routeDefaults = [];
   const issues = [];
 
-  const addAccount = ({ name, accountType, portId, currency = null, merchantReport = null, notes = null }) => {
+  const addAccount = ({
+    name,
+    accountType,
+    portId,
+    currency = null,
+    merchantReport = null,
+    notes = null,
+  }) => {
     const normalized = t(name);
     if (!normalized) return null;
     const key = comp(portId, accountType, normalized);
@@ -421,7 +454,11 @@ function buildApplyPayload(src) {
     });
   }
 
-  for (const id of new Set(src.transportTx.map((row) => row.trider_id).filter((value) => value !== null && value !== undefined))) {
+  for (const id of new Set(
+    src.transportTx
+      .map(row => row.trider_id)
+      .filter(value => value !== null && value !== undefined)
+  )) {
     const name = traderNameForTransport(id, src);
     if (name) {
       addAccount({
@@ -433,7 +470,7 @@ function buildApplyPayload(src) {
     }
   }
 
-  const addTransaction = (row) => {
+  const addTransaction = row => {
     if (row.driverName) drivers.add(row.driverName);
     if (row.vehiclePlate) vehicles.add(row.vehiclePlate);
     if (row.goodTypeName) goods.add(row.goodTypeName);
@@ -445,18 +482,31 @@ function buildApplyPayload(src) {
   for (const row of src.ksaTx) {
     let accountName = src.ksaById.get(row.trider_id)?.name || null;
     if (!accountName && !hasMeaningfulTransactionData(row)) {
-      issues.push({ type: "transaction_skipped_empty_orphan", table: "Tbl_KSA_Trans", refNo: t(row.ref_no) });
+      issues.push({
+        type: "transaction_skipped_empty_orphan",
+        table: "Tbl_KSA_Trans",
+        refNo: t(row.ref_no),
+      });
       continue;
     }
     if (!accountName) {
       accountName = legacyFallbackAccountName("port-1", row.trider_id);
-      issues.push({ type: "transaction_account_fallback", table: "Tbl_KSA_Trans", refNo: t(row.ref_no), accountName });
+      issues.push({
+        type: "transaction_account_fallback",
+        table: "Tbl_KSA_Trans",
+        refNo: t(row.ref_no),
+        accountName,
+      });
     }
     addTransaction({
       refNo: t(row.ref_no),
       sectionKey: "port-1",
       accountType: "1",
-      accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-1" }),
+      accountKey: addAccount({
+        name: accountName,
+        accountType: "1",
+        portId: "port-1",
+      }),
       carrierKey: null,
       transDate: requiredDate(row.tran_date, issues, {
         table: "Tbl_KSA_Trans",
@@ -490,18 +540,31 @@ function buildApplyPayload(src) {
   for (const row of src.mnzTx) {
     let accountName = src.mnzById.get(row.trider_id)?.name || null;
     if (!accountName && !hasMeaningfulTransactionData(row)) {
-      issues.push({ type: "transaction_skipped_empty_orphan", table: "Tbl_MNZ_Trans", refNo: t(row.ref_no_mnz) });
+      issues.push({
+        type: "transaction_skipped_empty_orphan",
+        table: "Tbl_MNZ_Trans",
+        refNo: t(row.ref_no_mnz),
+      });
       continue;
     }
     if (!accountName) {
       accountName = legacyFallbackAccountName("port-2", row.trider_id);
-      issues.push({ type: "transaction_account_fallback", table: "Tbl_MNZ_Trans", refNo: t(row.ref_no_mnz), accountName });
+      issues.push({
+        type: "transaction_account_fallback",
+        table: "Tbl_MNZ_Trans",
+        refNo: t(row.ref_no_mnz),
+        accountName,
+      });
     }
     addTransaction({
       refNo: t(row.ref_no_mnz),
       sectionKey: "port-2",
       accountType: "1",
-      accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-2" }),
+      accountKey: addAccount({
+        name: accountName,
+        accountType: "1",
+        portId: "port-2",
+      }),
       carrierKey: null,
       transDate: requiredDate(row.tran_date, issues, {
         table: "Tbl_MNZ_Trans",
@@ -535,19 +598,32 @@ function buildApplyPayload(src) {
   for (const row of src.qaimTx) {
     let accountName = src.qaimById.get(row.trider_id)?.name || null;
     if (!accountName && !hasMeaningfulTransactionData(row)) {
-      issues.push({ type: "transaction_skipped_empty_orphan", table: "Tbl_QAIM_Trans", refNo: t(row.ref_no_qaim) });
+      issues.push({
+        type: "transaction_skipped_empty_orphan",
+        table: "Tbl_QAIM_Trans",
+        refNo: t(row.ref_no_qaim),
+      });
       continue;
     }
     if (!accountName) {
       accountName = legacyFallbackAccountName("port-3", row.trider_id);
-      issues.push({ type: "transaction_account_fallback", table: "Tbl_QAIM_Trans", refNo: t(row.ref_no_qaim), accountName });
+      issues.push({
+        type: "transaction_account_fallback",
+        table: "Tbl_QAIM_Trans",
+        refNo: t(row.ref_no_qaim),
+        accountName,
+      });
     }
     if (t(row.company_name)) comps.add(row.company_name);
     addTransaction({
       refNo: t(row.ref_no_qaim),
       sectionKey: "port-3",
       accountType: "1",
-      accountKey: addAccount({ name: accountName, accountType: "1", portId: "port-3" }),
+      accountKey: addAccount({
+        name: accountName,
+        accountType: "1",
+        portId: "port-3",
+      }),
       carrierKey: null,
       transDate: requiredDate(row.tran_date, issues, {
         table: "Tbl_QAIM_Trans",
@@ -579,23 +655,42 @@ function buildApplyPayload(src) {
   }
 
   for (const row of src.transportTx) {
-    const carrierName = src.transportCarrierById.get(row.carrier_id)?.name || null;
-    let accountName = traderNameForTransport(row.trider_id, src) || carrierName || null;
+    const carrierName =
+      src.transportCarrierById.get(row.carrier_id)?.name || null;
+    let accountName =
+      traderNameForTransport(row.trider_id, src) || carrierName || null;
     if (!accountName && !hasMeaningfulTransactionData(row)) {
-      issues.push({ type: "transaction_skipped_empty_orphan", table: "Tbl_TRANS_Trans", refNo: t(row.ref_no_trans) });
+      issues.push({
+        type: "transaction_skipped_empty_orphan",
+        table: "Tbl_TRANS_Trans",
+        refNo: t(row.ref_no_trans),
+      });
       continue;
     }
     if (!accountName) {
       accountName = "نقل داخلي عام";
-      issues.push({ type: "transaction_account_fallback", table: "Tbl_TRANS_Trans", refNo: t(row.ref_no_trans), accountName });
+      issues.push({
+        type: "transaction_account_fallback",
+        table: "Tbl_TRANS_Trans",
+        refNo: t(row.ref_no_trans),
+        accountName,
+      });
     }
     addTransaction({
       refNo: t(row.ref_no_trans),
       sectionKey: "transport-1",
       accountType: "2",
-      accountKey: addAccount({ name: accountName, accountType: "2", portId: "transport-1" }),
+      accountKey: addAccount({
+        name: accountName,
+        accountType: "2",
+        portId: "transport-1",
+      }),
       carrierKey: carrierName
-        ? addAccount({ name: carrierName, accountType: "2", portId: "transport-1" })
+        ? addAccount({
+            name: carrierName,
+            accountType: "2",
+            portId: "transport-1",
+          })
         : null,
       transDate: requiredDate(row.tran_date, issues, {
         table: "Tbl_TRANS_Trans",
@@ -629,14 +724,22 @@ function buildApplyPayload(src) {
   for (const row of src.partnershipTx) {
     const accountName = src.partnershipById.get(row.account_id)?.name || null;
     if (!accountName) {
-      issues.push({ type: "transaction_account_unresolved", table: "Tbl_SHR_Trans", refNo: t(row.ref_no_shr) });
+      issues.push({
+        type: "transaction_account_unresolved",
+        table: "Tbl_SHR_Trans",
+        refNo: t(row.ref_no_shr),
+      });
       continue;
     }
     addTransaction({
       refNo: t(row.ref_no_shr),
       sectionKey: "partnership-1",
       accountType: "5",
-      accountKey: addAccount({ name: accountName, accountType: "5", portId: "partnership-1" }),
+      accountKey: addAccount({
+        name: accountName,
+        accountType: "5",
+        portId: "partnership-1",
+      }),
       carrierKey: null,
       transDate: requiredDate(row.tran_date, issues, {
         table: "Tbl_SHR_Trans",
@@ -667,7 +770,7 @@ function buildApplyPayload(src) {
     });
   }
 
-  const pushDebt = (row) => {
+  const pushDebt = row => {
     debts.push({
       debtorName: row.debtorName,
       date: dateOnly(row.date),
@@ -936,15 +1039,46 @@ async function loadSourceFromJson(sourceJsonPath) {
     source[sourceKey] = tables[legacyName] || [];
   }
 
-  source.ksaById = new Map(source.ksaTraders.map((row) => [row.ksa_trider_id, { name: t(row.ksa_trider_name) }]));
-  source.mnzById = new Map(source.mnzTraders.map((row) => [row.mnz_trider_id, { name: t(row.mnz_trider_name) }]));
-  source.qaimById = new Map(source.qaimTraders.map((row) => [row.qaim_trider_id, { name: t(row.qaim_trider_name) }]));
-  source.transportCarrierById = new Map(source.transportCarriers.map((row) => [row.trans_carrier_id, { name: t(row.trans_carrier_name) }]));
-  source.partnershipById = new Map(source.partnershipAccounts.map((row) => [row.shr_id, { name: t(row.shr_account_name) }]));
-  source.goodCommonById = new Map(source.goodsCommon.map((row) => [row.good_id, t(row.good_type)]));
-  source.goodQaimById = new Map(source.goodsQaim.map((row) => [row.good_id_qaim, t(row.good_type_qaim)]));
+  source.ksaById = new Map(
+    source.ksaTraders.map(row => [
+      row.ksa_trider_id,
+      { name: t(row.ksa_trider_name) },
+    ])
+  );
+  source.mnzById = new Map(
+    source.mnzTraders.map(row => [
+      row.mnz_trider_id,
+      { name: t(row.mnz_trider_name) },
+    ])
+  );
+  source.qaimById = new Map(
+    source.qaimTraders.map(row => [
+      row.qaim_trider_id,
+      { name: t(row.qaim_trider_name) },
+    ])
+  );
+  source.transportCarrierById = new Map(
+    source.transportCarriers.map(row => [
+      row.trans_carrier_id,
+      { name: t(row.trans_carrier_name) },
+    ])
+  );
+  source.partnershipById = new Map(
+    source.partnershipAccounts.map(row => [
+      row.shr_id,
+      { name: t(row.shr_account_name) },
+    ])
+  );
+  source.goodCommonById = new Map(
+    source.goodsCommon.map(row => [row.good_id, t(row.good_type)])
+  );
+  source.goodQaimById = new Map(
+    source.goodsQaim.map(row => [row.good_id_qaim, t(row.good_type_qaim)])
+  );
 
-  const tableCounts = Object.fromEntries(Object.entries(tables).map(([name, rows]) => [name, getCount(rows)]));
+  const tableCounts = Object.fromEntries(
+    Object.entries(tables).map(([name, rows]) => [name, getCount(rows)])
+  );
   const ignoredTables = Object.entries(tableCounts)
     .filter(([name]) => !IMPORTED_TABLES.has(name))
     .map(([name, count]) => ({ table: name, count }))
@@ -956,11 +1090,16 @@ async function loadSourceFromJson(sourceJsonPath) {
 async function mainApply(payload, tableCounts, ignoredTables) {
   const dbUrl = DATABASE_URL;
   if (!dbUrl) {
-    throw new Error("DATABASE_URL is missing. Set it in source-code/.env or pass --database-url");
+    throw new Error(
+      "DATABASE_URL is missing. Set it in source-code/.env or pass --database-url"
+    );
   }
 
   const target = await mysql.createConnection(cfg(dbUrl));
-  const reportPath = path.join(REPORT_DIR, `old-trade-json-import-apply-${stamp}.json`);
+  const reportPath = path.join(
+    REPORT_DIR,
+    `old-trade-json-import-apply-${stamp}.json`
+  );
 
   try {
     const before = {};
@@ -980,11 +1119,36 @@ async function mainApply(payload, tableCounts, ignoredTables) {
 
     await target.beginTransaction();
     try {
-      const goodsIds = await insertLookups(target, "goods_types", payload.goods, (row) => ({ name: row.name }));
-      const govIds = await insertLookups(target, "governorates", payload.governorates, (row) => ({ name: row.name, trance_price: row.trancePrice ?? null }));
-      const compIds = await insertLookups(target, "companies", payload.companies, (row) => ({ name: row.name }));
-      const driverIds = await insertLookups(target, "drivers", payload.drivers, (row) => ({ name: row.name }));
-      const vehicleIds = await insertLookups(target, "vehicles", payload.vehicles, (row) => ({ plateNumber: row.name }));
+      const goodsIds = await insertLookups(
+        target,
+        "goods_types",
+        payload.goods,
+        row => ({ name: row.name })
+      );
+      const govIds = await insertLookups(
+        target,
+        "governorates",
+        payload.governorates,
+        row => ({ name: row.name, trance_price: row.trancePrice ?? null })
+      );
+      const compIds = await insertLookups(
+        target,
+        "companies",
+        payload.companies,
+        row => ({ name: row.name })
+      );
+      const driverIds = await insertLookups(
+        target,
+        "drivers",
+        payload.drivers,
+        row => ({ name: row.name })
+      );
+      const vehicleIds = await insertLookups(
+        target,
+        "vehicles",
+        payload.vehicles,
+        row => ({ plateNumber: row.name })
+      );
 
       const accountIds = new Map();
       for (const row of payload.accounts) {
@@ -996,13 +1160,19 @@ async function mainApply(payload, tableCounts, ignoredTables) {
           merchantReport: row.merchantReport,
           notes: row.notes,
         });
-        accountIds.set(comp(row.portId, row.accountType, row.name), res.insertId);
+        accountIds.set(
+          comp(row.portId, row.accountType, row.name),
+          res.insertId
+        );
       }
 
       for (const row of payload.transactions) {
         const accountId = accountIds.get(row.accountKey);
-        if (!accountId) throw new Error(`Missing account for transaction ${row.refNo}`);
-        const carrierId = row.carrierKey ? accountIds.get(row.carrierKey) || null : null;
+        if (!accountId)
+          throw new Error(`Missing account for transaction ${row.refNo}`);
+        const carrierId = row.carrierKey
+          ? accountIds.get(row.carrierKey) || null
+          : null;
 
         await target.query("INSERT INTO `transactions` SET ?", {
           ref_no: row.refNo || null,
@@ -1010,9 +1180,15 @@ async function mainApply(payload, tableCounts, ignoredTables) {
           trans_date: row.transDate,
           account_id: accountId,
           currency: row.currency,
-          driver_id: row.driverName ? driverIds.get(k(row.driverName)) || null : null,
-          vehicle_id: row.vehiclePlate ? vehicleIds.get(k(row.vehiclePlate)) || null : null,
-          good_type_id: row.goodTypeName ? goodsIds.get(k(row.goodTypeName)) || null : null,
+          driver_id: row.driverName
+            ? driverIds.get(k(row.driverName)) || null
+            : null,
+          vehicle_id: row.vehiclePlate
+            ? vehicleIds.get(k(row.vehiclePlate)) || null
+            : null,
+          good_type_id: row.goodTypeName
+            ? goodsIds.get(k(row.goodTypeName)) || null
+            : null,
           weight: row.weight ?? null,
           meters: row.meters ?? null,
           qty: row.qty ?? null,
@@ -1026,8 +1202,12 @@ async function mainApply(payload, tableCounts, ignoredTables) {
           trans_price: row.transPrice ?? null,
           carrier_id: carrierId,
           company_name: row.companyName || null,
-          company_id: row.companyName ? compIds.get(k(row.companyName)) || null : null,
-          gov_id: row.governorateName ? govIds.get(k(row.governorateName)) || null : null,
+          company_id: row.companyName
+            ? compIds.get(k(row.companyName)) || null
+            : null,
+          gov_id: row.governorateName
+            ? govIds.get(k(row.governorateName)) || null
+            : null,
           notes: row.notes || null,
           trader_note: row.traderNote || null,
           record_type: row.recordType,
@@ -1139,7 +1319,11 @@ async function mainApply(payload, tableCounts, ignoredTables) {
       }
 
       const report = {
-        meta: { mode: "apply", createdAt: new Date().toISOString(), sourceJson: SOURCE_JSON },
+        meta: {
+          mode: "apply",
+          createdAt: new Date().toISOString(),
+          sourceJson: SOURCE_JSON,
+        },
         sourceCounts: tableCounts,
         ignoredTables,
         projected: {
@@ -1154,7 +1338,9 @@ async function mainApply(payload, tableCounts, ignoredTables) {
           expenses: payload.expenses.length,
           specialAccounts: payload.specialAccounts.length,
           routeDefaults: payload.routeDefaults.length,
-          pasteErrors: payload.issues.filter((item) => item.table === "Paste Errors").length,
+          pasteErrors: payload.issues.filter(
+            item => item.table === "Paste Errors"
+          ).length,
         },
         targetCountsBefore: before,
         targetCountsAfter: after,
@@ -1176,7 +1362,8 @@ async function mainApply(payload, tableCounts, ignoredTables) {
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
 
-  const { source, tableCounts, ignoredTables } = await loadSourceFromJson(SOURCE_JSON);
+  const { source, tableCounts, ignoredTables } =
+    await loadSourceFromJson(SOURCE_JSON);
   const payload = buildApplyPayload(source);
 
   if (APPLY) {
@@ -1209,12 +1396,15 @@ async function main() {
     issues: payload.issues,
   };
 
-  const reportPath = path.join(REPORT_DIR, `old-trade-json-import-dry-run-${stamp}.json`);
+  const reportPath = path.join(
+    REPORT_DIR,
+    `old-trade-json-import-dry-run-${stamp}.json`
+  );
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
   console.log(JSON.stringify({ reportPath, ...report }, null, 2));
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error);
   process.exit(1);
 });

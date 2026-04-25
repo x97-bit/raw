@@ -1,6 +1,11 @@
-import { formatBytes, formatDateTime } from '../backupsPageHelpers';
+import { formatBytes, formatDateTime } from "../backupsPageHelpers";
 
-export default function BackupFileTable({ title, subtitle, files, emptyLabel }) {
+export default function BackupFileTable({
+  title,
+  subtitle,
+  files,
+  emptyLabel,
+}) {
   return (
     <section className="surface-card overflow-hidden p-0">
       <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4">
@@ -14,7 +19,9 @@ export default function BackupFileTable({ title, subtitle, files, emptyLabel }) 
       </div>
 
       {files.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-[#91a0ad]">{emptyLabel}</div>
+        <div className="px-5 py-8 text-center text-sm text-[#91a0ad]">
+          {emptyLabel}
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table>
@@ -27,12 +34,17 @@ export default function BackupFileTable({ title, subtitle, files, emptyLabel }) 
               </tr>
             </thead>
             <tbody>
-              {files.map((file) => (
+              {files.map(file => (
                 <tr key={file.path}>
                   <td className="font-semibold text-white">{file.name}</td>
                   <td dir="ltr">{formatBytes(file.sizeBytes)}</td>
                   <td>{formatDateTime(file.modifiedAt)}</td>
-                  <td dir="ltr" className="max-w-[18rem] truncate text-[#9fb0be]">{file.path}</td>
+                  <td
+                    dir="ltr"
+                    className="max-w-[18rem] truncate text-[#9fb0be]"
+                  >
+                    {file.path}
+                  </td>
                 </tr>
               ))}
             </tbody>

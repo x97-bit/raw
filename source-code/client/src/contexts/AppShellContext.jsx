@@ -1,7 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const SIDEBAR_COLLAPSED_STORAGE_KEY = 'app-shell-sidebar-collapsed';
-const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "app-shell-sidebar-collapsed";
+const DESKTOP_MEDIA_QUERY = "(min-width: 1024px)";
 
 const AppShellContext = createContext({
   hasSidebar: false,
@@ -14,7 +21,10 @@ const AppShellContext = createContext({
 });
 
 function getDesktopMatch() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return false;
   }
 
@@ -22,12 +32,12 @@ function getDesktopMatch() {
 }
 
 function readInitialSidebarCollapsed() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false;
   }
 
   try {
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
   } catch {
     return false;
   }
@@ -35,24 +45,29 @@ function readInitialSidebarCollapsed() {
 
 export function AppShellProvider({ children }) {
   const [isDesktop, setIsDesktop] = useState(() => getDesktopMatch());
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readInitialSidebarCollapsed());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    readInitialSidebarCollapsed()
+  );
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return undefined;
     }
 
     const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
-    const handleChange = (event) => {
+    const handleChange = event => {
       setIsDesktop(event.matches);
     };
 
     setIsDesktop(mediaQuery.matches);
 
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }
 
     mediaQuery.addListener(handleChange);
@@ -60,12 +75,15 @@ export function AppShellProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return;
     }
 
     try {
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, sidebarCollapsed ? '1' : '0');
+      window.localStorage.setItem(
+        SIDEBAR_COLLAPSED_STORAGE_KEY,
+        sidebarCollapsed ? "1" : "0"
+      );
     } catch {
       // Ignore localStorage failures and keep the preference in memory.
     }
@@ -79,11 +97,11 @@ export function AppShellProvider({ children }) {
 
   const toggleSidebar = useCallback(() => {
     if (isDesktop) {
-      setSidebarCollapsed((current) => !current);
+      setSidebarCollapsed(current => !current);
       return;
     }
 
-    setMobileSidebarOpen((current) => !current);
+    setMobileSidebarOpen(current => !current);
   }, [isDesktop]);
 
   const closeSidebar = useCallback(() => {
@@ -99,15 +117,25 @@ export function AppShellProvider({ children }) {
     setMobileSidebarOpen(true);
   }, [isDesktop]);
 
-  const value = useMemo(() => ({
-    hasSidebar: true,
-    isDesktop,
-    sidebarCollapsed,
-    mobileSidebarOpen,
-    toggleSidebar,
-    closeSidebar,
-    openSidebar,
-  }), [closeSidebar, isDesktop, mobileSidebarOpen, openSidebar, sidebarCollapsed, toggleSidebar]);
+  const value = useMemo(
+    () => ({
+      hasSidebar: true,
+      isDesktop,
+      sidebarCollapsed,
+      mobileSidebarOpen,
+      toggleSidebar,
+      closeSidebar,
+      openSidebar,
+    }),
+    [
+      closeSidebar,
+      isDesktop,
+      mobileSidebarOpen,
+      openSidebar,
+      sidebarCollapsed,
+      toggleSidebar,
+    ]
+  );
 
   return (
     <AppShellContext.Provider value={value}>

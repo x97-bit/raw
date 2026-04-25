@@ -29,26 +29,30 @@ function resolveOrigin(rawValue?: string) {
   }
 }
 
-function buildUniqueSourceList(...groups: Array<Array<string | null | undefined>>) {
-  return Array.from(new Set(groups.flat().filter((value): value is string => Boolean(value))));
+function buildUniqueSourceList(
+  ...groups: Array<Array<string | null | undefined>>
+) {
+  return Array.from(
+    new Set(groups.flat().filter((value): value is string => Boolean(value)))
+  );
 }
 
 export function buildContentSecurityPolicy() {
   const runtimeOrigins = buildUniqueSourceList(
     [resolveOrigin(process.env.VITE_ANALYTICS_ENDPOINT)],
     [resolveOrigin(process.env.VITE_FRONTEND_FORGE_API_URL)],
-    [resolveOrigin(process.env.BUILT_IN_FORGE_API_URL)],
+    [resolveOrigin(process.env.BUILT_IN_FORGE_API_URL)]
   );
   const scriptSources = buildUniqueSourceList(
     ["'self'"],
     DEFAULT_MAP_SCRIPT_ORIGINS,
     runtimeOrigins,
-    process.env.NODE_ENV === "development" ? ["'unsafe-inline'"] : [],
+    process.env.NODE_ENV === "development" ? ["'unsafe-inline'"] : []
   );
   const connectSources = buildUniqueSourceList(
     ["'self'", "https:", "ws:", "wss:"],
     runtimeOrigins,
-    [DEFAULT_FORGE_ORIGIN],
+    [DEFAULT_FORGE_ORIGIN]
   );
 
   return [
@@ -77,8 +81,12 @@ export function buildSecurityHeaders(req: Request) {
     "Content-Security-Policy": buildContentSecurityPolicy(),
   };
 
-  if (process.env.NODE_ENV === "production" && (req.secure || req.protocol === "https")) {
-    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+  if (
+    process.env.NODE_ENV === "production" &&
+    (req.secure || req.protocol === "https")
+  ) {
+    headers["Strict-Transport-Security"] =
+      "max-age=31536000; includeSubDomains";
   }
 
   return headers;

@@ -1,1 +1,1 @@
-export { default } from '../features/field-management/FieldManagementPageContent';
+export { default } from "../features/field-management/FieldManagementPageContent";

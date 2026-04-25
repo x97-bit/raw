@@ -3,6 +3,7 @@
 This file records what was intentionally moved out of the active workflow and why.
 
 ## Database Scripts
+
 - `scripts/archive/database/export-db.mjs`
   - Old export utility kept for reference, not part of the active package workflow.
 - `scripts/archive/database/migrate-fields.mjs`
@@ -21,12 +22,14 @@ This file records what was intentionally moved out of the active workflow and wh
   - Legacy schema setup helper preserved for reference.
 
 ## Import Scripts
+
 - `scripts/archive/imports/import-data.mjs`
   - Older import path retained for comparison and safe cleanup.
 - `scripts/archive/imports/import-excel.mjs`
   - Older Excel import path retained for comparison and safe cleanup.
 
 ## Policy
+
 - Archived files are intentionally kept.
 - They are not the canonical active workflow.
 - Any future permanent deletion should be done only after a dedicated proof pass.

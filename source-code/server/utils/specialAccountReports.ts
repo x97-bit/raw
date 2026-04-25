@@ -12,10 +12,15 @@ export function getSpecialAccountDateFilters(query: Record<string, unknown>) {
   };
 }
 
-export function buildHaiderSpecialReport(rows: any[], filters: { from?: string; to?: string } = {}) {
+export function buildHaiderSpecialReport(
+  rows: any[],
+  filters: { from?: string; to?: string } = {}
+) {
   const mappedRows = rows
-    .filter((row) => withinDateRange(normalizeDateValue(row.date), filters.from, filters.to))
-    .map((row) => {
+    .filter(row =>
+      withinDateRange(normalizeDateValue(row.date), filters.from, filters.to)
+    )
+    .map(row => {
       const amountUSD = Number(row.amountUSD || 0);
       const amountIQD = Number(row.amountIQD || 0);
       const costUSD = Number(row.costUSD || 0);
@@ -49,23 +54,52 @@ export function buildHaiderSpecialReport(rows: any[], filters: { from?: string; 
   const statement = sortByDateDesc(mappedRows);
   const totals = {
     count: statement.length,
-    totalWeight: statement.reduce((sum, row) => sum + Number(row.Weight || 0), 0),
-    totalCostUSD: statement.reduce((sum, row) => sum + Number(row.CostUSD || 0), 0),
-    totalAmountUSD: statement.reduce((sum, row) => sum + Number(row.AmountUSD || 0), 0),
-    totalProfitUSD: statement.reduce((sum, row) => sum + Number(row.ProfitUSD || 0), 0),
-    totalCostIQD: statement.reduce((sum, row) => sum + Number(row.CostIQD || 0), 0),
-    totalAmountIQD: statement.reduce((sum, row) => sum + Number(row.AmountIQD || 0), 0),
-    totalDifferenceIQD: statement.reduce((sum, row) => sum + Number(row.DifferenceIQD || 0), 0),
-    totalNetIQD: statement.reduce((sum, row) => sum + Number(row.NetIQD || 0), 0),
+    totalWeight: statement.reduce(
+      (sum, row) => sum + Number(row.Weight || 0),
+      0
+    ),
+    totalCostUSD: statement.reduce(
+      (sum, row) => sum + Number(row.CostUSD || 0),
+      0
+    ),
+    totalAmountUSD: statement.reduce(
+      (sum, row) => sum + Number(row.AmountUSD || 0),
+      0
+    ),
+    totalProfitUSD: statement.reduce(
+      (sum, row) => sum + Number(row.ProfitUSD || 0),
+      0
+    ),
+    totalCostIQD: statement.reduce(
+      (sum, row) => sum + Number(row.CostIQD || 0),
+      0
+    ),
+    totalAmountIQD: statement.reduce(
+      (sum, row) => sum + Number(row.AmountIQD || 0),
+      0
+    ),
+    totalDifferenceIQD: statement.reduce(
+      (sum, row) => sum + Number(row.DifferenceIQD || 0),
+      0
+    ),
+    totalNetIQD: statement.reduce(
+      (sum, row) => sum + Number(row.NetIQD || 0),
+      0
+    ),
   };
 
   return { statement, totals };
 }
 
-export function buildPartnershipSpecialReport(rows: any[], filters: { from?: string; to?: string } = {}) {
+export function buildPartnershipSpecialReport(
+  rows: any[],
+  filters: { from?: string; to?: string } = {}
+) {
   const mappedRows = rows
-    .filter((row) => withinDateRange(normalizeDateValue(row.date), filters.from, filters.to))
-    .map((row) => ({
+    .filter(row =>
+      withinDateRange(normalizeDateValue(row.date), filters.from, filters.to)
+    )
+    .map(row => ({
       id: row.id,
       type: row.type,
       name: row.name || getDefaultSpecialAccountName("partnership"),
@@ -89,16 +123,35 @@ export function buildPartnershipSpecialReport(rows: any[], filters: { from?: str
     }));
 
   const rowsResult = sortByDateDesc(mappedRows);
-  const totalAmountUSD = rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD || 0), 0);
-  const totalAmountIQD = rowsResult.reduce((sum, row) => sum + Number(row.AmountIQD || 0), 0);
-  const totalPartnerBaseUSD = rowsResult.reduce((sum, row) => sum + Number(row.AmountUSD_Partner || 0), 0);
-  const totalDifferenceIQD = rowsResult.reduce((sum, row) => sum + Number(row.DifferenceIQD || 0), 0);
-  const totalCLR = rowsResult.reduce((sum, row) => sum + Number(row.CLR || 0), 0);
+  const totalAmountUSD = rowsResult.reduce(
+    (sum, row) => sum + Number(row.AmountUSD || 0),
+    0
+  );
+  const totalAmountIQD = rowsResult.reduce(
+    (sum, row) => sum + Number(row.AmountIQD || 0),
+    0
+  );
+  const totalPartnerBaseUSD = rowsResult.reduce(
+    (sum, row) => sum + Number(row.AmountUSD_Partner || 0),
+    0
+  );
+  const totalDifferenceIQD = rowsResult.reduce(
+    (sum, row) => sum + Number(row.DifferenceIQD || 0),
+    0
+  );
+  const totalCLR = rowsResult.reduce(
+    (sum, row) => sum + Number(row.CLR || 0),
+    0
+  );
   const totalTX = rowsResult.reduce((sum, row) => sum + Number(row.TX || 0), 0);
-  const totalTaxiWater = rowsResult.reduce((sum, row) => sum + Number(row.TaxiWater || 0), 0);
+  const totalTaxiWater = rowsResult.reduce(
+    (sum, row) => sum + Number(row.TaxiWater || 0),
+    0
+  );
 
   const totalTaxiAndOfficer = totalTX + totalTaxiWater;
-  const totalPartnerExtras = totalDifferenceIQD + totalCLR + totalTaxiAndOfficer;
+  const totalPartnerExtras =
+    totalDifferenceIQD + totalCLR + totalTaxiAndOfficer;
   const totalPartnerUSD = totalPartnerBaseUSD + totalPartnerExtras;
   const totalPartnerIQD = totalPartnerExtras;
   const totalNetUSD = totalAmountUSD - totalPartnerUSD;

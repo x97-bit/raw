@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import TransactionModal from '../../components/TransactionModal';
-import { useAuth } from '../../contexts/AuthContext';
-import PortFormView from './components/PortFormView';
-import PortListView from './components/PortListView';
-import PortStatementSelectView from './components/PortStatementSelectView';
-import PortStatementView from './components/PortStatementView';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import TransactionModal from "../../components/TransactionModal";
+import { useAuth } from "../../contexts/AuthContext";
+import PortFormView from "./components/PortFormView";
+import PortListView from "./components/PortListView";
+import PortStatementSelectView from "./components/PortStatementSelectView";
+import PortStatementView from "./components/PortStatementView";
 import {
   PORT_PAGE_LIMIT,
   buildPortStatementQuery,
@@ -13,53 +13,68 @@ import {
   getPortViewLabels,
   relabelPortColumnsForSection,
   resolvePortSectionKey,
-} from './portPageHelpers';
+} from "./portPageHelpers";
 import {
   getPortTransactionTarget,
   buildPortAccountPayload,
-} from './portTransactionFormHelpers';
-import usePortData from './usePortData';
-import usePortFieldConfig from './usePortFieldConfig';
-import usePortTransactionForm from './usePortTransactionForm';
-import useTransactionFormLayout from '../transactions/useTransactionFormLayout';
-import { filterSectionsByCurrency } from '../../utils/orderedFormSections';
-import { buildListExportTemplates, buildStatementExportTemplates, buildListScreenTemplates, buildStatementScreenTemplates } from '../../utils/portExportTemplates';
-import { renderPortCell, toExportColumn, toPreviewColumn } from '../../utils/portPageColumns';
+} from "./portTransactionFormHelpers";
+import usePortData from "./usePortData";
+import usePortFieldConfig from "./usePortFieldConfig";
+import usePortTransactionForm from "./usePortTransactionForm";
+import useTransactionFormLayout from "../transactions/useTransactionFormLayout";
+import { filterSectionsByCurrency } from "../../utils/orderedFormSections";
+import {
+  buildListExportTemplates,
+  buildStatementExportTemplates,
+  buildListScreenTemplates,
+  buildStatementScreenTemplates,
+} from "../../utils/portExportTemplates";
+import {
+  renderPortCell,
+  toExportColumn,
+  toPreviewColumn,
+} from "../../utils/portPageColumns";
 import {
   EMPTY_PORT_SUMMARY,
   formatPortSummaryValue,
   PORT_SECTION_SUMMARY_META,
-} from '../../utils/portSummaryConfig';
+} from "../../utils/portSummaryConfig";
 
 export default function PortPage({
   portId,
   portName,
   accountType,
-  initialView = 'list',
+  initialView = "list",
   initialFormType,
   onBack,
   onHome,
 }) {
   const { api, can } = useAuth();
-  const [view, setView] = useState(initialView === 'statement-select' ? 'list' : initialView);
+  const [view, setView] = useState(
+    initialView === "statement-select" ? "list" : initialView
+  );
   const [page, setPage] = useState(0);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [formType, setFormType] = useState(initialFormType || 1);
-  const [showStatementSelect, setShowStatementSelect] = useState(initialView === 'statement-select');
+  const [showStatementSelect, setShowStatementSelect] = useState(
+    initialView === "statement-select"
+  );
   const [stAccount, setStAccount] = useState(null);
   const [statement, setStatement] = useState(null);
   const [selectedTx, setSelectedTx] = useState(null);
   const [filters, setFilters] = useState(createPortFilters());
-  const [selectedListTemplateId, setSelectedListTemplateId] = useState('current-list');
-  const [selectedStatementTemplateId, setSelectedStatementTemplateId] = useState('current-statement');
+  const [selectedListTemplateId, setSelectedListTemplateId] =
+    useState("current-list");
+  const [selectedStatementTemplateId, setSelectedStatementTemplateId] =
+    useState("current-statement");
 
   const sectionKey = useMemo(
     () => resolvePortSectionKey(portId, accountType),
-    [accountType, portId],
+    [accountType, portId]
   );
   const portViewLabels = useMemo(
     () => getPortViewLabels({ sectionKey, formType }),
-    [formType, sectionKey],
+    [formType, sectionKey]
   );
 
   const {
@@ -111,17 +126,18 @@ export default function PortPage({
     formTarget: activeFormTarget,
     fieldConfigMap: activeFormFieldConfigMap,
     customFields: activeFormCustomFields,
-    fallbackTitle: 'تفاصيل الحركة',
-    fallbackSubtitle: 'اعرض الحقول حسب ترتيب إدارة الحقول',
+    fallbackTitle: "تفاصيل الحركة",
+    fallbackSubtitle: "اعرض الحقول حسب ترتيب إدارة الحقول",
   });
   const getScopedBuiltInFormFieldLabel = useCallback(
-    (fieldKey, fallbackLabel) => getPortBuiltInFieldLabel(
-      sectionKey,
-      fieldKey,
-      formType,
-      getBuiltInFormFieldLabel(fieldKey, fallbackLabel),
-    ),
-    [formType, getBuiltInFormFieldLabel, sectionKey],
+    (fieldKey, fallbackLabel) =>
+      getPortBuiltInFieldLabel(
+        sectionKey,
+        fieldKey,
+        formType,
+        getBuiltInFormFieldLabel(fieldKey, fallbackLabel)
+      ),
+    [formType, getBuiltInFormFieldLabel, sectionKey]
   );
 
   const transactionFormState = usePortTransactionForm({
@@ -140,7 +156,7 @@ export default function PortPage({
         onBack();
         return;
       }
-      setView('list');
+      setView("list");
       await loadData();
     },
     loadData,
@@ -162,13 +178,17 @@ export default function PortPage({
   });
 
   const filteredFormSections = useMemo(
-    () => filterSectionsByCurrency(orderedFormSections, transactionFormState.form?.Currency),
-    [orderedFormSections, transactionFormState.form?.Currency],
+    () =>
+      filterSectionsByCurrency(
+        orderedFormSections,
+        transactionFormState.form?.Currency
+      ),
+    [orderedFormSections, transactionFormState.form?.Currency]
   );
 
   const listSummaryCards = useMemo(() => {
     const summaryMeta = PORT_SECTION_SUMMARY_META[sectionKey]?.list || [];
-    return summaryMeta.map((card) => ({
+    return summaryMeta.map(card => ({
       ...card,
       value: formatPortSummaryValue(listSummary?.[card.key] || 0, card.format),
     }));
@@ -177,7 +197,7 @@ export default function PortPage({
   const statementSummaryCards = useMemo(() => {
     const summaryMeta = PORT_SECTION_SUMMARY_META[sectionKey]?.statement || [];
     const totals = statement?.totals || EMPTY_PORT_SUMMARY;
-    return summaryMeta.map((card) => ({
+    return summaryMeta.map(card => ({
       ...card,
       value: formatPortSummaryValue(totals?.[card.key] || 0, card.format),
     }));
@@ -185,122 +205,167 @@ export default function PortPage({
 
   const statementSummaryGridClass = useMemo(() => {
     const count = statementSummaryCards.length;
-    if (count <= 1) return 'mb-5 grid grid-cols-1 gap-4';
-    if (count === 2) return 'mb-5 grid grid-cols-1 gap-4 md:grid-cols-2';
-    if (count === 3) return 'mb-5 grid grid-cols-1 gap-4 md:grid-cols-3';
-    return 'mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4';
+    if (count <= 1) return "mb-5 grid grid-cols-1 gap-4";
+    if (count === 2) return "mb-5 grid grid-cols-1 gap-4 md:grid-cols-2";
+    if (count === 3) return "mb-5 grid grid-cols-1 gap-4 md:grid-cols-3";
+    return "mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4";
   }, [statementSummaryCards.length]);
 
   const activeListColumnsBase = useMemo(
     () => relabelPortColumnsForSection(viewColumns.list || [], sectionKey),
-    [sectionKey, viewColumns.list],
+    [sectionKey, viewColumns.list]
   );
   const activeStatementColumnsBase = useMemo(
     () => relabelPortColumnsForSection(viewColumns.statement || [], sectionKey),
-    [sectionKey, viewColumns.statement],
+    [sectionKey, viewColumns.statement]
   );
 
   const listExportColumns = useMemo(
-    () => activeListColumnsBase.map((column) => toExportColumn(column, { sectionKey })),
-    [activeListColumnsBase, sectionKey],
+    () =>
+      activeListColumnsBase.map(column =>
+        toExportColumn(column, { sectionKey })
+      ),
+    [activeListColumnsBase, sectionKey]
   );
   const statementExportColumns = useMemo(
-    () => activeStatementColumnsBase.map((column) => toExportColumn(column, { sectionKey })),
-    [activeStatementColumnsBase, sectionKey],
+    () =>
+      activeStatementColumnsBase.map(column =>
+        toExportColumn(column, { sectionKey })
+      ),
+    [activeStatementColumnsBase, sectionKey]
   );
 
   // Screen templates include ALL columns (cost_usd, cost_iqd visible on screen)
   const listScreenTemplates = useMemo(
     () => buildListScreenTemplates(sectionKey, listExportColumns, portName),
-    [listExportColumns, portName, sectionKey],
+    [listExportColumns, portName, sectionKey]
   );
   const statementScreenTemplates = useMemo(
-    () => buildStatementScreenTemplates(sectionKey, statementExportColumns, statement?.account?.AccountName || ''),
-    [sectionKey, statement?.account?.AccountName, statementExportColumns],
+    () =>
+      buildStatementScreenTemplates(
+        sectionKey,
+        statementExportColumns,
+        statement?.account?.AccountName || ""
+      ),
+    [sectionKey, statement?.account?.AccountName, statementExportColumns]
   );
 
   // Print/PDF templates strip cost columns
   const listExportTemplates = useMemo(
     () => buildListExportTemplates(sectionKey, listExportColumns, portName),
-    [listExportColumns, portName, sectionKey],
+    [listExportColumns, portName, sectionKey]
   );
   const statementExportTemplates = useMemo(
-    () => buildStatementExportTemplates(sectionKey, statementExportColumns, statement?.account?.AccountName || ''),
-    [sectionKey, statement?.account?.AccountName, statementExportColumns],
+    () =>
+      buildStatementExportTemplates(
+        sectionKey,
+        statementExportColumns,
+        statement?.account?.AccountName || ""
+      ),
+    [sectionKey, statement?.account?.AccountName, statementExportColumns]
   );
 
   // Screen display uses screen templates (cost columns included)
   const activeListScreenTemplate = useMemo(
-    () => listScreenTemplates.find((t) => t.id === selectedListTemplateId) || listScreenTemplates[0],
-    [listScreenTemplates, selectedListTemplateId],
+    () =>
+      listScreenTemplates.find(t => t.id === selectedListTemplateId) ||
+      listScreenTemplates[0],
+    [listScreenTemplates, selectedListTemplateId]
   );
   const activeStatementScreenTemplate = useMemo(
-    () => statementScreenTemplates.find((t) => t.id === selectedStatementTemplateId) || statementScreenTemplates[0],
-    [selectedStatementTemplateId, statementScreenTemplates],
+    () =>
+      statementScreenTemplates.find(
+        t => t.id === selectedStatementTemplateId
+      ) || statementScreenTemplates[0],
+    [selectedStatementTemplateId, statementScreenTemplates]
   );
 
   const activeListColumns = useMemo(
     () => (activeListScreenTemplate?.columns || []).map(toPreviewColumn),
-    [activeListScreenTemplate],
+    [activeListScreenTemplate]
   );
   const activeStatementColumns = useMemo(
     () => (activeStatementScreenTemplate?.columns || []).map(toPreviewColumn),
-    [activeStatementScreenTemplate],
+    [activeStatementScreenTemplate]
   );
 
   useEffect(() => {
-    if (!listExportTemplates.find((template) => template.id === selectedListTemplateId)) {
-      setSelectedListTemplateId(listExportTemplates[0]?.id || 'current-list');
+    if (
+      !listExportTemplates.find(
+        template => template.id === selectedListTemplateId
+      )
+    ) {
+      setSelectedListTemplateId(listExportTemplates[0]?.id || "current-list");
     }
   }, [listExportTemplates, selectedListTemplateId]);
 
   useEffect(() => {
-    if (!statementExportTemplates.find((template) => template.id === selectedStatementTemplateId)) {
-      setSelectedStatementTemplateId(statementExportTemplates[0]?.id || 'current-statement');
+    if (
+      !statementExportTemplates.find(
+        template => template.id === selectedStatementTemplateId
+      )
+    ) {
+      setSelectedStatementTemplateId(
+        statementExportTemplates[0]?.id || "current-statement"
+      );
     }
   }, [selectedStatementTemplateId, statementExportTemplates]);
 
-  const openStatement = useCallback(async (accountId) => {
-    if (!accountId) return;
+  const openStatement = useCallback(
+    async accountId => {
+      if (!accountId) return;
 
-    const normalizedAccountId = String(accountId);
-    setStAccount(normalizedAccountId);
-    setFilters((current) => ({ ...current, accountId: normalizedAccountId }));
-    setShowStatementSelect(false);
+      const normalizedAccountId = String(accountId);
+      setStAccount(normalizedAccountId);
+      setFilters(current => ({ ...current, accountId: normalizedAccountId }));
+      setShowStatementSelect(false);
 
-    try {
-      const query = buildPortStatementQuery({
-        portId,
-        accountType,
-        from: filters.from,
-        to: filters.to,
-        by: undefined,
-      });
-      const statementResponse = await api(`/reports/account-statement/${normalizedAccountId}${query ? `?${query}` : ''}`);
-      setStatement(statementResponse);
-      setView('statement');
-    } catch (error) {
-      console.error(error);
-    }
-  }, [accountType, api, filters.from, filters.to, portId, sectionKey]);
+      try {
+        const query = buildPortStatementQuery({
+          portId,
+          accountType,
+          from: filters.from,
+          to: filters.to,
+          by: undefined,
+        });
+        const statementResponse = await api(
+          `/reports/account-statement/${normalizedAccountId}${query ? `?${query}` : ""}`
+        );
+        setStatement(statementResponse);
+        setView("statement");
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [accountType, api, filters.from, filters.to, portId, sectionKey]
+  );
 
-  const statementFilterAccountId = String(filters.accountId || stAccount || statement?.account?.AccountID || '');
+  const statementFilterAccountId = String(
+    filters.accountId || stAccount || statement?.account?.AccountID || ""
+  );
 
   const resetStatementFilters = useCallback(() => {
-    const fallbackAccountId = String(stAccount || statement?.account?.AccountID || '');
+    const fallbackAccountId = String(
+      stAccount || statement?.account?.AccountID || ""
+    );
     setFilters(createPortFilters(fallbackAccountId));
   }, [stAccount, statement?.account?.AccountID]);
 
-  const getTransactionCustomFields = useCallback((transaction) => {
-    if (!transaction) return [];
-    const target = getPortTransactionTarget(transaction);
-    return [
-      ...getVisibleCustomFieldsForTarget(target),
-      ...getVisibleFormulaFieldsForTarget(target),
-    ];
-  }, [getVisibleCustomFieldsForTarget, getVisibleFormulaFieldsForTarget]);
+  const getTransactionCustomFields = useCallback(
+    transaction => {
+      if (!transaction) return [];
+      const target = getPortTransactionTarget(transaction);
+      return [
+        ...getVisibleCustomFieldsForTarget(target),
+        ...getVisibleFormulaFieldsForTarget(target),
+      ];
+    },
+    [getVisibleCustomFieldsForTarget, getVisibleFormulaFieldsForTarget]
+  );
 
-  const selectedTransactionTarget = selectedTx ? getPortTransactionTarget(selectedTx) : 'payment';
+  const selectedTransactionTarget = selectedTx
+    ? getPortTransactionTarget(selectedTx)
+    : "payment";
 
   const selectedTransactionModal = (
     <TransactionModal
@@ -317,71 +382,88 @@ export default function PortPage({
       accountType={accountType}
       portId={portId}
       onClose={() => setSelectedTx(null)}
-      onUpdate={can.editTransaction ? async (transactionForm) => {
-        const didUpdate = await transactionFormState.handleUpdate(transactionForm);
-        if (didUpdate) setSelectedTx(null);
-      } : null}
-      onDelete={can.deleteTransaction ? async (id) => {
-        const didDelete = await transactionFormState.handleDelete(id);
-        if (didDelete) setSelectedTx(null);
-      } : null}
+      onUpdate={
+        can.editTransaction
+          ? async transactionForm => {
+              const didUpdate =
+                await transactionFormState.handleUpdate(transactionForm);
+              if (didUpdate) setSelectedTx(null);
+            }
+          : null
+      }
+      onDelete={
+        can.deleteTransaction
+          ? async id => {
+              const didDelete = await transactionFormState.handleDelete(id);
+              if (didDelete) setSelectedTx(null);
+            }
+          : null
+      }
     />
   );
 
   const handlePageBack = useCallback(() => {
     if (onBack) onBack();
-    else setView('list');
+    else setView("list");
   }, [onBack]);
 
-  const handleListSearchChange = useCallback((value) => {
+  const handleListSearchChange = useCallback(value => {
     setSearch(value);
     setPage(0);
   }, []);
 
-  const handleListAccountFilterChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, accountId: value }));
+  const handleListAccountFilterChange = useCallback(value => {
+    setFilters(current => ({ ...current, accountId: value }));
     setPage(0);
   }, []);
 
-  const handleAddAccount = useCallback(async (name) => {
-    const traderName = String(name || '').trim();
-    if (!traderName) return null;
+  const handleAddAccount = useCallback(
+    async name => {
+      const traderName = String(name || "").trim();
+      if (!traderName) return null;
 
-    try {
-      const response = await api('/accounts', {
-        method: 'POST',
-        body: JSON.stringify(buildPortAccountPayload({
-          traderText: traderName,
-          accountType,
-          portId,
-        })),
-      });
+      try {
+        const response = await api("/accounts", {
+          method: "POST",
+          body: JSON.stringify(
+            buildPortAccountPayload({
+              traderText: traderName,
+              accountType,
+              portId,
+            })
+          ),
+        });
 
-      const accountEntry = {
-        AccountID: response.id,
-        AccountName: traderName,
-      };
+        const accountEntry = {
+          AccountID: response.id,
+          AccountName: traderName,
+        };
 
-      setAccounts((current) => (
-        current.some((account) => String(account.AccountID) === String(accountEntry.AccountID))
-          ? current
-          : [...current, accountEntry]
-      ));
+        setAccounts(current =>
+          current.some(
+            account =>
+              String(account.AccountID) === String(accountEntry.AccountID)
+          )
+            ? current
+            : [...current, accountEntry]
+        );
 
-      return accountEntry;
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
-  }, [accountType, api, portId, setAccounts]);
+        return accountEntry;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    },
+    [accountType, api, portId, setAccounts]
+  );
 
-  const handleListFromChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, from: value }));
+  const handleListFromChange = useCallback(value => {
+    setFilters(current => ({ ...current, from: value }));
     setPage(0);
   }, []);
 
-  const handleListToChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, to: value }));
+  const handleListToChange = useCallback(value => {
+    setFilters(current => ({ ...current, to: value }));
     setPage(0);
   }, []);
 
@@ -390,16 +472,16 @@ export default function PortPage({
     setPage(0);
   }, []);
 
-  const handleStatementAccountChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, accountId: value }));
+  const handleStatementAccountChange = useCallback(value => {
+    setFilters(current => ({ ...current, accountId: value }));
   }, []);
 
-  const handleStatementFromChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, from: value }));
+  const handleStatementFromChange = useCallback(value => {
+    setFilters(current => ({ ...current, from: value }));
   }, []);
 
-  const handleStatementToChange = useCallback((value) => {
-    setFilters((current) => ({ ...current, to: value }));
+  const handleStatementToChange = useCallback(value => {
+    setFilters(current => ({ ...current, to: value }));
   }, []);
 
   const handleOpenStatementFromFilters = useCallback(() => {
@@ -410,12 +492,18 @@ export default function PortPage({
     if (statementFilterAccountId) openStatement(statementFilterAccountId);
   }, [openStatement, statementFilterAccountId]);
 
-  const handleStatementSelectAccount = useCallback((accountId) => {
-    setShowStatementSelect(false);
-    openStatement(accountId);
-  }, [openStatement]);
+  const handleStatementSelectAccount = useCallback(
+    accountId => {
+      setShowStatementSelect(false);
+      openStatement(accountId);
+    },
+    [openStatement]
+  );
 
-  if (showStatementSelect || (view === 'list' && initialView === 'statement-select')) {
+  if (
+    showStatementSelect ||
+    (view === "list" && initialView === "statement-select")
+  ) {
     return (
       <PortStatementSelectView
         portName={portName}
@@ -440,7 +528,7 @@ export default function PortPage({
     );
   }
 
-  if (view === 'list') {
+  if (view === "list") {
     return (
       <PortListView
         portName={portName}
@@ -456,7 +544,9 @@ export default function PortPage({
         accounts={accounts}
         listSummaryCards={listSummaryCards}
         activeListColumns={activeListColumns}
-        renderPortCell={(column, row) => renderPortCell(column, row, { sectionKey })}
+        renderPortCell={(column, row) =>
+          renderPortCell(column, row, { sectionKey })
+        }
         onSearchChange={handleListSearchChange}
         onAccountFilterChange={handleListAccountFilterChange}
         onAddAccount={handleAddAccount}
@@ -467,8 +557,8 @@ export default function PortPage({
         onOpenInvoiceForm={() => transactionFormState.openForm(1)}
         onOpenDebitForm={() => transactionFormState.openForm(3)}
         onOpenPaymentForm={() => transactionFormState.openForm(2)}
-        onPreviousPage={() => setPage((current) => Math.max(0, current - 1))}
-        onNextPage={() => setPage((current) => current + 1)}
+        onPreviousPage={() => setPage(current => Math.max(0, current - 1))}
+        onNextPage={() => setPage(current => current + 1)}
         onSelectTransaction={setSelectedTx}
         transactionModal={selectedTransactionModal}
         canAddInvoice={can.addInvoice}
@@ -483,7 +573,7 @@ export default function PortPage({
     );
   }
 
-  if (view === 'form') {
+  if (view === "form") {
     return (
       <PortFormView
         formType={formType}
@@ -507,7 +597,7 @@ export default function PortPage({
     );
   }
 
-  if (view === 'statement' && statement) {
+  if (view === "statement" && statement) {
     return (
       <PortStatementView
         statement={statement}
@@ -532,7 +622,9 @@ export default function PortPage({
         onTemplateChange={setSelectedStatementTemplateId}
         sectionKey={sectionKey}
         activeStatementColumns={activeStatementColumns}
-        renderPortCell={(column, row) => renderPortCell(column, row, { sectionKey })}
+        renderPortCell={(column, row) =>
+          renderPortCell(column, row, { sectionKey })
+        }
         onSelectTransaction={setSelectedTx}
         transactionModal={selectedTransactionModal}
         portViewLabels={portViewLabels}

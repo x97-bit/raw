@@ -3,12 +3,9 @@ import { desc, sql } from "drizzle-orm";
 import { accounts, debts, ports, transactions } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
-import { getDb } from "../../db";
+import { getDb } from "../../db/db";
 import { enrichTransactions } from "../../utils/transactionEnrichment";
-import { calculateTransactionTotals } from "../../utils/transactionSummaries";
 
-type AccountRow = typeof accounts.$inferSelect;
-type DebtRow = typeof debts.$inferSelect;
 type PortRow = typeof ports.$inferSelect;
 type TransactionRow = typeof transactions.$inferSelect;
 
@@ -41,85 +38,209 @@ function parseStoredAmount(value: unknown): number {
 }
 
 export function registerReportDashboardRoutes(router: Router) {
-  router.get("/reports/dashboard", authMiddleware, async (_req: AuthRequest, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.get(
+    "/reports/dashboard",
+    authMiddleware,
+    async (_req: AuthRequest, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const [{ count: totalAccounts }] = await db.select({ count: sql<number>`count(*)` }).from(accounts);
-      const [{ count: totalTransactions }] = await db.select({ count: sql<number>`count(*)` }).from(transactions);
-      const allPorts = await db.select().from(ports);
-      const allTransactions = await db.select().from(transactions);
+        // Run all aggregation queries in parallel — no more full table scans in JS
+        const [
+          countResults,
+          portAggregations,
+          monthlyAggregations,
+          debtAggregations,
+          recentTransactions,
+          topTraderAggregations,
+          allPorts,
+        ] = await Promise.all([
+          // Total counts via SQL COUNT
+          db.execute(sql`
+          SELECT
+            (SELECT COUNT(*) FROM accounts) AS totalAccounts,
+            (SELECT COUNT(*) FROM transactions) AS totalTransactions
+        `),
 
-      const portStats: PortStatsRow[] = allPorts.map((port: PortRow) => {
-        const portTransactions = allTransactions.filter(
-          (transaction: TransactionRow) => transaction.portId === port.portId,
-        );
-        const totals = calculateTransactionTotals(portTransactions);
-        return {
-          PortID: port.portId,
-          PortName: port.name,
-          transCount: portTransactions.length,
-          invoicesUSD: totals.totalInvoicesUSD,
-          invoicesIQD: totals.totalInvoicesIQD,
-          paymentsUSD: totals.totalPaymentsUSD,
-          paymentsIQD: totals.totalPaymentsIQD,
-        };
-      });
+          // Port stats via SQL GROUP BY — replaces full allTransactions.filter() per port in JS
+          db.execute(sql`
+          SELECT
+            t.port_id AS portId,
+            COUNT(*) AS transCount,
+            SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS invoicesUSD,
+            SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS invoicesIQD,
+            SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS paymentsUSD,
+            SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS paymentsIQD
+          FROM transactions t
+          WHERE t.port_id IS NOT NULL
+          GROUP BY t.port_id
+        `),
 
-      const monthlyTrend: MonthlyTrendRow[] = [];
-      for (let index = 0; index < 6; index += 1) {
-        const current = new Date();
-        current.setMonth(current.getMonth() - index);
-        const month = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
-        const monthTransactions = allTransactions.filter(
-          (transaction: TransactionRow) => Boolean(transaction.transDate) && transaction.transDate.startsWith(month),
-        );
-        const monthTotals = calculateTransactionTotals(monthTransactions);
-        monthlyTrend.push({
-          month,
-          invoicesUSD: monthTotals.totalInvoicesUSD,
-          paymentsUSD: monthTotals.totalPaymentsUSD,
-        });
-      }
+          // Monthly trend via SQL GROUP BY DATE_FORMAT — replaces full allTransactions.filter() per month in JS
+          db.execute(sql`
+          SELECT
+            DATE_FORMAT(trans_date, '%Y-%m') AS month,
+            SUM(CASE WHEN UPPER(direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS invoicesUSD,
+            SUM(CASE WHEN UPPER(direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS paymentsUSD
+          FROM transactions
+          WHERE trans_date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH), '%Y-%m-01')
+          GROUP BY DATE_FORMAT(trans_date, '%Y-%m')
+          ORDER BY month DESC
+          LIMIT 6
+        `),
 
-      const allDebts = await db.select().from(debts);
-      const totalDebts = {
-        totalUSD: allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountUSD), 0),
-        totalIQD: allDebts.reduce((sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountIQD), 0),
-      };
+          // Debt totals via SQL SUM
+          db.execute(sql`
+          SELECT
+            COALESCE(SUM(CAST(amount_usd AS DECIMAL(15,2))), 0) AS totalUSD,
+            COALESCE(SUM(CAST(amount_iqd AS DECIMAL(15,0))), 0) AS totalIQD
+          FROM debts
+        `),
 
-      const recentTransactions = await db.select().from(transactions).orderBy(desc(transactions.id)).limit(10);
-      const enrichedRecentTransactions = await enrichTransactions(db, recentTransactions);
-      const allAccounts = await db.select().from(accounts);
+          // Only last 10 transactions — not all of them
+          db
+            .select()
+            .from(transactions)
+            .orderBy(desc(transactions.id))
+            .limit(10),
 
-      const topTraders: TopTraderRow[] = allAccounts
-        .map((account: AccountRow) => {
-          const accountTransactions = allTransactions.filter(
-            (transaction: TransactionRow) => transaction.accountId === account.id,
-          );
-          const totals = calculateTransactionTotals(accountTransactions);
-          return {
-            AccountID: account.id,
-            AccountName: account.name,
-            transCount: accountTransactions.length,
-            balanceUSD: totals.balanceUSD,
+          // Top traders via SQL GROUP BY + ORDER BY — replaces allAccounts.map() + filter per account in JS
+          db.execute(sql`
+          SELECT
+            a.id AS AccountID,
+            a.name AS AccountName,
+            COUNT(t.id) AS transCount,
+            COALESCE(
+              SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) -
+              SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END),
+              0
+            ) AS balanceUSD
+          FROM accounts a
+          INNER JOIN transactions t ON t.account_id = a.id
+          GROUP BY a.id, a.name
+          ORDER BY ABS(
+            SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) -
+            SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END)
+          ) DESC
+          LIMIT 10
+        `),
+
+          // Port metadata
+          db.select().from(ports),
+        ]);
+
+        // Parse count results
+        const countsRow =
+          (
+            countResults as unknown as Array<{
+              totalAccounts: unknown;
+              totalTransactions: unknown;
+            }>
+          )[0] ?? {};
+        const totalAccounts = Number(countsRow.totalAccounts ?? 0);
+        const totalTransactions = Number(countsRow.totalTransactions ?? 0);
+
+        // Build port stats map
+        const portAggMap = new Map<
+          string,
+          {
+            transCount: number;
+            invoicesUSD: number;
+            invoicesIQD: number;
+            paymentsUSD: number;
+            paymentsIQD: number;
+          }
+        >();
+        for (const row of portAggregations as unknown as Array<
+          Record<string, unknown>
+        >) {
+          portAggMap.set(String(row.portId ?? ""), {
+            transCount: Number(row.transCount ?? 0),
+            invoicesUSD: parseStoredAmount(row.invoicesUSD),
+            invoicesIQD: parseStoredAmount(row.invoicesIQD),
+            paymentsUSD: parseStoredAmount(row.paymentsUSD),
+            paymentsIQD: parseStoredAmount(row.paymentsIQD),
+          });
+        }
+
+        const portStats: PortStatsRow[] = (allPorts as PortRow[]).map(port => {
+          const agg = portAggMap.get(port.portId) ?? {
+            transCount: 0,
+            invoicesUSD: 0,
+            invoicesIQD: 0,
+            paymentsUSD: 0,
+            paymentsIQD: 0,
           };
-        })
-        .sort((left, right) => Math.abs(right.balanceUSD) - Math.abs(left.balanceUSD))
-        .slice(0, 10);
+          return { PortID: port.portId, PortName: port.name, ...agg };
+        });
 
-      return res.json({
-        totalAccounts: Number(totalAccounts),
-        totalTransactions: Number(totalTransactions),
-        portStats,
-        monthlyTrend,
-        totalDebts,
-        recentTransactions: enrichedRecentTransactions,
-        topTraders,
-      });
-    } catch (error) {
-      return respondRouteError(res, error);
+        // Build monthly trend (fill in months that have no data with zeros)
+        const monthlyMap = new Map<
+          string,
+          { invoicesUSD: number; paymentsUSD: number }
+        >();
+        for (const row of monthlyAggregations as unknown as Array<
+          Record<string, unknown>
+        >) {
+          monthlyMap.set(String(row.month ?? ""), {
+            invoicesUSD: parseStoredAmount(row.invoicesUSD),
+            paymentsUSD: parseStoredAmount(row.paymentsUSD),
+          });
+        }
+        const monthlyTrend: MonthlyTrendRow[] = [];
+        for (let i = 0; i < 6; i++) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          const agg = monthlyMap.get(month) ?? {
+            invoicesUSD: 0,
+            paymentsUSD: 0,
+          };
+          monthlyTrend.push({ month, ...agg });
+        }
+
+        // Debt totals
+        const debtRow =
+          (
+            debtAggregations as unknown as Array<{
+              totalUSD: unknown;
+              totalIQD: unknown;
+            }>
+          )[0] ?? {};
+        const totalDebts = {
+          totalUSD: parseStoredAmount(debtRow.totalUSD),
+          totalIQD: parseStoredAmount(debtRow.totalIQD),
+        };
+
+        // Enrich only the last 10 transactions (not thousands)
+        const enrichedRecentTransactions = await enrichTransactions(
+          db,
+          recentTransactions as TransactionRow[]
+        );
+
+        // Top traders
+        const topTraders: TopTraderRow[] = (
+          topTraderAggregations as unknown as Array<Record<string, unknown>>
+        ).map(row => ({
+          AccountID: Number(row.AccountID ?? 0),
+          AccountName: String(row.AccountName ?? ""),
+          transCount: Number(row.transCount ?? 0),
+          balanceUSD: parseStoredAmount(row.balanceUSD),
+        }));
+
+        return res.json({
+          totalAccounts,
+          totalTransactions,
+          portStats,
+          monthlyTrend,
+          totalDebts,
+          recentTransactions: enrichedRecentTransactions,
+          topTraders,
+        });
+      } catch (error) {
+        return respondRouteError(res, error);
+      }
     }
-  });
+  );
 }

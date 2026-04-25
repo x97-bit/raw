@@ -1,1 +1,1 @@
-export { default } from '../features/profile/ProfilePageContent';
+export { default } from "../features/profile/ProfilePageContent";

@@ -6,15 +6,15 @@
 
 ## محتويات الحزمة
 
-| الملف | الوصف |
-|-------|-------|
-| `../sql/01_schema.sql` | هيكل جميع الجداول (17 جدول) |
-| `../sql/02_seed_data.sql` | البيانات الأساسية (مستخدم admin، أنواع البضائع، المحافظات، المنافذ) |
-| `../sql/03_indexes.sql` | فهارس إضافية لتحسين الأداء |
-| `../sql/04_sample_data.sql` | بيانات تجريبية للاختبار (اختياري) |
-| `../setup.sh` | سكربت الإعداد التلقائي (Linux/macOS) |
-| `../setup.bat` | سكربت الإعداد التلقائي (Windows) |
-| `erd.md` | مخطط العلاقات بين الجداول |
+| الملف                       | الوصف                                                               |
+| --------------------------- | ------------------------------------------------------------------- |
+| `../sql/01_schema.sql`      | هيكل جميع الجداول (17 جدول)                                         |
+| `../sql/02_seed_data.sql`   | البيانات الأساسية (مستخدم admin، أنواع البضائع، المحافظات، المنافذ) |
+| `../sql/03_indexes.sql`     | فهارس إضافية لتحسين الأداء                                          |
+| `../sql/04_sample_data.sql` | بيانات تجريبية للاختبار (اختياري)                                   |
+| `../setup.sh`               | سكربت الإعداد التلقائي (Linux/macOS)                                |
+| `../setup.bat`              | سكربت الإعداد التلقائي (Windows)                                    |
+| `erd.md`                    | مخطط العلاقات بين الجداول                                           |
 
 ---
 
@@ -30,12 +30,14 @@
 ### الطريقة 1: سكربت تلقائي (مُوصى به)
 
 **Linux / macOS:**
+
 ```bash
 chmod +x database/setup.sh
 ./database/setup.sh
 ```
 
 **Windows:**
+
 ```cmd
 database\setup.bat
 ```
@@ -69,11 +71,11 @@ mysql -u root -p < database/sql/04_sample_data.sql
 
 ## بيانات تسجيل الدخول
 
-| الحقل | القيمة |
-|-------|--------|
-| اسم المستخدم | `admin` |
-| كلمة المرور | `admin` |
-| الدور | مدير (admin) |
+| الحقل        | القيمة       |
+| ------------ | ------------ |
+| اسم المستخدم | `admin`      |
+| كلمة المرور  | `admin`      |
+| الدور        | مدير (admin) |
 
 ---
 
@@ -81,35 +83,35 @@ mysql -u root -p < database/sql/04_sample_data.sql
 
 ### الجداول الرئيسية
 
-| # | الجدول | الوصف | الحقول الرئيسية |
-|---|--------|-------|-----------------|
-| 1 | `app_users` | المستخدمين | username, password, role, permissions |
-| 2 | `accounts` | الحسابات (تجار/ناقلين/صرافة) | name, accountType, portId, currency |
-| 3 | `transactions` | المعاملات (فواتير/دفعات) | direction, account_id, cost_usd, amount_usd, cost_iqd, amount_iqd |
-| 4 | `debts` | الديون | debtorName, amountUSD, amountIQD, status |
-| 5 | `expenses` | المصروفات | expense_date, amount_usd, amount_iqd |
-| 6 | `payment_matching` | مطابقة الدفعات | invoiceId, paymentId, amountUSD, amountIQD |
-| 7 | `special_accounts` | الحسابات الخاصة | type, name, amountUSD, amountIQD |
+| #   | الجدول             | الوصف                        | الحقول الرئيسية                                                   |
+| --- | ------------------ | ---------------------------- | ----------------------------------------------------------------- |
+| 1   | `app_users`        | المستخدمين                   | username, password, role, permissions                             |
+| 2   | `accounts`         | الحسابات (تجار/ناقلين/صرافة) | name, accountType, portId, currency                               |
+| 3   | `transactions`     | المعاملات (فواتير/دفعات)     | direction, account_id, cost_usd, amount_usd, cost_iqd, amount_iqd |
+| 4   | `debts`            | الديون                       | debtorName, amountUSD, amountIQD, status                          |
+| 5   | `expenses`         | المصروفات                    | expense_date, amount_usd, amount_iqd                              |
+| 6   | `payment_matching` | مطابقة الدفعات               | invoiceId, paymentId, amountUSD, amountIQD                        |
+| 7   | `special_accounts` | الحسابات الخاصة              | type, name, amountUSD, amountIQD                                  |
 
 ### جداول البحث (Lookups)
 
-| # | الجدول | الوصف |
-|---|--------|-------|
-| 8 | `goods_types` | أنواع البضائع (15 نوع) |
-| 9 | `governorates` | المحافظات العراقية (18 محافظة) |
-| 10 | `ports` | المنافذ والأقسام (6 منافذ) |
-| 11 | `account_types` | أنواع الحسابات (6 أنواع) |
-| 12 | `drivers` | السائقين |
-| 13 | `vehicles` | المركبات |
-| 14 | `cash_state` | حالة الصندوق |
+| #   | الجدول          | الوصف                          |
+| --- | --------------- | ------------------------------ |
+| 8   | `goods_types`   | أنواع البضائع (15 نوع)         |
+| 9   | `governorates`  | المحافظات العراقية (18 محافظة) |
+| 10  | `ports`         | المنافذ والأقسام (6 منافذ)     |
+| 11  | `account_types` | أنواع الحسابات (6 أنواع)       |
+| 12  | `drivers`       | السائقين                       |
+| 13  | `vehicles`      | المركبات                       |
+| 14  | `cash_state`    | حالة الصندوق                   |
 
 ### جداول الإعدادات
 
-| # | الجدول | الوصف |
-|---|--------|-------|
-| 15 | `field_config` | إعدادات ظهور الحقول |
-| 16 | `custom_fields` | الحقول المخصصة |
-| 17 | `custom_field_values` | قيم الحقول المخصصة |
+| #   | الجدول                | الوصف               |
+| --- | --------------------- | ------------------- |
+| 15  | `field_config`        | إعدادات ظهور الحقول |
+| 16  | `custom_fields`       | الحقول المخصصة      |
+| 17  | `custom_field_values` | قيم الحقول المخصصة  |
 
 ---
 
@@ -117,10 +119,10 @@ mysql -u root -p < database/sql/04_sample_data.sql
 
 النظام يدعم عملتين بشكل منفصل:
 
-| العملة | الرمز | الحقول |
-|--------|-------|--------|
-| الدولار الأمريكي | USD / $ | `cost_usd`, `amount_usd`, `fee_usd` |
-| الدينار العراقي | IQD / د.ع | `cost_iqd`, `amount_iqd` |
+| العملة           | الرمز     | الحقول                              |
+| ---------------- | --------- | ----------------------------------- |
+| الدولار الأمريكي | USD / $   | `cost_usd`, `amount_usd`, `fee_usd` |
+| الدينار العراقي  | IQD / د.ع | `cost_iqd`, `amount_iqd`            |
 
 ---
 

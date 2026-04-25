@@ -1,38 +1,40 @@
-import { Search } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { Search } from "lucide-react";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function PortStatementAccountPicker({
   search,
   onSearchChange,
   accounts,
   onSelectAccount,
-  accountLabel = 'تاجر',
+  accountLabel = "تاجر",
   hideSearch = false,
 }) {
   const { isDark } = useTheme();
-  const filteredAccounts = accounts.filter((account) => !search || account.AccountName.includes(search));
+  const filteredAccounts = accounts.filter(
+    account => !search || account.AccountName.includes(search)
+  );
 
   return (
     <>
       {!hideSearch && (
         <div className="mb-4">
-        <div className="relative">
-          <Search
-            size={18}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-utility-muted"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            className="input-field pr-10"
-            placeholder={`ابحث عن ${accountLabel}...`}
-          />
-        </div>
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-utility-muted"
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={event => onSearchChange(event.target.value)}
+              className="input-field pr-10"
+              placeholder={`ابحث عن ${accountLabel}...`}
+            />
+          </div>
         </div>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {filteredAccounts.map((account) => (
+        {filteredAccounts.map(account => (
           <button
             key={account.AccountID}
             onClick={() => onSelectAccount(account.AccountID)}

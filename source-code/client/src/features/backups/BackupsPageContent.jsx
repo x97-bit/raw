@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { trpc } from "../../utils/trpc";
 import {
   ArchiveRestore,
   Clock3,
@@ -7,44 +8,49 @@ import {
   RefreshCw,
   Save,
   ShieldCheck,
-} from 'lucide-react';
-import PageHeader from '../../components/PageHeader';
-import { useAuth } from '../../contexts/AuthContext';
-import BackupActionCard from './components/BackupActionCard';
-import BackupFileTable from './components/BackupFileTable';
-import BackupImportPanel from './components/BackupImportPanel';
-import BackupSummaryCard from './components/BackupSummaryCard';
-import DailyBackupPanel from './components/DailyBackupPanel';
+} from "lucide-react";
+import PageHeader from "../../components/PageHeader";
+import BackupActionCard from "./components/BackupActionCard";
+import BackupFileTable from "./components/BackupFileTable";
+import BackupImportPanel from "./components/BackupImportPanel";
+import BackupSummaryCard from "./components/BackupSummaryCard";
+import DailyBackupPanel from "./components/DailyBackupPanel";
 import {
   IMPORT_CONFIRM_PHRASE,
   buildBackupSummaryCards,
   downloadProtectedFile,
   getBackupMessageClassName,
-} from './backupsPageHelpers';
+} from "./backupsPageHelpers";
 
 export default function BackupsPageContent({ onBack }) {
-  const { api, authFetch } = useAuth();
+  const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [busyAction, setBusyAction] = useState('');
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('info');
+  const [busyAction, setBusyAction] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("info");
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
 
   const messageClassName = useMemo(
     () => getBackupMessageClassName(messageType),
-    [messageType],
+    [messageType]
   );
 
   const summaryCards = useMemo(
-    () => buildBackupSummaryCards(status, { Database, Save, Clock3, ArchiveRestore }),
-    [status],
+    () =>
+      buildBackupSummaryCards(status, {
+        Database,
+        Save,
+        Clock3,
+        ArchiveRestore,
+      }),
+    [status]
   );
 
   const resetSelectedFile = () => {
     setSelectedFile(null);
-    setFileInputKey((current) => current + 1);
+    setFileInputKey(current => current + 1);
   };
 
   const loadStatus = async ({ silent = false } = {}) => {
@@ -53,10 +59,10 @@ export default function BackupsPageContent({ onBack }) {
     }
 
     try {
-      const response = await api('/backups/status');
+      const response = await trpc.backups.status.query();
       setStatus(response);
     } catch (error) {
-      setMessageType('error');
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       if (!silent) {
@@ -69,88 +75,117 @@ export default function BackupsPageContent({ onBack }) {
     void loadStatus();
   }, []);
 
-  const handleRefresh = async () => {
-    setBusyAction('refresh');
-    try {
-      await loadStatus({ silent: true });
-      setMessageType('success');
-      setMessage('تم تحديث حالة النسخ الاحتياطي.');
-    } finally {
-      setBusyAction('');
-    }
+  const handleRefresh = () => {
+    setBusyAction("refresh");
+    startTransition(async () => {
+      try {
+        await loadStatus({ silent: true });
+        setMessageType("success");
+        setMessage("تم تحديث حالة النسخ الاحتياطي.");
+      } finally {
+        setBusyAction("");
+      }
+    });
   };
 
-  const handleCreateServerBackup = async () => {
-    setBusyAction('create');
-    try {
-      const result = await api('/backups/create', { method: 'POST' });
-      await loadStatus({ silent: true });
-      setMessageType('success');
-      setMessage(`${result.message} ${result.file?.fileName ? `الملف: ${result.file.fileName}` : ''}`.trim());
-    } catch (error) {
-      setMessageType('error');
-      setMessage(error.message);
-    } finally {
-      setBusyAction('');
-    }
+  const handleCreateServerBackup = () => {
+    setBusyAction("create");
+    startTransition(async () => {
+      try {
+        const result = await trpc.backups.create.mutate();
+        await loadStatus({ silent: true });
+        setMessageType("success");
+        setMessage(
+          `${result.message} ${result.file?.fileName ? `الملف: ${result.file.fileName}` : ""}`.trim()
+        );
+      } catch (error) {
+        setMessageType("error");
+        setMessage(error.message);
+      } finally {
+        setBusyAction("");
+      }
+    });
   };
 
-  const handleExport = async (endpoint, fallbackName, successLabel, actionKey) => {
+  const handleExport = (actionKey, isTemplate = false) => {
     setBusyAction(actionKey);
 
-    try {
-      const fileName = await downloadProtectedFile(authFetch, endpoint, fallbackName);
-      setMessageType('success');
-      setMessage(`${successLabel} ${fileName}`);
-    } catch (error) {
-      setMessageType('error');
-      setMessage(error.message);
-    } finally {
-      setBusyAction('');
-    }
+    startTransition(async () => {
+      try {
+        const result = isTemplate
+          ? await trpc.backups.template.mutate()
+          : await trpc.backups.export.mutate();
+
+        // Create a blob and trigger download manually since tRPC returns JSON
+        const blob = new Blob([JSON.stringify(result.payload, null, 2)], {
+          type: "application/json; charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = result.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setMessageType("success");
+        setMessage(
+          `تم تنزيل ${isTemplate ? "قالب القاعدة" : "النسخة الاحتياطية"}: ${result.fileName}`
+        );
+      } catch (error) {
+        setMessageType("error");
+        setMessage(error.message);
+      } finally {
+        setBusyAction("");
+      }
+    });
   };
 
   const handleImport = async () => {
     if (!selectedFile) {
-      setMessageType('error');
-      setMessage('اختر ملف JSON أولاً.');
+      setMessageType("error");
+      setMessage("اختر ملف JSON أولاً.");
       return;
     }
 
-    if (!window.confirm('سيتم أخذ نسخة أمان قبل الاستيراد. هل تريد المتابعة؟')) {
+    if (
+      !window.confirm("سيتم أخذ نسخة أمان قبل الاستيراد. هل تريد المتابعة؟")
+    ) {
       return;
     }
 
-    setBusyAction('import');
+    setBusyAction("import");
 
-    try {
-      const rawText = await selectedFile.text();
-      const parsedBackup = JSON.parse(rawText);
-      const result = await api('/backups/import', {
-        method: 'POST',
-        body: JSON.stringify({
+    startTransition(async () => {
+      try {
+        const rawText = await selectedFile.text();
+        const parsedBackup = JSON.parse(rawText);
+
+        const result = await trpc.backups.import.mutate({
           backup: parsedBackup,
           sourceFileName: selectedFile.name,
           confirmPhrase: IMPORT_CONFIRM_PHRASE,
-        }),
-      });
+        });
 
-      resetSelectedFile();
-      await loadStatus({ silent: true });
-      setMessageType('success');
-      setMessage(
-        `${result.message} ${result.preImportBackup?.fileName ? `نسخة الأمان: ${result.preImportBackup.fileName}` : ''}`.trim(),
-      );
-    } catch (error) {
-      const fallbackMessage = error instanceof SyntaxError
-        ? 'الملف المحدد ليس JSON صالحاً.'
-        : error.message;
+        resetSelectedFile();
+        await loadStatus({ silent: true });
+        setMessageType("success");
+        setMessage(
+          `${result.message} ${result.preImportBackup?.fileName ? `نسخة الأمان: ${result.preImportBackup.fileName}` : ""}`.trim()
+        );
+      } catch (error) {
+        const fallbackMessage =
+          error instanceof SyntaxError
+            ? "الملف المحدد ليس JSON صالحاً."
+            : error.message;
 
-      setMessageType('error');
-      setMessage(fallbackMessage);
-    } finally {
-      setBusyAction('');
-    }
+        setMessageType("error");
+        setMessage(fallbackMessage);
+      } finally {
+        setBusyAction("");
+      }
+    });
   };
 
   const handleCopyCron = async () => {
@@ -159,11 +194,11 @@ export default function BackupsPageContent({ onBack }) {
 
     try {
       await navigator.clipboard.writeText(cronValue);
-      setMessageType('success');
-      setMessage('تم نسخ أمر النسخ اليومي.');
+      setMessageType("success");
+      setMessage("تم نسخ أمر النسخ اليومي.");
     } catch {
-      setMessageType('error');
-      setMessage('تعذر نسخ الأمر تلقائياً. انسخه يدوياً من المربع أدناه.');
+      setMessageType("error");
+      setMessage("تعذر نسخ الأمر تلقائياً. انسخه يدوياً من المربع أدناه.");
     }
   };
 
@@ -182,43 +217,57 @@ export default function BackupsPageContent({ onBack }) {
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-5">
         {message && (
-          <div className={`rounded-[22px] border px-4 py-3 text-sm font-semibold ${messageClassName}`}>
+          <div
+            className={`rounded-[22px] border px-4 py-3 text-sm font-semibold ${messageClassName}`}
+          >
             {message}
           </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {(loading ? new Array(4).fill(null) : summaryCards).map((card, index) => (
-            card ? (
-              <BackupSummaryCard
-                key={card.title}
-                title={card.title}
-                value={card.value}
-                hint={card.hint}
-                icon={card.icon}
-                accent={card.accent}
-              />
-            ) : (
-              <div key={`skeleton-${index}`} className="surface-card h-[136px] shimmer rounded-[24px]" />
-            )
-          ))}
+          {(loading ? new Array(4).fill(null) : summaryCards).map(
+            (card, index) =>
+              card ? (
+                <BackupSummaryCard
+                  key={card.title}
+                  title={card.title}
+                  value={card.value}
+                  hint={card.hint}
+                  icon={card.icon}
+                  accent={card.accent}
+                />
+              ) : (
+                <div
+                  key={`skeleton-${index}`}
+                  className="surface-card h-[136px] shimmer rounded-[24px]"
+                />
+              )
+          )}
         </div>
 
         <section className="surface-card space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-right">
-              <h2 className="text-lg font-black text-white">أوامر النسخ والاستعادة</h2>
+              <h2 className="text-lg font-black text-white">
+                أوامر النسخ والاستعادة
+              </h2>
               <p className="mt-1 text-sm text-[#91a0ad]">
-                تصدير نسخة كاملة، توليد قالب القاعدة، أو إنشاء نسخة داخل الخادم قبل أي عملية حساسة.
+                تصدير نسخة كاملة، توليد قالب القاعدة، أو إنشاء نسخة داخل الخادم
+                قبل أي عملية حساسة.
               </p>
             </div>
             <button
               onClick={handleRefresh}
-              disabled={busyAction === 'refresh'}
+              disabled={busyAction === "refresh"}
               className="btn-outline flex items-center gap-2"
             >
-              <RefreshCw size={16} className={busyAction === 'refresh' ? 'animate-spin' : ''} />
-              <span>{busyAction === 'refresh' ? 'جارٍ التحديث...' : 'تحديث الحالة'}</span>
+              <RefreshCw
+                size={16}
+                className={busyAction === "refresh" ? "animate-spin" : ""}
+              />
+              <span>
+                {busyAction === "refresh" ? "جارٍ التحديث..." : "تحديث الحالة"}
+              </span>
             </button>
           </div>
 
@@ -230,7 +279,7 @@ export default function BackupsPageContent({ onBack }) {
               accentBgClass="bg-[#648ea9]/[0.16]"
               accentTextClass="text-[#dbe7f0]"
               onClick={handleCreateServerBackup}
-              disabled={busyAction === 'create'}
+              disabled={busyAction === "create"}
             />
 
             <BackupActionCard
@@ -239,8 +288,8 @@ export default function BackupsPageContent({ onBack }) {
               icon={Download}
               accentBgClass="bg-[#4f7d74]/[0.16]"
               accentTextClass="text-[#dceee8]"
-              onClick={() => handleExport('/backups/export', 'alrawi-backup-export.json', 'تم تنزيل النسخة الاحتياطية:', 'export')}
-              disabled={busyAction === 'export'}
+              onClick={() => handleExport("export", false)}
+              disabled={busyAction === "export" || isPending}
             />
 
             <BackupActionCard
@@ -249,8 +298,8 @@ export default function BackupsPageContent({ onBack }) {
               icon={Database}
               accentBgClass="bg-[#7c6f63]/[0.16]"
               accentTextClass="text-[#ead8c8]"
-              onClick={() => handleExport('/backups/template', 'alrawi-database-template.json', 'تم تنزيل قالب القاعدة:', 'template')}
-              disabled={busyAction === 'template'}
+              onClick={() => handleExport("template", true)}
+              disabled={busyAction === "template" || isPending}
             />
 
             <BackupActionCard

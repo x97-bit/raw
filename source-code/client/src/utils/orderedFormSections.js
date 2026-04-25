@@ -9,29 +9,35 @@ export function buildOrderedFormSections({
   configMap = {},
   editableCustomFields = [],
   formulaCustomFields = [],
-  fallbackTitle = 'تفاصيل الحركة',
-  fallbackSubtitle = '',
+  fallbackTitle = "تفاصيل الحركة",
+  fallbackSubtitle = "",
 }) {
-  const baseSections = sections.length > 0
-    ? sections.map((section, sectionIndex) => ({
-        ...section,
-        sectionIndex,
-        items: [],
-      }))
-    : [{
-        title: fallbackTitle,
-        subtitle: fallbackSubtitle,
-        fields: [],
-        sectionIndex: 0,
-        items: [],
-      }];
+  const baseSections =
+    sections.length > 0
+      ? sections.map((section, sectionIndex) => ({
+          ...section,
+          sectionIndex,
+          items: [],
+        }))
+      : [
+          {
+            title: fallbackTitle,
+            subtitle: fallbackSubtitle,
+            fields: [],
+            sectionIndex: 0,
+            items: [],
+          },
+        ];
 
   const builtInAnchors = [];
   let builtInFallbackOrder = 1;
 
-  baseSections.forEach((section) => {
-    (section.fields || []).forEach((field) => {
-      const sortOrder = parsePositiveOrder(configMap[field.key]?.sortOrder, builtInFallbackOrder);
+  baseSections.forEach(section => {
+    (section.fields || []).forEach(field => {
+      const sortOrder = parsePositiveOrder(
+        configMap[field.key]?.sortOrder,
+        builtInFallbackOrder
+      );
       builtInFallbackOrder += 1;
       builtInAnchors.push({
         sectionIndex: section.sectionIndex,
@@ -39,14 +45,14 @@ export function buildOrderedFormSections({
       });
       section.items.push({
         key: field.key,
-        kind: 'builtIn',
+        kind: "builtIn",
         sortOrder,
         field,
       });
     });
   });
 
-  const resolveSectionIndex = (sortOrder) => {
+  const resolveSectionIndex = sortOrder => {
     if (builtInAnchors.length === 0) return 0;
 
     let previousAnchor = null;
@@ -60,11 +66,11 @@ export function buildOrderedFormSections({
 
   const appendCustomItems = (fields, kind, startFallbackOrder) => {
     let fallbackOrder = startFallbackOrder;
-    (fields || []).forEach((field) => {
+    (fields || []).forEach(field => {
       const fieldKey = field.fieldKey || field.key;
       const sortOrder = parsePositiveOrder(
         configMap[fieldKey]?.sortOrder,
-        parsePositiveOrder(field.sortOrder, fallbackOrder),
+        parsePositiveOrder(field.sortOrder, fallbackOrder)
       );
       fallbackOrder = Math.max(fallbackOrder + 1, sortOrder + 1);
       const sectionIndex = resolveSectionIndex(sortOrder);
@@ -79,29 +85,36 @@ export function buildOrderedFormSections({
     return fallbackOrder;
   };
 
-  let nextCustomOrder = Math.max(builtInFallbackOrder, builtInAnchors.length + 1);
-  nextCustomOrder = appendCustomItems(editableCustomFields, 'custom', nextCustomOrder);
-  appendCustomItems(formulaCustomFields, 'formula', nextCustomOrder);
+  let nextCustomOrder = Math.max(
+    builtInFallbackOrder,
+    builtInAnchors.length + 1
+  );
+  nextCustomOrder = appendCustomItems(
+    editableCustomFields,
+    "custom",
+    nextCustomOrder
+  );
+  appendCustomItems(formulaCustomFields, "formula", nextCustomOrder);
 
   return baseSections
-    .map((section) => ({
+    .map(section => ({
       ...section,
       items: section.items.sort((a, b) => a.sortOrder - b.sortOrder),
     }))
-    .filter((section) => section.items.length > 0);
+    .filter(section => section.items.length > 0);
 }
 
 export function filterSectionsByCurrency(sections, currency) {
-  const normalized = String(currency || 'USD').toUpperCase();
-  if (normalized === 'BOTH') return sections || [];
-  const hideSuffix = normalized === 'USD' ? '_iqd' : '_usd';
+  const normalized = String(currency || "USD").toUpperCase();
+  if (normalized === "BOTH") return sections || [];
+  const hideSuffix = normalized === "USD" ? "_iqd" : "_usd";
   return (sections || [])
-    .map((section) => ({
+    .map(section => ({
       ...section,
-      items: (section.items || []).filter((item) => {
-        const key = String(item?.key || '').toLowerCase();
+      items: (section.items || []).filter(item => {
+        const key = String(item?.key || "").toLowerCase();
         return !key.endsWith(hideSuffix);
       }),
     }))
-    .filter((section) => (section.items || []).length > 0);
+    .filter(section => (section.items || []).length > 0);
 }

@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createQueryResult, filterRowsByCondition, getDrizzleTableName } from "../../tests/support/fakeSql";
+import {
+  createQueryResult,
+  filterRowsByCondition,
+  getDrizzleTableName,
+} from "../../tests/support/fakeSql";
 import { createRouteHarness } from "../../tests/support/httpRouteHarness";
 
 function createTransactionsDb(seedRows: Array<Record<string, unknown>>) {
-  const rows = seedRows.map((row) => ({ ...row }));
+  const rows = seedRows.map(row => ({ ...row }));
 
   return {
     rows,
@@ -25,7 +29,9 @@ function createTransactionsDb(seedRows: Array<Record<string, unknown>>) {
 
       return {
         values: async (data: Record<string, unknown>) => {
-          const nextId = rows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) + 1;
+          const nextId =
+            rows.reduce((max, row) => Math.max(max, Number(row.id || 0)), 0) +
+            1;
           rows.push({
             id: nextId,
             ...data,
@@ -60,7 +66,9 @@ function createTransactionsDb(seedRows: Array<Record<string, unknown>>) {
 
       return {
         where: async (condition: unknown) => {
-          const matches = new Set(filterRowsByCondition(rows, condition as never));
+          const matches = new Set(
+            filterRowsByCondition(rows, condition as never)
+          );
           for (let index = rows.length - 1; index >= 0; index -= 1) {
             if (matches.has(rows[index])) {
               rows.splice(index, 1);
@@ -73,21 +81,28 @@ function createTransactionsDb(seedRows: Array<Record<string, unknown>>) {
   };
 }
 
-async function loadTransactionsHarness(fakeDb: ReturnType<typeof createTransactionsDb>) {
+async function loadTransactionsHarness(
+  fakeDb: ReturnType<typeof createTransactionsDb>
+) {
   vi.resetModules();
 
   vi.doMock("../../db", () => ({
     getDb: vi.fn().mockResolvedValue(fakeDb),
   }));
   vi.doMock("../../_core/appAuth", () => ({
-    authMiddleware: (req: Record<string, unknown>, _res: unknown, next: () => void) => {
+    authMiddleware: (
+      req: Record<string, unknown>,
+      _res: unknown,
+      next: () => void
+    ) => {
       req.appUser = { id: 77, role: "admin", username: "tester" };
       next();
     },
     requireAppUser: (req: Record<string, unknown>) => req.appUser,
   }));
   vi.doMock("../../_core/financialRateLimits", () => ({
-    financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) => next(),
+    financialWriteRateLimit: (_req: unknown, _res: unknown, next: () => void) =>
+      next(),
   }));
   vi.doMock("../../utils/safeAuditLog", () => ({
     safeWriteAuditLog: vi.fn().mockResolvedValue(undefined),

@@ -1,21 +1,32 @@
 import { Response } from "express";
 import { z } from "zod";
-import { isStrongPassword, PASSWORD_MIN_LENGTH } from "../../../shared/passwordPolicy";
+import {
+  isStrongPassword,
+  PASSWORD_MIN_LENGTH,
+} from "../../../shared/passwordPolicy";
 import { AuthRequest, isAdminUser } from "../../_core/appAuth";
-import { createRateLimitMiddleware, resolveRateLimitClientIp } from "../../_core/rateLimit";
-import type { AppUserRecord } from "../../dbTypes";
+import {
+  createRateLimitMiddleware,
+  resolveRateLimitClientIp,
+} from "../../_core/rateLimit";
+import type { AppUserRecord } from "../../db/schema/dbTypes";
 
-type LegacyUserShapeInput =
-  Pick<AppUserRecord, "id" | "username" | "name" | "role" | "active" | "createdAt">
-  & Partial<Pick<AppUserRecord, "profileImage" | "permissions" | "updatedAt">>;
+type LegacyUserShapeInput = Pick<
+  AppUserRecord,
+  "id" | "username" | "name" | "role" | "active" | "createdAt"
+> &
+  Partial<Pick<AppUserRecord, "profileImage" | "permissions" | "updatedAt">>;
 
 export const authRateLimit = createRateLimitMiddleware({
   keyPrefix: "auth-login",
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: "تم تجاوز عدد محاولات تسجيل الدخول. حاول مرة أخرى لاحقًا.",
-  keyFn: (req) => {
-    const username = String(req.body?.username ?? "").trim().toLowerCase() || "anonymous";
+  keyFn: req => {
+    const username =
+      String(req.body?.username ?? "")
+        .trim()
+        .toLowerCase() || "anonymous";
     return `${resolveRateLimitClientIp(req)}:${username}`;
   },
 });
@@ -41,7 +52,9 @@ const strongPasswordSchema = z
   });
 
 export const userRoleSchema = z.enum(["admin", "user"]);
-export const permissionListSchema = z.array(z.string().trim().min(1).max(64)).max(100);
+export const permissionListSchema = z
+  .array(z.string().trim().min(1).max(64))
+  .max(100);
 
 export const createUserSchema = z.object({
   username: z.string().trim().min(1).max(64),
@@ -60,15 +73,14 @@ export const updateUserSchema = z
     role: userRoleSchema.optional(),
     Role: userRoleSchema.optional(),
     permissions: permissionListSchema.optional(),
-    profileImage: z.union([
-      z.string().trim().max(350_000),
-      z.null(),
-    ]).optional(),
+    profileImage: z
+      .union([z.string().trim().max(350_000), z.null()])
+      .optional(),
     active: z.union([z.boolean(), z.number().int().min(0).max(1)]).optional(),
     IsActive: z.union([z.boolean(), z.number().int().min(0).max(1)]).optional(),
     password: strongPasswordSchema.optional(),
   })
-  .refine((payload) => Object.keys(payload).length > 0, {
+  .refine(payload => Object.keys(payload).length > 0, {
     message: "No user updates were provided.",
   });
 
@@ -77,7 +89,7 @@ export const changePasswordSchema = z
     currentPassword: z.string().min(1).max(128),
     newPassword: strongPasswordSchema,
   })
-  .refine((payload) => payload.currentPassword !== payload.newPassword, {
+  .refine(payload => payload.currentPassword !== payload.newPassword, {
     message: "The new password must be different from the current password.",
   });
 
@@ -86,7 +98,7 @@ export const resetPasswordSchema = z
     password: strongPasswordSchema.optional(),
     newPassword: strongPasswordSchema.optional(),
   })
-  .refine((payload) => Boolean(payload.password || payload.newPassword), {
+  .refine(payload => Boolean(payload.password || payload.newPassword), {
     message: "A new password is required.",
   });
 
@@ -110,9 +122,12 @@ export const permissionsPayloadSchema = z.union([
 export const LOGIN_VALIDATION_MESSAGE = "Login payload is invalid.";
 export const CREATE_USER_VALIDATION_MESSAGE = "User details are invalid.";
 export const UPDATE_USER_VALIDATION_MESSAGE = "User update payload is invalid.";
-export const CHANGE_PASSWORD_VALIDATION_MESSAGE = "Password change payload is invalid.";
-export const RESET_PASSWORD_VALIDATION_MESSAGE = "Password reset payload is invalid.";
-export const PROFILE_UPDATE_VALIDATION_MESSAGE = "Profile update payload is invalid.";
+export const CHANGE_PASSWORD_VALIDATION_MESSAGE =
+  "Password change payload is invalid.";
+export const RESET_PASSWORD_VALIDATION_MESSAGE =
+  "Password reset payload is invalid.";
+export const PROFILE_UPDATE_VALIDATION_MESSAGE =
+  "Profile update payload is invalid.";
 export const PERMISSIONS_VALIDATION_MESSAGE = "Permissions payload is invalid.";
 export const USER_ID_LABEL = "User id";
 export const FORBIDDEN_ERROR = "غير مصرح";
@@ -145,6 +160,8 @@ export function requireAdmin(req: AuthRequest, res: Response) {
   return false;
 }
 
-export function normalizePermissionsPayload(payload: z.infer<typeof permissionsPayloadSchema>) {
+export function normalizePermissionsPayload(
+  payload: z.infer<typeof permissionsPayloadSchema>
+) {
   return Array.isArray(payload) ? payload : payload.permissions;
 }

@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { AppDb } from "../dbTypes";
+import type { AppDb } from "../db/schema/dbTypes";
 import {
   accounts,
   companies,
@@ -66,7 +66,13 @@ type TransactionMapInput = {
   createdBy?: number | null;
 } & TransactionNameFields;
 
-type LookupEntityType = "driver" | "vehicle" | "goodType" | "governorate" | "company" | "account";
+type LookupEntityType =
+  | "driver"
+  | "vehicle"
+  | "goodType"
+  | "governorate"
+  | "company"
+  | "account";
 
 type LookupOption = {
   id: number;
@@ -93,12 +99,16 @@ function parseAmountOrZero(value: DecimalLike): number {
 }
 
 function normalizeRecordType(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function isDebitNoteRecordType(value: unknown): boolean {
   const normalized = normalizeRecordType(value);
-  return normalized === "debit-note" || String(value ?? "").trim() === "سند إضافة";
+  return (
+    normalized === "debit-note" || String(value ?? "").trim() === "سند إضافة"
+  );
 }
 
 function isExpenseChargeRecordType(value: unknown): boolean {
@@ -119,13 +129,13 @@ export function mapTransaction(
   vehiclePlate?: string,
   goodTypeName?: string,
   governorateName?: string,
-  customFieldData: Record<string, unknown> = {},
+  customFieldData: Record<string, unknown> = {}
 ) {
   const invoiceDirection = isInvoiceDirection(transaction.direction);
   const isDebitNote = isDebitNoteRecordType(transaction.recordType);
   const isExpenseCharge = isExpenseChargeRecordType(transaction.recordType);
   const showAsAdjustment = isDebitNote || isExpenseCharge;
-  const transactionTypeId = showAsAdjustment ? 3 : (invoiceDirection ? 1 : 2);
+  const transactionTypeId = showAsAdjustment ? 3 : invoiceDirection ? 1 : 2;
   const transactionTypeName = isDebitNote
     ? "سند إضافة"
     : isExpenseCharge
@@ -175,10 +185,12 @@ export function mapTransaction(
     AccountType: transaction.accountType,
     CreatedBy: transaction.createdBy,
     ProfitUSD: includeProfit
-      ? parseAmountOrZero(transaction.amountUsd) - parseAmountOrZero(transaction.costUsd)
+      ? parseAmountOrZero(transaction.amountUsd) -
+        parseAmountOrZero(transaction.costUsd)
       : 0,
     ProfitIQD: includeProfit
-      ? parseAmountOrZero(transaction.amountIqd) - parseAmountOrZero(transaction.costIqd)
+      ? parseAmountOrZero(transaction.amountIqd) -
+        parseAmountOrZero(transaction.costIqd)
       : 0,
     direction: transaction.direction,
     amount_usd: parseAmountOrZero(transaction.amountUsd),
@@ -195,39 +207,75 @@ export function mapTransaction(
 
 export async function enrichTransactions(
   db: AppDb,
-  transactionsRows: TransactionEnrichmentRow[],
+  transactionsRows: TransactionEnrichmentRow[]
 ): Promise<EnrichedTransactionRecord[]> {
   if (transactionsRows.length === 0) return [];
 
-  const transactionIds = transactionsRows.map((transaction) => transaction.id).filter(Boolean);
-  const accountIds = Array.from(new Set(
-    transactionsRows.flatMap((transaction) => [transaction.accountId, transaction.carrierId]).filter((value): value is number => Boolean(value)),
-  ));
-  const driverIds = Array.from(new Set(
-    transactionsRows.map((transaction) => transaction.driverId).filter((value): value is number => Boolean(value)),
-  ));
-  const vehicleIds = Array.from(new Set(
-    transactionsRows.map((transaction) => transaction.vehicleId).filter((value): value is number => Boolean(value)),
-  ));
-  const goodTypeIds = Array.from(new Set(
-    transactionsRows.map((transaction) => transaction.goodTypeId).filter((value): value is number => Boolean(value)),
-  ));
-  const governorateIds = Array.from(new Set(
-    transactionsRows.map((transaction) => transaction.govId).filter((value): value is number => Boolean(value)),
-  ));
-  const companyIds = Array.from(new Set(
-    transactionsRows.map((transaction) => transaction.companyId).filter((value): value is number => Boolean(value)),
-  ));
+  const transactionIds = transactionsRows
+    .map(transaction => transaction.id)
+    .filter(Boolean);
+  const accountIds = Array.from(
+    new Set(
+      transactionsRows
+        .flatMap(transaction => [transaction.accountId, transaction.carrierId])
+        .filter((value): value is number => Boolean(value))
+    )
+  );
+  const driverIds = Array.from(
+    new Set(
+      transactionsRows
+        .map(transaction => transaction.driverId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
+  const vehicleIds = Array.from(
+    new Set(
+      transactionsRows
+        .map(transaction => transaction.vehicleId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
+  const goodTypeIds = Array.from(
+    new Set(
+      transactionsRows
+        .map(transaction => transaction.goodTypeId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
+  const governorateIds = Array.from(
+    new Set(
+      transactionsRows
+        .map(transaction => transaction.govId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
+  const companyIds = Array.from(
+    new Set(
+      transactionsRows
+        .map(transaction => transaction.companyId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
 
-  const customValues = transactionIds.length > 0
-    ? await db.select().from(customFieldValues).where(and(
-      eq(customFieldValues.entityType, "transaction"),
-      inArray(customFieldValues.entityId, transactionIds),
-    ))
-    : [];
-  const customFieldIds = Array.from(new Set(
-    customValues.map((valueRow) => valueRow.customFieldId).filter((value): value is number => Boolean(value)),
-  ));
+  const customValues =
+    transactionIds.length > 0
+      ? await db
+          .select()
+          .from(customFieldValues)
+          .where(
+            and(
+              eq(customFieldValues.entityType, "transaction"),
+              inArray(customFieldValues.entityId, transactionIds)
+            )
+          )
+      : [];
+  const customFieldIds = Array.from(
+    new Set(
+      customValues
+        .map(valueRow => valueRow.customFieldId)
+        .filter((value): value is number => Boolean(value))
+    )
+  );
 
   const [
     filteredAccounts,
@@ -251,36 +299,48 @@ export async function enrichTransactions(
       ? db.select().from(goodsTypes).where(inArray(goodsTypes.id, goodTypeIds))
       : Promise.resolve([]),
     governorateIds.length > 0
-      ? db.select().from(governorates).where(inArray(governorates.id, governorateIds))
+      ? db
+          .select()
+          .from(governorates)
+          .where(inArray(governorates.id, governorateIds))
       : Promise.resolve([]),
     companyIds.length > 0
       ? db.select().from(companies).where(inArray(companies.id, companyIds))
       : Promise.resolve([]),
     customFieldIds.length > 0
-      ? db.select().from(customFields).where(inArray(customFields.id, customFieldIds))
+      ? db
+          .select()
+          .from(customFields)
+          .where(inArray(customFields.id, customFieldIds))
       : Promise.resolve([]),
   ]);
 
   const accountMap = new Map<number, string>(
-    filteredAccounts.map((account: AccountRow) => [account.id, account.name]),
+    filteredAccounts.map((account: AccountRow) => [account.id, account.name])
   );
   const driverMap = new Map<number, string>(
-    filteredDrivers.map((driver: DriverRow) => [driver.id, driver.name]),
+    filteredDrivers.map((driver: DriverRow) => [driver.id, driver.name])
   );
   const vehicleMap = new Map<number, string>(
-    filteredVehicles.map((vehicle: VehicleRow) => [vehicle.id, vehicle.plateNumber]),
+    filteredVehicles.map((vehicle: VehicleRow) => [
+      vehicle.id,
+      vehicle.plateNumber,
+    ])
   );
   const goodMap = new Map<number, string>(
-    filteredGoods.map((good: GoodTypeRow) => [good.id, good.name]),
+    filteredGoods.map((good: GoodTypeRow) => [good.id, good.name])
   );
   const governorateMap = new Map<number, string>(
-    filteredGovernorates.map((governorate: GovernorateRow) => [governorate.id, governorate.name]),
+    filteredGovernorates.map((governorate: GovernorateRow) => [
+      governorate.id,
+      governorate.name,
+    ])
   );
   const companyMap = new Map<number, string>(
-    filteredCompanies.map((company: CompanyRow) => [company.id, company.name]),
+    filteredCompanies.map((company: CompanyRow) => [company.id, company.name])
   );
   const customFieldMap = new Map<number, CustomFieldRow>(
-    filteredCustomFields.map((field: CustomFieldRow) => [field.id, field]),
+    filteredCustomFields.map((field: CustomFieldRow) => [field.id, field])
   );
   const customValuesByEntity = new Map<number, Record<string, unknown>>();
 
@@ -301,7 +361,7 @@ export async function enrichTransactions(
     customValuesByEntity.set(valueRow.entityId, entityValues);
   }
 
-  return transactionsRows.map((transaction) => {
+  return transactionsRows.map(transaction => {
     const enrichedTransaction: TransactionMapInput = {
       ...transaction,
       _accountName: getNameById(accountMap, transaction.accountId),
@@ -310,7 +370,10 @@ export async function enrichTransactions(
       _goodTypeName: getNameById(goodMap, transaction.goodTypeId),
       _govName: getNameById(governorateMap, transaction.govId),
       _carrierName: getNameById(accountMap, transaction.carrierId),
-      _companyName: getNameById(companyMap, transaction.companyId) || transaction.companyName || "",
+      _companyName:
+        getNameById(companyMap, transaction.companyId) ||
+        transaction.companyName ||
+        "",
     };
 
     return mapTransaction(
@@ -319,7 +382,7 @@ export async function enrichTransactions(
       enrichedTransaction._vehiclePlate,
       enrichedTransaction._goodTypeName,
       enrichedTransaction._govName,
-      customValuesByEntity.get(transaction.id) || {},
+      customValuesByEntity.get(transaction.id) || {}
     );
   });
 }
@@ -327,32 +390,56 @@ export async function enrichTransactions(
 export async function getLookupNameById(
   db: AppDb,
   type: LookupEntityType,
-  id?: number | null,
+  id?: number | null
 ): Promise<LookupOption | null> {
   if (!id) return null;
 
   if (type === "driver") {
-    const [row] = await db.select().from(drivers).where(eq(drivers.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(drivers)
+      .where(eq(drivers.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.name } : null;
   }
   if (type === "vehicle") {
-    const [row] = await db.select().from(vehicles).where(eq(vehicles.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(vehicles)
+      .where(eq(vehicles.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.plateNumber } : null;
   }
   if (type === "goodType") {
-    const [row] = await db.select().from(goodsTypes).where(eq(goodsTypes.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(goodsTypes)
+      .where(eq(goodsTypes.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.name } : null;
   }
   if (type === "governorate") {
-    const [row] = await db.select().from(governorates).where(eq(governorates.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(governorates)
+      .where(eq(governorates.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.name } : null;
   }
   if (type === "company") {
-    const [row] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.name } : null;
   }
   if (type === "account") {
-    const [row] = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, id))
+      .limit(1);
     return row ? { id: row.id, name: row.name } : null;
   }
 

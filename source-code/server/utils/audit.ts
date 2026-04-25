@@ -1,6 +1,6 @@
-import { auditLogs } from '../../drizzle/schema';
+import { auditLogs } from "../../drizzle/schema";
 
-type AuditAction = 'create' | 'update' | 'delete';
+type AuditAction = "create" | "update" | "delete";
 
 type AuditPayload = {
   entityType: string;
@@ -9,15 +9,19 @@ type AuditPayload = {
   summary: string;
   before?: Record<string, unknown> | null;
   after?: Record<string, unknown> | null;
-  appUser?: { id?: number | null; username?: string | null; name?: string | null } | null;
+  appUser?: {
+    id?: number | null;
+    username?: string | null;
+    name?: string | null;
+  } | null;
   metadata?: Record<string, unknown> | null;
 };
 
-const REDACTED_KEYS = new Set(['password']);
+const REDACTED_KEYS = new Set(["password"]);
 
 function normalizePrimitive(value: unknown) {
   if (value instanceof Date) return value.toISOString();
-  if (typeof value === 'bigint') return String(value);
+  if (typeof value === "bigint") return String(value);
   return value;
 }
 
@@ -26,13 +30,16 @@ function sanitizeForAudit(value: unknown): unknown {
 
   if (normalized === undefined) return null;
   if (normalized === null) return null;
-  if (Array.isArray(normalized)) return normalized.map((entry) => sanitizeForAudit(entry));
-  if (typeof normalized !== 'object') return normalized;
+  if (Array.isArray(normalized))
+    return normalized.map(entry => sanitizeForAudit(entry));
+  if (typeof normalized !== "object") return normalized;
 
   const output: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(normalized as Record<string, unknown>)) {
+  for (const [key, entry] of Object.entries(
+    normalized as Record<string, unknown>
+  )) {
     if (REDACTED_KEYS.has(key)) {
-      output[key] = '[REDACTED]';
+      output[key] = "[REDACTED]";
       continue;
     }
     output[key] = sanitizeForAudit(entry);
@@ -46,10 +53,16 @@ function isEqualValue(left: unknown, right: unknown) {
 
 export function buildAuditChanges(
   before?: Record<string, unknown> | null,
-  after?: Record<string, unknown> | null,
+  after?: Record<string, unknown> | null
 ) {
-  const safeBefore = sanitizeForAudit(before ?? null) as Record<string, unknown> | null;
-  const safeAfter = sanitizeForAudit(after ?? null) as Record<string, unknown> | null;
+  const safeBefore = sanitizeForAudit(before ?? null) as Record<
+    string,
+    unknown
+  > | null;
+  const safeAfter = sanitizeForAudit(after ?? null) as Record<
+    string,
+    unknown
+  > | null;
   const changes: Record<string, { before: unknown; after: unknown }> = {};
 
   const keys = new Set([
@@ -77,8 +90,11 @@ export function buildAuditChanges(
 export async function writeAuditLog(db: any, payload: AuditPayload) {
   if (!db) return;
 
-  const { beforeData, afterData, changes } = buildAuditChanges(payload.before, payload.after);
-  if (payload.action === 'update' && Object.keys(changes).length === 0) {
+  const { beforeData, afterData, changes } = buildAuditChanges(
+    payload.before,
+    payload.after
+  );
+  if (payload.action === "update" && Object.keys(changes).length === 0) {
     return;
   }
   const actor = payload.appUser ?? null;

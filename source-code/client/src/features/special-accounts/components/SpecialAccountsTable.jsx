@@ -1,5 +1,5 @@
-import { Pencil, Trash2 } from 'lucide-react';
-import { isSpecialHaiderSettlementRow } from '../../../utils/specialHaiderMath';
+import { Pencil, Trash2 } from "lucide-react";
+import { isSpecialHaiderSettlementRow } from "../../../utils/specialHaiderMath";
 import {
   getAccountAccentLineStyle,
   getAccountCardOutlineStyle,
@@ -7,7 +7,7 @@ import {
   getAccountSettlementRowStyle,
   getAccountTableFooterStyle,
   getAccountTableHeaderStyle,
-} from '../specialAccountsTheme';
+} from "../specialAccountsTheme";
 
 export default function SpecialAccountsTable({
   account,
@@ -21,12 +21,15 @@ export default function SpecialAccountsTable({
   onEdit,
   onDelete,
 }) {
-  const surfaceStyle = getAccountCardOutlineStyle(account, '12');
+  const surfaceStyle = getAccountCardOutlineStyle(account, "12");
   const accentLineStyle = getAccountAccentLineStyle(account);
   const headerStyle = getAccountTableHeaderStyle(account);
   const editButtonStyle = getAccountEditButtonStyle(account);
   const footerStyle = getAccountTableFooterStyle(account);
-  const isDateColumn = (column) => column?.format === 'date' || column?.key === 'trans_date' || column?.dataKey === 'TransDate';
+  const isDateColumn = column =>
+    column?.format === "date" ||
+    column?.key === "trans_date" ||
+    column?.dataKey === "TransDate";
 
   return (
     <div
@@ -40,13 +43,18 @@ export default function SpecialAccountsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-              <tr className="text-right" style={headerStyle}>
-              {visibleColumns.map((column) => (
-                <th key={column.key} className={`px-4 py-3 font-semibold ${isDateColumn(column) ? 'whitespace-nowrap' : ''}`}>
+            <tr className="text-right" style={headerStyle}>
+              {visibleColumns.map(column => (
+                <th
+                  key={column.key}
+                  className={`px-4 py-3 font-semibold ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
+                >
                   {column.label}
                 </th>
               ))}
-              {canEdit && <th className="w-24 px-4 py-3 font-semibold">إجراءات</th>}
+              {canEdit && (
+                <th className="w-24 px-4 py-3 font-semibold">إجراءات</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -61,8 +69,42 @@ export default function SpecialAccountsTable({
               </tr>
             ) : (
               rows.map((row, index) => {
-                const isSettlement = accountId === 'haider' && isSpecialHaiderSettlementRow(row);
-                const settlementStyle = isSettlement ? getAccountSettlementRowStyle(account) : undefined;
+                if (row.isDailySummary) {
+                  return (
+                    <tr
+                      key={row.id || `summary-${index}`}
+                      className="bg-[#d18e4b] text-white font-bold"
+                    >
+                      <td
+                        colSpan={
+                          (visibleColumns.length || 1) + (canEdit ? 1 : 0)
+                        }
+                        className="px-4 py-3 text-center shadow-inner"
+                      >
+                        <div className="flex items-center justify-center gap-12 text-[15px]">
+                          <span>
+                            المبلغ عليه :{" "}
+                            {Number(
+                              row.totals?.totalAmountUSD || 0
+                            ).toLocaleString("en-US")}
+                          </span>
+                          <span>
+                            المبلغ له :{" "}
+                            {Number(
+                              row.totals?.totalPartnerUSD || 0
+                            ).toLocaleString("en-US")}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                const isSettlement =
+                  accountId === "haider" && isSpecialHaiderSettlementRow(row);
+                const settlementStyle = isSettlement
+                  ? getAccountSettlementRowStyle(account)
+                  : undefined;
 
                 return (
                   <tr
@@ -70,10 +112,10 @@ export default function SpecialAccountsTable({
                     className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.035]"
                     style={settlementStyle}
                   >
-                    {visibleColumns.map((column) => (
+                    {visibleColumns.map(column => (
                       <td
                         key={column.key}
-                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? 'font-bold text-[#f4f8fb]' : ''} ${column.isMedium ? 'font-semibold' : ''} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ''} ${column.isNotes ? 'max-w-[220px] truncate text-xs text-[#91a0ad]' : ''} ${isDateColumn(column) ? 'whitespace-nowrap' : ''}`}
+                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? "font-bold text-[#f4f8fb]" : ""} ${column.isMedium ? "font-semibold" : ""} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ""} ${column.isNotes ? "max-w-[220px] truncate text-xs text-[#91a0ad]" : ""} ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
                       >
                         {column.render(row[column.dataKey], row)}
                       </td>
@@ -94,8 +136,8 @@ export default function SpecialAccountsTable({
                             disabled={deletingId === row.id}
                             className="flex h-9 w-9 items-center justify-center rounded-xl text-[#d8a2a8] transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60"
                             style={{
-                              background: 'rgba(183,97,105,0.12)',
-                              border: '1px solid rgba(183,97,105,0.2)',
+                              background: "rgba(183,97,105,0.12)",
+                              border: "1px solid rgba(183,97,105,0.2)",
                             }}
                             title="حذف"
                           >
@@ -111,7 +153,10 @@ export default function SpecialAccountsTable({
           </tbody>
           {derivedTotals && rows.length > 0 && (
             <tfoot>
-              <tr className="border-t border-white/[0.08] font-bold" style={footerStyle}>
+              <tr
+                className="border-t border-white/[0.08] font-bold"
+                style={footerStyle}
+              >
                 {visibleColumns.map((column, index) => {
                   const footerValue = getFooterValue(column.key, derivedTotals);
 

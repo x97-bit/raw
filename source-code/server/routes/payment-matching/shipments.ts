@@ -1,20 +1,30 @@
 import { Router, Response } from "express";
 import { sql } from "drizzle-orm";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
-import { getDb } from "../../db";
-import { ACCOUNT_PARAMETER_REQUIRED_MESSAGE, mapShipmentPaymentStatus, SHIPMENT_NOT_FOUND_MESSAGE } from "./shared";
+import { getDb } from "../../db/db";
+import {
+  ACCOUNT_PARAMETER_REQUIRED_MESSAGE,
+  mapShipmentPaymentStatus,
+  SHIPMENT_NOT_FOUND_MESSAGE,
+} from "./shared";
 
 export function registerPaymentMatchingShipmentRoutes(router: Router) {
-  router.get("/payment-matching/shipments", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.get(
+    "/payment-matching/shipments",
+    authMiddleware,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const accountId = parseInt(req.query.account as string, 10);
-      const limit = parseInt(req.query.limit as string, 10) || 200;
-      if (!accountId) return res.status(400).json({ error: ACCOUNT_PARAMETER_REQUIRED_MESSAGE });
+        const accountId = parseInt(req.query.account as string, 10);
+        const limit = parseInt(req.query.limit as string, 10) || 200;
+        if (!accountId)
+          return res
+            .status(400)
+            .json({ error: ACCOUNT_PARAMETER_REQUIRED_MESSAGE });
 
-      const rows: any[] = await db.execute(sql`
+        const rows: any[] = await db.execute(sql`
         SELECT
           t.id AS shipment_id,
           t.ref_no,
@@ -36,20 +46,24 @@ export function registerPaymentMatchingShipmentRoutes(router: Router) {
         LIMIT ${limit}
       `);
 
-      const enriched = rows.map(mapShipmentPaymentStatus);
-      return res.json({ rows: enriched, total: enriched.length });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+        const enriched = rows.map(mapShipmentPaymentStatus);
+        return res.json({ rows: enriched, total: enriched.length });
+      } catch (error: any) {
+        return res.status(500).json({ error: error.message });
+      }
     }
-  });
+  );
 
-  router.get("/payment-matching/shipments/:shipmentId", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "Database unavailable" });
+  router.get(
+    "/payment-matching/shipments/:shipmentId",
+    authMiddleware,
+    async (req: AuthRequest, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-      const shipmentId = parseInt(req.params.shipmentId, 10);
-      const shipmentRows: any[] = await db.execute(sql`
+        const shipmentId = parseInt(req.params.shipmentId, 10);
+        const shipmentRows: any[] = await db.execute(sql`
         SELECT
           t.id AS shipment_id,
           t.ref_no,
@@ -69,10 +83,11 @@ export function registerPaymentMatchingShipmentRoutes(router: Router) {
         WHERE t.id = ${shipmentId}
       `);
 
-      if (!shipmentRows.length) return res.status(404).json({ error: SHIPMENT_NOT_FOUND_MESSAGE });
+        if (!shipmentRows.length)
+          return res.status(404).json({ error: SHIPMENT_NOT_FOUND_MESSAGE });
 
-      const shipment = mapShipmentPaymentStatus(shipmentRows[0]);
-      const allocations: any[] = await db.execute(sql`
+        const shipment = mapShipmentPaymentStatus(shipmentRows[0]);
+        const allocations: any[] = await db.execute(sql`
         SELECT
           pm.id,
           pm.paymentId,
@@ -88,9 +103,10 @@ export function registerPaymentMatchingShipmentRoutes(router: Router) {
         ORDER BY pm.createdAt DESC
       `);
 
-      return res.json({ shipment, allocations });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+        return res.json({ shipment, allocations });
+      } catch (error: any) {
+        return res.status(500).json({ error: error.message });
+      }
     }
-  });
+  );
 }

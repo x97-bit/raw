@@ -1,5 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
+import { extractBearerToken, loadAuthenticatedAppUser, verifyToken } from "./appAuth";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -10,11 +11,24 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // OAuth is not used - the app uses local username/password auth via /api/auth/*
-  // tRPC context always returns null user since the app doesn't use tRPC auth
+  let user: User | null = null;
+  const token = extractBearerToken(opts.req.headers.authorization);
+
+  if (token) {
+    const payload = await verifyToken(token);
+    if (payload) {
+      const dbUser = await loadAuthenticatedAppUser(payload.userId);
+      if (dbUser) {
+        user = dbUser as unknown as User;
+      }
+    }
+  }
+
+  console.log("TRPC createContext -> user:", user);
+
   return {
     req: opts.req,
     res: opts.res,
-    user: null,
+    user,
   };
 }

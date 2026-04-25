@@ -1,1 +1,1 @@
-export { default } from '../features/payment-matching/PaymentMatchingPageContent';
+export { default } from "../features/payment-matching/PaymentMatchingPageContent";

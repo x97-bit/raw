@@ -1,14 +1,15 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 const AuthContext = createContext(null);
 
-const API = '/api';
-const AUTH_TOKEN_STORAGE_KEY = 'token';
-const SESSION_EXPIRED_MESSAGE = '\u0627\u0646\u062a\u0647\u062a \u0627\u0644\u062c\u0644\u0633\u0629';
-const REQUEST_FAILED_MESSAGE = '\u062d\u062f\u062b \u062e\u0637\u0623';
+const API = "/api";
+const AUTH_TOKEN_STORAGE_KEY = "token";
+const SESSION_EXPIRED_MESSAGE =
+  "\u0627\u0646\u062a\u0647\u062a \u0627\u0644\u062c\u0644\u0633\u0629";
+const REQUEST_FAILED_MESSAGE = "\u062d\u062f\u062b \u062e\u0637\u0623";
 
 function readStoredToken() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
 
   try {
     const sessionToken = window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
@@ -30,7 +31,7 @@ function readStoredToken() {
 }
 
 function persistToken(token) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
   try {
     window.sessionStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
@@ -41,7 +42,7 @@ function persistToken(token) {
 }
 
 function clearStoredToken() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
   try {
     window.sessionStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
@@ -56,20 +57,24 @@ function buildRequestHeaders(token, options = {}) {
   const hasBody = options.body !== undefined && options.body !== null;
 
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  if (hasBody && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
+  if (
+    hasBody &&
+    !(options.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
+    headers.set("Content-Type", "application/json");
   }
 
   return headers;
 }
 
 async function parseApiResponse(res) {
-  const contentType = res.headers.get('content-type') || '';
+  const contentType = res.headers.get("content-type") || "";
 
-  if (contentType.includes('application/json')) {
+  if (contentType.includes("application/json")) {
     return res.json();
   }
 
@@ -101,13 +106,13 @@ export function AuthProvider({ children }) {
 
     const refreshRequest = (async () => {
       const res = await fetch(`${API}/auth/refresh`, {
-        method: 'POST',
-        cache: 'no-store',
-        credentials: 'same-origin',
+        method: "POST",
+        cache: "no-store",
+        credentials: "same-origin",
       });
 
       const data = await parseApiResponse(res);
-      if (!res.ok || typeof data?.token !== 'string' || !data.token.trim()) {
+      if (!res.ok || typeof data?.token !== "string" || !data.token.trim()) {
         throw new Error(data?.error || SESSION_EXPIRED_MESSAGE);
       }
 
@@ -127,14 +132,17 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const performAuthenticatedFetch = async (url, options = {}, accessToken = null) => (
+  const performAuthenticatedFetch = async (
+    url,
+    options = {},
+    accessToken = null
+  ) =>
     fetch(`${API}${url}`, {
-      cache: 'no-store',
-      credentials: 'same-origin',
+      cache: "no-store",
+      credentials: "same-origin",
       ...options,
       headers: buildRequestHeaders(accessToken, options),
-    })
-  );
+    });
 
   const authFetch = async (url, options = {}, config = {}) => {
     const { retryOn401 = true, initialToken = token } = config;
@@ -174,9 +182,9 @@ export function AuthProvider({ children }) {
 
     try {
       await fetch(`${API}/auth/logout`, {
-        method: 'POST',
-        cache: 'no-store',
-        credentials: 'same-origin',
+        method: "POST",
+        cache: "no-store",
+        credentials: "same-origin",
       });
     } catch {
       // Best effort; local auth state is still cleared below.
@@ -205,7 +213,11 @@ export function AuthProvider({ children }) {
           }
         }
 
-        const res = await authFetch('/auth/me', { method: 'GET' }, { initialToken: activeToken });
+        const res = await authFetch(
+          "/auth/me",
+          { method: "GET" },
+          { initialToken: activeToken }
+        );
         const nextUser = await parseApiResponse(res);
 
         if (!cancelled) {
@@ -231,9 +243,9 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const res = await fetch(`${API}/auth/login`, {
-      method: 'POST',
-      cache: 'no-store',
-      credentials: 'same-origin',
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
       headers: buildRequestHeaders(null, {
         body: true,
       }),
@@ -245,7 +257,7 @@ export function AuthProvider({ children }) {
       throw new Error(data?.error || REQUEST_FAILED_MESSAGE);
     }
 
-    if (typeof data?.token !== 'string' || !data.token.trim()) {
+    if (typeof data?.token !== "string" || !data.token.trim()) {
       throw new Error(REQUEST_FAILED_MESSAGE);
     }
 
@@ -267,34 +279,48 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const role = user?.Role || user?.role || 'user';
+  const role = user?.Role || user?.role || "user";
   const permissions = user?.permissions || [];
-  const isAdmin = role === 'admin';
-  const hasPerm = (perm) => isAdmin || permissions.includes(perm);
+  const isAdmin = role === "admin";
+  const hasPerm = perm => isAdmin || permissions.includes(perm);
 
   const can = {
-    viewPort1: hasPerm('port-1'),
-    viewPort2: hasPerm('port-2'),
-    viewPort3: hasPerm('port-3'),
-    viewTransport: hasPerm('transport'),
-    viewPartnership: hasPerm('partnership'),
-    viewFx: hasPerm('fx'),
-    viewDebts: hasPerm('debts'),
-    viewSpecial: hasPerm('special'),
-    viewReports: hasPerm('reports'),
-    addInvoice: hasPerm('add_invoice'),
-    addPayment: hasPerm('add_payment'),
-    editTransaction: hasPerm('edit_transaction'),
-    deleteTransaction: hasPerm('delete_transaction'),
-    export: hasPerm('export'),
-    addTrader: hasPerm('add_trader'),
-    manageDebts: hasPerm('manage_debts'),
+    viewPort1: hasPerm("port-1"),
+    viewPort2: hasPerm("port-2"),
+    viewPort3: hasPerm("port-3"),
+    viewTransport: hasPerm("transport"),
+    viewPartnership: hasPerm("partnership"),
+    viewFx: hasPerm("fx"),
+    viewDebts: hasPerm("debts"),
+    viewSpecial: hasPerm("special"),
+    viewReports: hasPerm("reports"),
+    addInvoice: hasPerm("add_invoice"),
+    addPayment: hasPerm("add_payment"),
+    editTransaction: hasPerm("edit_transaction"),
+    deleteTransaction: hasPerm("delete_transaction"),
+    export: hasPerm("export"),
+    addTrader: hasPerm("add_trader"),
+    manageDebts: hasPerm("manage_debts"),
     manageUsers: isAdmin,
     isAdmin,
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, api, authFetch, can, role, permissions, hasPerm }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        api,
+        authFetch,
+        can,
+        role,
+        permissions,
+        hasPerm,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,10 +1,13 @@
 import bcrypt from "bcryptjs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createQueryResult, getDrizzleTableName } from "../../tests/support/fakeSql";
+import {
+  createQueryResult,
+  getDrizzleTableName,
+} from "../../tests/support/fakeSql";
 import { createRouteHarness } from "../../tests/support/httpRouteHarness";
 
 function createAuthDb(seedRows: Array<Record<string, unknown>>) {
-  const rows = seedRows.map((row) => ({ ...row }));
+  const rows = seedRows.map(row => ({ ...row }));
 
   return {
     select() {
@@ -28,9 +31,12 @@ async function loadAuthHarness(fakeDb: ReturnType<typeof createAuthDb>) {
     getDb: vi.fn().mockResolvedValue(fakeDb),
   }));
   vi.doMock("../../_core/sessionSecret", () => ({
-    getAppAccessTokenSecret: () => new TextEncoder().encode("test-access-secret-that-is-long-enough"),
-    getAppRefreshTokenSecret: () => new TextEncoder().encode("test-refresh-secret-that-is-long-enough"),
-    getSessionSecret: () => new TextEncoder().encode("test-session-secret-that-is-long-enough"),
+    getAppAccessTokenSecret: () =>
+      new TextEncoder().encode("test-access-secret-that-is-long-enough"),
+    getAppRefreshTokenSecret: () =>
+      new TextEncoder().encode("test-refresh-secret-that-is-long-enough"),
+    getSessionSecret: () =>
+      new TextEncoder().encode("test-session-secret-that-is-long-enough"),
   }));
 
   const { registerAuthRoutes } = await import("./auth");

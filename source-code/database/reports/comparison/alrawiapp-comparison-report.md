@@ -67,67 +67,67 @@
 
 ### الحركات والمعاملات
 
-| `AlrawiApp` | مشروعنا الحالي | الملاحظة |
-|---|---|---|
-| `Tbl_KSA_Trans` | `transactions` | السعودية |
-| `Tbl_MNZ_Trans` | `transactions` | المنذرية |
-| `Tbl_QAIM_Trans` | `transactions` | القائم |
-| `Tbl_TRANS_Trans` | `transactions` | النقل |
-| `Tbl_SHR_Trans` | `transactions` أو `special_accounts` | الشراكة/الخاص |
-| `Tbl_SP_Yaser_Trans` | `special_accounts` | ياسر عادل |
-| `Tbl_Adb_Alkarem_Trans` | `special_accounts` أو `debts` | حسب منطق العرض الحالي |
+| `AlrawiApp`             | مشروعنا الحالي                       | الملاحظة              |
+| ----------------------- | ------------------------------------ | --------------------- |
+| `Tbl_KSA_Trans`         | `transactions`                       | السعودية              |
+| `Tbl_MNZ_Trans`         | `transactions`                       | المنذرية              |
+| `Tbl_QAIM_Trans`        | `transactions`                       | القائم                |
+| `Tbl_TRANS_Trans`       | `transactions`                       | النقل                 |
+| `Tbl_SHR_Trans`         | `transactions` أو `special_accounts` | الشراكة/الخاص         |
+| `Tbl_SP_Yaser_Trans`    | `special_accounts`                   | ياسر عادل             |
+| `Tbl_Adb_Alkarem_Trans` | `special_accounts` أو `debts`        | حسب منطق العرض الحالي |
 
 ### الحسابات/التجار
 
-| `AlrawiApp` | مشروعنا الحالي | الملاحظة |
-|---|---|---|
-| `Tbl_KSA_Triders` | `accounts` | تجار السعودية |
-| `Tbl_MNZ_Triders` | `accounts` | تجار المنذرية |
-| `Tbl_QAIM_Triders` | `accounts` | تجار القائم |
+| `AlrawiApp`        | مشروعنا الحالي                   | الملاحظة          |
+| ------------------ | -------------------------------- | ----------------- |
+| `Tbl_KSA_Triders`  | `accounts`                       | تجار السعودية     |
+| `Tbl_MNZ_Triders`  | `accounts`                       | تجار المنذرية     |
+| `Tbl_QAIM_Triders` | `accounts`                       | تجار القائم       |
 | `Tbl_SHR_Accounts` | `accounts` أو `special_accounts` | حسابات خاصة/شراكة |
-| `Tbl_FX_Accounts` | لا يوجد مقابل واضح حاليًا | يحتاج قرار تصميمي |
+| `Tbl_FX_Accounts`  | لا يوجد مقابل واضح حاليًا        | يحتاج قرار تصميمي |
 
 ### الديون
 
-| `AlrawiApp` | مشروعنا الحالي | الملاحظة |
-|---|---|---|
-| `Tbl_Depet_Basim` | `debts` | دين باسم |
+| `AlrawiApp`        | مشروعنا الحالي                | الملاحظة        |
+| ------------------ | ----------------------------- | --------------- |
+| `Tbl_Depet_Basim`  | `debts`                       | دين باسم        |
 | `Tbl_Depet_Haider` | `debts` أو `special_accounts` | حسب طريقة العمل |
-| `Tbl_Depet_Luay` | `debts` | دين لؤي |
-| `Tbl_Depet_Luay2` | `debts` | فرع دين إضافي |
-| `Tbl_Depet_Noman` | `debts` | دين نومان |
+| `Tbl_Depet_Luay`   | `debts`                       | دين لؤي         |
+| `Tbl_Depet_Luay2`  | `debts`                       | فرع دين إضافي   |
+| `Tbl_Depet_Noman`  | `debts`                       | دين نومان       |
 
 ### المصاريف
 
-| `AlrawiApp` | مشروعنا الحالي | الملاحظة |
-|---|---|---|
-| `Tbl_Expenses` | `expenses` | مصاريف عامة |
-| `Tbl_Expenses_MNZ` | `expenses` | مصاريف المنذرية |
-| `Tbl_Expenses_Qaim` | `expenses` | مصاريف القائم |
+| `AlrawiApp`         | مشروعنا الحالي | الملاحظة        |
+| ------------------- | -------------- | --------------- |
+| `Tbl_Expenses`      | `expenses`     | مصاريف عامة     |
+| `Tbl_Expenses_MNZ`  | `expenses`     | مصاريف المنذرية |
+| `Tbl_Expenses_Qaim` | `expenses`     | مصاريف القائم   |
 
 ### القواميس Lookup
 
-| `AlrawiApp` | مشروعنا الحالي | الملاحظة |
-|---|---|---|
-| `Tbl_Goods_Type` | `goods_types` | السعودية/عام |
-| `Tbl_Goods_Type_MNZ` | `goods_types` | المنذرية |
-| `Tbl_Goods_Type_QAIM` | `goods_types` | القائم |
-| `Tbl_SHR_Goods_Type` | `goods_types` | خاص/شراكة |
-| `Tbl_Tran_Goverments` | `governorates` و`route_defaults` | المحافظات والمسارات |
-| `Tbl_Port` | `ports` | المنافذ |
-| `Tbl_Account_Type` | `account_types` | أنواع الحسابات |
-| `Cash_State` | `cash_state` | حالة النقد |
-| `Tbl_Tran_Types` | منطق `direction`/`record_type` | لم يعد جدولًا مستقلًا |
-| `Tbl_Currency` | منطق `currency` النصي | لم يعد جدولًا مستقلًا |
+| `AlrawiApp`           | مشروعنا الحالي                   | الملاحظة              |
+| --------------------- | -------------------------------- | --------------------- |
+| `Tbl_Goods_Type`      | `goods_types`                    | السعودية/عام          |
+| `Tbl_Goods_Type_MNZ`  | `goods_types`                    | المنذرية              |
+| `Tbl_Goods_Type_QAIM` | `goods_types`                    | القائم                |
+| `Tbl_SHR_Goods_Type`  | `goods_types`                    | خاص/شراكة             |
+| `Tbl_Tran_Goverments` | `governorates` و`route_defaults` | المحافظات والمسارات   |
+| `Tbl_Port`            | `ports`                          | المنافذ               |
+| `Tbl_Account_Type`    | `account_types`                  | أنواع الحسابات        |
+| `Cash_State`          | `cash_state`                     | حالة النقد            |
+| `Tbl_Tran_Types`      | منطق `direction`/`record_type`   | لم يعد جدولًا مستقلًا |
+| `Tbl_Currency`        | منطق `currency` النصي            | لم يعد جدولًا مستقلًا |
 
 ### عناصر ليس لها مقابل 1:1
 
-| `AlrawiApp` | الوضع في مشروعنا |
-|---|---|
-| `Tbl_Reports` | لا يوجد مقابل جدولي مباشر؛ التقارير مبنية من الواجهة/المنطق |
-| `Paste Errors` | لا يوجد مقابل مباشر |
-| `Tbl_SP_Yaser_Setting` | لا يوجد مقابل جدولي مباشر |
-| `Tbl_FX_Trans` | لا يوجد مسار مكتمل مقابل له حاليًا |
+| `AlrawiApp`            | الوضع في مشروعنا                                            |
+| ---------------------- | ----------------------------------------------------------- |
+| `Tbl_Reports`          | لا يوجد مقابل جدولي مباشر؛ التقارير مبنية من الواجهة/المنطق |
+| `Paste Errors`         | لا يوجد مقابل مباشر                                         |
+| `Tbl_SP_Yaser_Setting` | لا يوجد مقابل جدولي مباشر                                   |
+| `Tbl_FX_Trans`         | لا يوجد مسار مكتمل مقابل له حاليًا                          |
 
 ## أيهما أفضل من ناحية قاعدة البيانات فقط؟
 

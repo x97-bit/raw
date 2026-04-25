@@ -41,6 +41,7 @@ pnpm db:bootstrap-old-trade-import-db -- --reset
 ```
 
 This creates `alrawi_import` with:
+
 - full schema
 - performance indexes
 - minimal base records only: `admin`, `ports`, `account_types`, `users`

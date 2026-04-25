@@ -9,7 +9,12 @@ export function mapShipmentPaymentStatus(row: any) {
   const amountIqd = Number(row.amount_iqd) || 0;
   const paidUsd = Number(row.paid_usd) || 0;
   const paidIqd = Number(row.paid_iqd) || 0;
-  const { status, remainingUsd, remainingIqd } = getPaymentStatus(amountUsd, amountIqd, paidUsd, paidIqd);
+  const { status, remainingUsd, remainingIqd } = getPaymentStatus(
+    amountUsd,
+    amountIqd,
+    paidUsd,
+    paidIqd
+  );
 
   return {
     ...row,

@@ -1,10 +1,10 @@
 export default function PortIconBadge({
   lines = [],
-  accent = '#648ea9',
-  background = 'rgba(255,255,255,0.06)',
+  accent = "#648ea9",
+  background = "rgba(255,255,255,0.06)",
   textColor,
   borderColor,
-  className = '',
+  className = "",
 }) {
   if (!Array.isArray(lines) || lines.length === 0) return null;
 
@@ -19,8 +19,10 @@ export default function PortIconBadge({
       }}
     >
       <span className="max-w-full whitespace-nowrap leading-none">
-        {lines.map((line) => (
-          <span key={line} className="block">{line}</span>
+        {lines.map(line => (
+          <span key={line} className="block">
+            {line}
+          </span>
         ))}
       </span>
     </span>

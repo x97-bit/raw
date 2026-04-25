@@ -1,1 +1,1 @@
-export { default } from '../features/debts/DebtsPageContent';
+export { default } from "../features/debts/DebtsPageContent";

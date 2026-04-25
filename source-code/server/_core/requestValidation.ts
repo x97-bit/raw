@@ -10,7 +10,11 @@ export class RequestValidationError extends Error {
   }
 }
 
-export function validateInput<T>(schema: ZodType<T>, payload: unknown, message: string): T {
+export function validateInput<T>(
+  schema: ZodType<T>,
+  payload: unknown,
+  message: string
+): T {
   const result = schema.safeParse(payload);
   if (!result.success) {
     throw new RequestValidationError(message, z.treeifyError(result.error));
@@ -18,7 +22,10 @@ export function validateInput<T>(schema: ZodType<T>, payload: unknown, message: 
   return result.data;
 }
 
-export function assertPositiveIntegerParam(value: unknown, label: string): number {
+export function assertPositiveIntegerParam(
+  value: unknown,
+  label: string
+): number {
   const parsed = Number.parseInt(String(value ?? ""), 10);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new RequestValidationError(`${label} غير صالح`);

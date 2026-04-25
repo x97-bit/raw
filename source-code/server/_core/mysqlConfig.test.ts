@@ -3,7 +3,9 @@ import { buildMySqlConnectionOptions } from "./mysqlConfig";
 
 describe("buildMySqlConnectionOptions", () => {
   it("parses the database URL and forces DATE columns to remain strings", () => {
-    const config = buildMySqlConnectionOptions("mysql://root:pass@localhost:3307/alrawi_db");
+    const config = buildMySqlConnectionOptions(
+      "mysql://root:pass@localhost:3307/alrawi_db"
+    );
 
     expect(config.host).toBe("localhost");
     expect(config.port).toBe(3307);
@@ -16,7 +18,7 @@ describe("buildMySqlConnectionOptions", () => {
 
   it("throws when the URL has no database name", () => {
     expect(() => buildMySqlConnectionOptions("mysql://root@localhost")).toThrow(
-      "DATABASE_URL is missing the database name.",
+      "DATABASE_URL is missing the database name."
     );
   });
 });

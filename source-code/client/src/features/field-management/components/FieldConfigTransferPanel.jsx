@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Copy, Download, Upload } from 'lucide-react';
+import { ArrowLeftRight, Copy, Download, Upload } from "lucide-react";
 
 export default function FieldConfigTransferPanel({
   show,
@@ -20,12 +20,12 @@ export default function FieldConfigTransferPanel({
           onClick={onToggle}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
             show
-              ? 'bg-[#d6b36b]/[0.16] text-[#f6e7c2] border-[#d6b36b]/[0.22]'
-              : 'bg-white/[0.06] text-[#dce8f2] border-white/[0.04] hover:bg-white/[0.1]'
+              ? "bg-[#d6b36b]/[0.16] text-[#f6e7c2] border-[#d6b36b]/[0.22]"
+              : "bg-white/[0.06] text-[#dce8f2] border-white/[0.04] hover:bg-white/[0.1]"
           }`}
         >
           <ArrowLeftRight size={16} />
-          {'نسخ / استيراد الإعدادات'}
+          {"نسخ / استيراد الإعدادات"}
         </button>
       </div>
 
@@ -34,7 +34,7 @@ export default function FieldConfigTransferPanel({
           <div className="px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
             <h3 className="font-bold text-[#eef3f7] flex items-center gap-2">
               <ArrowLeftRight size={16} className="text-[#dce8f2]" />
-              {'نسخ / استيراد إعدادات الحقول'}
+              {"نسخ / استيراد إعدادات الحقول"}
             </h3>
           </div>
 
@@ -43,9 +43,9 @@ export default function FieldConfigTransferPanel({
               <div className="flex items-center gap-2 text-sm font-medium text-[#eef3f7]">
                 <Copy size={14} className="text-[#7bd3eb]" />
                 <span>
-                  {'نسخ إعدادات '}
+                  {"نسخ إعدادات "}
                   <strong>{currentConfigLabel}</strong>
-                  {' إلى أقسام أخرى:'}
+                  {" إلى أقسام أخرى:"}
                 </span>
               </div>
 
@@ -55,18 +55,18 @@ export default function FieldConfigTransferPanel({
                   className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.06] text-[#c8d4df] hover:bg-white/[0.1] transition-all"
                 >
                   {targetSections.length === compatibleTargetSections.length
-                    ? 'إلغاء الكل'
-                    : 'تحديد الكل'}
+                    ? "إلغاء الكل"
+                    : "تحديد الكل"}
                 </button>
 
-                {compatibleTargetSections.map((section) => (
+                {compatibleTargetSections.map(section => (
                   <button
                     key={section.key}
                     onClick={() => onToggleTargetSection(section.key)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       targetSections.includes(section.key)
-                        ? 'bg-[#15467c] text-white'
-                        : 'bg-white/[0.04] text-[#91a0ad] hover:bg-white/[0.08]'
+                        ? "bg-[#15467c] text-white"
+                        : "bg-white/[0.04] text-[#91a0ad] hover:bg-white/[0.08]"
                     }`}
                   >
                     {section.label}
@@ -81,14 +81,14 @@ export default function FieldConfigTransferPanel({
               >
                 <Download size={16} />
                 {saving
-                  ? 'جارٍ النسخ...'
+                  ? "جارٍ النسخ..."
                   : `نسخ الإعدادات إلى ${targetSections.length} أقسام`}
               </button>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex-1 border-t border-white/[0.06]" />
-              <span className="text-xs text-[#91a0ad] font-medium">{'أو'}</span>
+              <span className="text-xs text-[#91a0ad] font-medium">{"أو"}</span>
               <div className="flex-1 border-t border-white/[0.06]" />
             </div>
 
@@ -96,18 +96,22 @@ export default function FieldConfigTransferPanel({
               <div className="flex items-center gap-2 text-sm font-medium text-[#eef3f7]">
                 <Upload size={14} className="text-[#8eb8ad]" />
                 <span>
-                  {'استيراد إعدادات من قسم آخر إلى '}
+                  {"استيراد إعدادات من قسم آخر إلى "}
                   <strong>{currentConfigLabel}</strong>
-                  {':'}
+                  {":"}
                 </span>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {compatibleTargetSections.map((section) => (
+                {compatibleTargetSections.map(section => (
                   <button
                     key={section.key}
                     onClick={() => {
-                      if (confirm(`هل تريد استيراد إعدادات "${section.label} - ${currentTargetLabel}" إلى "${currentConfigLabel}"؟ سيتم استبدال الإعدادات الحالية.`)) {
+                      if (
+                        confirm(
+                          `هل تريد استيراد إعدادات "${section.label} - ${currentTargetLabel}" إلى "${currentConfigLabel}"؟ سيتم استبدال الإعدادات الحالية.`
+                        )
+                      ) {
                         onImportFromSection(section.key);
                       }
                     }}

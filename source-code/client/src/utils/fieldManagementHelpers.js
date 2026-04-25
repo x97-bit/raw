@@ -1,16 +1,16 @@
-const EMPTY_FORMULA_FIELD_LABEL = '(اختر حقل)';
+const EMPTY_FORMULA_FIELD_LABEL = "(اختر حقل)";
 
 export function createFormulaParts() {
-  return [{ type: 'field', value: '' }];
+  return [{ type: "field", value: "" }];
 }
 
 export function createInitialCustomFieldForm(defaultTarget) {
   return {
-    label: '',
-    fieldType: 'text',
-    options: '',
-    defaultValue: '',
-    placement: 'transaction',
+    label: "",
+    fieldType: "text",
+    options: "",
+    defaultValue: "",
+    placement: "transaction",
     targets: defaultTarget ? [defaultTarget] : [],
     sections: [],
     formulaParts: createFormulaParts(),
@@ -20,8 +20,8 @@ export function createInitialCustomFieldForm(defaultTarget) {
 export function appendFormulaPart(parts) {
   return [
     ...parts,
-    { type: 'operator', value: '+' },
-    { type: 'field', value: '' },
+    { type: "operator", value: "+" },
+    { type: "field", value: "" },
   ];
 }
 
@@ -49,14 +49,14 @@ export function updateFormulaPart(parts, index, value) {
 }
 
 export function hasRequiredFormulaFields(parts) {
-  const fieldParts = parts.filter((part) => part.type === 'field');
-  return fieldParts.length >= 2 && fieldParts.every((part) => part.value);
+  const fieldParts = parts.filter(part => part.type === "field");
+  return fieldParts.length >= 2 && fieldParts.every(part => part.value);
 }
 
 export function parseCustomFieldOptions(optionsText) {
   return optionsText
-    .split(',')
-    .map((option) => option.trim())
+    .split(",")
+    .map(option => option.trim())
     .filter(Boolean);
 }
 
@@ -69,11 +69,11 @@ export function collectNumericFormulaFields({
 }) {
   const fieldsMap = new Map();
 
-  sectionKeys.forEach((sectionKey) => {
-    targetKeys.forEach((targetKey) => {
+  sectionKeys.forEach(sectionKey => {
+    targetKeys.forEach(targetKey => {
       getSectionFieldsForTarget(sectionKey, targetKey)
-        .filter((field) => ['number', 'money'].includes(field.type))
-        .forEach((field) => {
+        .filter(field => ["number", "money"].includes(field.type))
+        .forEach(field => {
           if (!fieldsMap.has(field.key)) {
             fieldsMap.set(field.key, field);
           }
@@ -81,11 +81,11 @@ export function collectNumericFormulaFields({
     });
   });
 
-  targetKeys.forEach((targetKey) => {
+  targetKeys.forEach(targetKey => {
     getCustomFieldsForSections(sectionKeys, targetKey)
-      .filter((field) => ['number', 'money'].includes(field.fieldType))
-      .filter((field) => field.id !== excludeCustomFieldId)
-      .forEach((field) => {
+      .filter(field => ["number", "money"].includes(field.fieldType))
+      .filter(field => field.id !== excludeCustomFieldId)
+      .forEach(field => {
         if (!fieldsMap.has(field.fieldKey)) {
           fieldsMap.set(field.fieldKey, {
             key: field.fieldKey,
@@ -102,16 +102,16 @@ export function collectNumericFormulaFields({
 
 export function buildFormulaPreview(parts, availableFields, operators) {
   return parts
-    .map((part) => {
-      if (part.type === 'operator') {
-        const operator = operators.find((item) => item.value === part.value);
+    .map(part => {
+      if (part.type === "operator") {
+        const operator = operators.find(item => item.value === part.value);
         return ` ${operator?.label || part.value} `;
       }
 
-      const field = availableFields.find((item) => item.key === part.value);
+      const field = availableFields.find(item => item.key === part.value);
       return field ? field.label : EMPTY_FORMULA_FIELD_LABEL;
     })
-    .join('');
+    .join("");
 }
 
 export function reorderFieldConfigs(fieldConfigs, fromIndex, toIndex) {
@@ -140,6 +140,6 @@ export function buildFieldConfigPayload(fieldConfigs) {
     fieldKey: field.key,
     visible: field.visible,
     sortOrder: index + 1,
-    displayLabel: field.displayLabel || '',
+    displayLabel: field.displayLabel || "",
   }));
 }

@@ -1,33 +1,41 @@
-import mysql2 from 'mysql2/promise';
-import dotenv from 'dotenv';
-import XLSX from 'xlsx';
-import fs from 'fs';
-import path from 'path';
-import { buildMySqlConnectionOptions } from '../../shared/scriptMysqlConfig.mjs';
+import mysql2 from "mysql2/promise";
+import dotenv from "dotenv";
+import XLSX from "xlsx";
+import fs from "fs";
+import path from "path";
+import { buildMySqlConnectionOptions } from "../../shared/scriptMysqlConfig.mjs";
 
 dotenv.config();
 
-const UPLOAD_DIR = '/home/ubuntu/upload';
+const UPLOAD_DIR = "/home/ubuntu/upload";
 
 // Excel file → trader name mapping (must match MySQL account names)
 const EXCEL_FILES = [
-  { file: 'ابوحسنبعقوبة.xlsx', trader: 'أبو حسن بعقوبة', type: 'usd' },
-  { file: 'ابوعلي.xlsx', trader: 'أبو علي', type: 'usd' },
-  { file: 'ابوفاروق.xlsx', trader: 'أبو فاروق', type: 'usd' },
-  { file: 'ابومشعان.xlsx', trader: 'أبو مشعان', type: 'usd' },
-  { file: 'جاسمجراد.xlsx', trader: 'جاسم جراد', type: 'usd' },
-  { file: 'حسنتاجالدين.xlsx', trader: 'حسن شركة تاج الدين', type: 'usd' },
-  { file: 'حيدرشركةتاجالدين.xlsx', trader: 'حيدر شركة تاج الدين', type: 'usd' },
-  { file: 'سجادابوزيد.xlsx', trader: 'سجاد أبو زيد', type: 'usd' },
-  { file: 'سجادابوزيددينار.xlsx', trader: 'سجاد أبو زيد', type: 'iqd' },
-  { file: 'سعدشركةبلقيس.xlsx', trader: 'سعد شركة بلقيس', type: 'usd' },
-  { file: 'طارقعمران.xlsx', trader: 'طارق عمران', type: 'usd' },
+  { file: "ابوحسنبعقوبة.xlsx", trader: "أبو حسن بعقوبة", type: "usd" },
+  { file: "ابوعلي.xlsx", trader: "أبو علي", type: "usd" },
+  { file: "ابوفاروق.xlsx", trader: "أبو فاروق", type: "usd" },
+  { file: "ابومشعان.xlsx", trader: "أبو مشعان", type: "usd" },
+  { file: "جاسمجراد.xlsx", trader: "جاسم جراد", type: "usd" },
+  { file: "حسنتاجالدين.xlsx", trader: "حسن شركة تاج الدين", type: "usd" },
+  { file: "حيدرشركةتاجالدين.xlsx", trader: "حيدر شركة تاج الدين", type: "usd" },
+  { file: "سجادابوزيد.xlsx", trader: "سجاد أبو زيد", type: "usd" },
+  { file: "سجادابوزيددينار.xlsx", trader: "سجاد أبو زيد", type: "iqd" },
+  { file: "سعدشركةبلقيس.xlsx", trader: "سعد شركة بلقيس", type: "usd" },
+  { file: "طارقعمران.xlsx", trader: "طارق عمران", type: "usd" },
   // عمرالدليميجديد is the newer/complete version, use it instead of عمرالدليمي
-  { file: 'عمرالدليميجديد.xlsx', trader: 'عمر الدليمي', type: 'usd' },
-  { file: 'مرتضىابوجعفرالنجف.xlsx', trader: 'مرتضى أبو جعفر النجف', type: 'usd' },
-  { file: 'نصرت.xlsx', trader: 'نصرت', type: 'usd' },
-  { file: 'هيثمالراويابواية.xlsx', trader: 'هيثم الراوي  أبو اية', type: 'usd' },
-  { file: 'واثقجاسم.xlsx', trader: 'واثق جاسم', type: 'usd' },
+  { file: "عمرالدليميجديد.xlsx", trader: "عمر الدليمي", type: "usd" },
+  {
+    file: "مرتضىابوجعفرالنجف.xlsx",
+    trader: "مرتضى أبو جعفر النجف",
+    type: "usd",
+  },
+  { file: "نصرت.xlsx", trader: "نصرت", type: "usd" },
+  {
+    file: "هيثمالراويابواية.xlsx",
+    trader: "هيثم الراوي  أبو اية",
+    type: "usd",
+  },
+  { file: "واثقجاسم.xlsx", trader: "واثق جاسم", type: "usd" },
 ];
 
 // Column mapping per file type
@@ -40,7 +48,7 @@ function parseExcelDate(val) {
   const s = String(val).trim();
   // Format: 2025/12/02 or 2025-12-02
   const m = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
   // Excel serial number
   if (!isNaN(val) && Number(val) > 40000) {
     const d = new Date((Number(val) - 25569) * 86400000);
@@ -50,25 +58,25 @@ function parseExcelDate(val) {
 }
 
 function parseNum(val) {
-  if (val === null || val === undefined || val === '') return null;
-  const n = Number(String(val).replace(/,/g, '').trim());
+  if (val === null || val === undefined || val === "") return null;
+  const n = Number(String(val).replace(/,/g, "").trim());
   return isNaN(n) ? null : n;
 }
 
 function parseStr(val) {
   if (val === null || val === undefined) return null;
   const s = String(val).trim();
-  return s === '' ? null : s;
+  return s === "" ? null : s;
 }
 
 function getHeaderMap(ws) {
   // Headers are in row 3
   const headers = {};
-  const range = XLSX.utils.decode_range(ws['!ref']);
+  const range = XLSX.utils.decode_range(ws["!ref"]);
   for (let c = range.s.c; c <= range.e.c; c++) {
     const cell = ws[XLSX.utils.encode_cell({ r: 2, c })]; // row 3 = index 2
     if (cell && cell.v) {
-      const h = String(cell.v).trim().replace(/\s+/g, ' ');
+      const h = String(cell.v).trim().replace(/\s+/g, " ");
       headers[h] = c;
     }
   }
@@ -82,11 +90,11 @@ function getCellVal(ws, r, c) {
 
 function extractTransactions(filePath, fileType) {
   const wb = XLSX.readFile(filePath);
-  const ws = wb.Sheets['A'];
+  const ws = wb.Sheets["A"];
   if (!ws) return [];
 
   const headers = getHeaderMap(ws);
-  const range = XLSX.utils.decode_range(ws['!ref']);
+  const range = XLSX.utils.decode_range(ws["!ref"]);
   const transactions = [];
 
   // Find column indices by header name (flexible matching)
@@ -99,34 +107,37 @@ function extractTransactions(filePath, fileType) {
     return -1;
   };
 
-  const colSeq = findCol('ت');
-  const colDriver = findCol('اسم السائق');
-  const colCar = findCol('رقم السيارة');
-  const colGoods = findCol('نوع البضاعة');
-  const colDate = findCol('التاريخ');
-  const colWeight = findCol('الوزن');
-  const colMeters = findCol('امتار', 'الامتار');
-  const colType = findCol('نوع الحركة');
-  const colNotes = findCol('الملاحظات');
-  const colTransSA = findCol('نقل (سعودية', 'نقل (سعودية )');
-  const colTransIQ = findCol('نقل ( عراقية', 'نقل ( عراقية )');
-  const colGov = findCol('المحافظة');
+  const colSeq = findCol("ت");
+  const colDriver = findCol("اسم السائق");
+  const colCar = findCol("رقم السيارة");
+  const colGoods = findCol("نوع البضاعة");
+  const colDate = findCol("التاريخ");
+  const colWeight = findCol("الوزن");
+  const colMeters = findCol("امتار", "الامتار");
+  const colType = findCol("نوع الحركة");
+  const colNotes = findCol("الملاحظات");
+  const colTransSA = findCol("نقل (سعودية", "نقل (سعودية )");
+  const colTransIQ = findCol("نقل ( عراقية", "نقل ( عراقية )");
+  const colGov = findCol("المحافظة");
 
-  let colCostUSD = -1, colAmountUSD = -1, colCostIQD = -1, colAmountIQD = -1;
+  let colCostUSD = -1,
+    colAmountUSD = -1,
+    colCostIQD = -1,
+    colAmountIQD = -1;
 
-  if (fileType === 'iqd') {
+  if (fileType === "iqd") {
     // IQD file: الكلفة دينار, المبلغ دينار
-    colCostIQD = findCol('الكلفة دينار');
-    colAmountIQD = findCol('المبلغ دينار');
+    colCostIQD = findCol("الكلفة دينار");
+    colAmountIQD = findCol("المبلغ دينار");
     // May also have المبلغ$ for USD
-    colAmountUSD = findCol('المبلغ$');
+    colAmountUSD = findCol("المبلغ$");
   } else {
     // USD file: الكلفة$, المبلغ$
-    colCostUSD = findCol('الكلفة$', 'الكلفة');
-    colAmountUSD = findCol('المبلغ$', 'المبلغ');
+    colCostUSD = findCol("الكلفة$", "الكلفة");
+    colAmountUSD = findCol("المبلغ$", "المبلغ");
     // Some files also have دينار columns
-    colCostIQD = findCol('كلفة الدينار', 'الكلفة دينار');
-    colAmountIQD = findCol('مبلغ الدينار', 'المبلغ الدينار', 'المبلغ دينار');
+    colCostIQD = findCol("كلفة الدينار", "الكلفة دينار");
+    colAmountIQD = findCol("مبلغ الدينار", "المبلغ الدينار", "المبلغ دينار");
   }
 
   // Data starts at row 4 (index 3)
@@ -138,27 +149,42 @@ function extractTransactions(filePath, fileType) {
     const date = parseExcelDate(getCellVal(ws, r, colDate));
     const weight = parseNum(getCellVal(ws, r, colWeight));
     const meters = parseNum(getCellVal(ws, r, colMeters));
-    const costUsd = colCostUSD >= 0 ? parseNum(getCellVal(ws, r, colCostUSD)) : null;
-    const amountUsd = colAmountUSD >= 0 ? parseNum(getCellVal(ws, r, colAmountUSD)) : null;
-    const costIqd = colCostIQD >= 0 ? parseNum(getCellVal(ws, r, colCostIQD)) : null;
-    const amountIqd = colAmountIQD >= 0 ? parseNum(getCellVal(ws, r, colAmountIQD)) : null;
+    const costUsd =
+      colCostUSD >= 0 ? parseNum(getCellVal(ws, r, colCostUSD)) : null;
+    const amountUsd =
+      colAmountUSD >= 0 ? parseNum(getCellVal(ws, r, colAmountUSD)) : null;
+    const costIqd =
+      colCostIQD >= 0 ? parseNum(getCellVal(ws, r, colCostIQD)) : null;
+    const amountIqd =
+      colAmountIQD >= 0 ? parseNum(getCellVal(ws, r, colAmountIQD)) : null;
     const transType = parseStr(getCellVal(ws, r, colType));
     const notes = parseStr(getCellVal(ws, r, colNotes));
-    const transSA = colTransSA >= 0 ? parseNum(getCellVal(ws, r, colTransSA)) : null;
-    const transIQ = colTransIQ >= 0 ? parseNum(getCellVal(ws, r, colTransIQ)) : null;
+    const transSA =
+      colTransSA >= 0 ? parseNum(getCellVal(ws, r, colTransSA)) : null;
+    const transIQ =
+      colTransIQ >= 0 ? parseNum(getCellVal(ws, r, colTransIQ)) : null;
     const gov = colGov >= 0 ? parseStr(getCellVal(ws, r, colGov)) : null;
 
     // Skip empty rows - must have at least an amount or a note
-    const hasAmount = (amountUsd && amountUsd !== 0) || (amountIqd && amountIqd !== 0) || 
-                      (costUsd && costUsd !== 0) || (costIqd && costIqd !== 0);
+    const hasAmount =
+      (amountUsd && amountUsd !== 0) ||
+      (amountIqd && amountIqd !== 0) ||
+      (costUsd && costUsd !== 0) ||
+      (costIqd && costIqd !== 0);
     const hasNote = notes && notes.length > 0;
     if (!hasAmount && !hasNote && !transType) continue;
 
     // Determine record_type from نوع الحركة
-    let recordType = 'فاتورة';
+    let recordType = "فاتورة";
     if (transType) {
       const t = transType.trim();
-      if (t === 'فاتورة' || t === 'تسديد' || t === 'طلب سابق' || t === 'صرف' || t === 'استلام') {
+      if (
+        t === "فاتورة" ||
+        t === "تسديد" ||
+        t === "طلب سابق" ||
+        t === "صرف" ||
+        t === "استلام"
+      ) {
         recordType = t;
       } else {
         recordType = t;
@@ -166,17 +192,29 @@ function extractTransactions(filePath, fileType) {
     }
 
     // Determine direction
-    let direction = 'in';
-    if (recordType === 'تسديد' || recordType === 'صرف') {
-      direction = 'out';
+    let direction = "in";
+    if (recordType === "تسديد" || recordType === "صرف") {
+      direction = "out";
     }
 
     transactions.push({
-      driver, car, goods, date, weight, meters,
-      costUsd, amountUsd, costIqd, amountIqd,
-      recordType, direction, notes,
-      transSA, transIQ, gov,
-      fileType
+      driver,
+      car,
+      goods,
+      date,
+      weight,
+      meters,
+      costUsd,
+      amountUsd,
+      costIqd,
+      amountIqd,
+      recordType,
+      direction,
+      notes,
+      transSA,
+      transIQ,
+      gov,
+      fileType,
     });
   }
 
@@ -184,12 +222,16 @@ function extractTransactions(filePath, fileType) {
 }
 
 async function main() {
-  const conn = await mysql2.createConnection(buildMySqlConnectionOptions(process.env.DATABASE_URL));
-  
-  console.log('=== استيراد البيانات من ملفات Excel ===\n');
+  const conn = await mysql2.createConnection(
+    buildMySqlConnectionOptions(process.env.DATABASE_URL)
+  );
+
+  console.log("=== استيراد البيانات من ملفات Excel ===\n");
 
   // Load existing accounts
-  const [accounts] = await conn.query("SELECT id, name FROM accounts WHERE portId = 'port-1'");
+  const [accounts] = await conn.query(
+    "SELECT id, name FROM accounts WHERE portId = 'port-1'"
+  );
   const accountMap = {};
   for (const a of accounts) {
     accountMap[a.name] = a.id;
@@ -206,7 +248,7 @@ async function main() {
   // Key: accountId|date|amountUsd|amountIqd|recordType
   const existingFingerprints = new Set();
   for (const t of existingTrans) {
-    const fp = `${t.account_id}|${t.trans_date}|${Number(t.amount_usd)||0}|${Number(t.amount_iqd)||0}|${t.record_type}`;
+    const fp = `${t.account_id}|${t.trans_date}|${Number(t.amount_usd) || 0}|${Number(t.amount_iqd) || 0}|${t.record_type}`;
     existingFingerprints.add(fp);
   }
 
@@ -228,7 +270,9 @@ async function main() {
   for (const g of govs) govMap[g.name] = g.id;
 
   // Get max ref_no
-  const [maxRef] = await conn.query("SELECT MAX(CAST(SUBSTRING(ref_no, 5) AS UNSIGNED)) as maxNum FROM transactions WHERE ref_no LIKE 'KSA-%'");
+  const [maxRef] = await conn.query(
+    "SELECT MAX(CAST(SUBSTRING(ref_no, 5) AS UNSIGNED)) as maxNum FROM transactions WHERE ref_no LIKE 'KSA-%'"
+  );
   let refCounter = (maxRef[0].maxNum || 0) + 1;
 
   let totalImported = 0;
@@ -270,7 +314,10 @@ async function main() {
         if (driverMap[t.driver]) {
           driverId = driverMap[t.driver];
         } else {
-          const [res] = await conn.query("INSERT INTO drivers (name) VALUES (?)", [t.driver]);
+          const [res] = await conn.query(
+            "INSERT INTO drivers (name) VALUES (?)",
+            [t.driver]
+          );
           driverId = res.insertId;
           driverMap[t.driver] = driverId;
         }
@@ -282,7 +329,10 @@ async function main() {
         if (vehicleMap[t.car]) {
           vehicleId = vehicleMap[t.car];
         } else {
-          const [res] = await conn.query("INSERT INTO vehicles (plateNumber) VALUES (?)", [t.car]);
+          const [res] = await conn.query(
+            "INSERT INTO vehicles (plateNumber) VALUES (?)",
+            [t.car]
+          );
           vehicleId = res.insertId;
           vehicleMap[t.car] = vehicleId;
         }
@@ -294,7 +344,10 @@ async function main() {
         if (goodsMap[t.goods]) {
           goodsId = goodsMap[t.goods];
         } else {
-          const [res] = await conn.query("INSERT INTO goods_types (name) VALUES (?)", [t.goods]);
+          const [res] = await conn.query(
+            "INSERT INTO goods_types (name) VALUES (?)",
+            [t.goods]
+          );
           goodsId = res.insertId;
           goodsMap[t.goods] = goodsId;
         }
@@ -317,11 +370,11 @@ async function main() {
         }
       }
 
-      const refNo = `KSA-${String(refCounter++).padStart(4, '0')}`;
-      const transDate = t.date || '2025-01-01';
+      const refNo = `KSA-${String(refCounter++).padStart(4, "0")}`;
+      const transDate = t.date || "2025-01-01";
 
       // Determine currency
-      const currency = (t.fileType === 'iqd' && !t.amountUsd) ? 'IQD' : 'USD';
+      const currency = t.fileType === "iqd" && !t.amountUsd ? "IQD" : "USD";
 
       // fee_usd = transport Saudi
       const feeUsd = t.transSA || null;
@@ -329,7 +382,26 @@ async function main() {
       await conn.query(
         `INSERT INTO transactions (ref_no, direction, trans_date, account_id, currency, driver_id, vehicle_id, good_type_id, weight, meters, cost_usd, amount_usd, cost_iqd, amount_iqd, fee_usd, gov_id, notes, record_type, port_id, account_type, created_by)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'port-1', 'تاجر', 1)`,
-        [refNo, t.direction, transDate, accountId, currency, driverId, vehicleId, goodsId, t.weight, t.meters, t.costUsd, t.amountUsd, t.costIqd, t.amountIqd, feeUsd, govId, t.notes, t.recordType]
+        [
+          refNo,
+          t.direction,
+          transDate,
+          accountId,
+          currency,
+          driverId,
+          vehicleId,
+          goodsId,
+          t.weight,
+          t.meters,
+          t.costUsd,
+          t.amountUsd,
+          t.costIqd,
+          t.amountIqd,
+          feeUsd,
+          govId,
+          t.notes,
+          t.recordType,
+        ]
       );
 
       // Add to fingerprints to prevent duplicates within same import
@@ -341,17 +413,25 @@ async function main() {
     totalSkipped += skipped;
     totalDuplicate += duplicate;
 
-    const icon = imported > 0 ? '✅' : (duplicate > 0 ? '🔄' : '⚠️');
-    console.log(`${icon} ${file} → ${trader}: ${transactions.length} إجمالي, ${imported} جديد, ${duplicate} مكرر`);
+    const icon = imported > 0 ? "✅" : duplicate > 0 ? "🔄" : "⚠️";
+    console.log(
+      `${icon} ${file} → ${trader}: ${transactions.length} إجمالي, ${imported} جديد, ${duplicate} مكرر`
+    );
   }
 
   // Final counts
-  const [finalCount] = await conn.query("SELECT COUNT(*) as cnt FROM transactions WHERE port_id = 'port-1'");
+  const [finalCount] = await conn.query(
+    "SELECT COUNT(*) as cnt FROM transactions WHERE port_id = 'port-1'"
+  );
   const [driverCount] = await conn.query("SELECT COUNT(*) as cnt FROM drivers");
-  const [vehicleCount] = await conn.query("SELECT COUNT(*) as cnt FROM vehicles");
-  const [goodsCount] = await conn.query("SELECT COUNT(*) as cnt FROM goods_types");
+  const [vehicleCount] = await conn.query(
+    "SELECT COUNT(*) as cnt FROM vehicles"
+  );
+  const [goodsCount] = await conn.query(
+    "SELECT COUNT(*) as cnt FROM goods_types"
+  );
 
-  console.log(`\n${'='.repeat(60)}`);
+  console.log(`\n${"=".repeat(60)}`);
   console.log(`  ملخص الاستيراد:`);
   console.log(`  معاملات جديدة مضافة: ${totalImported}`);
   console.log(`  معاملات مكررة (تم تخطيها): ${totalDuplicate}`);
@@ -359,9 +439,12 @@ async function main() {
   console.log(`  إجمالي السائقين: ${driverCount[0].cnt}`);
   console.log(`  إجمالي المركبات: ${vehicleCount[0].cnt}`);
   console.log(`  إجمالي أنواع البضائع: ${goodsCount[0].cnt}`);
-  console.log(`${'='.repeat(60)}`);
+  console.log(`${"=".repeat(60)}`);
 
   await conn.end();
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

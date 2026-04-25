@@ -1,6 +1,7 @@
 # VPS Deployment Guide
 
 This guide assumes:
+
 - Ubuntu or Debian VPS
 - Domain already pointing to the VPS public IP
 - Clean app upload target is `/var/www/alrawi/source-code`
@@ -43,6 +44,7 @@ C:\Users\lenovo\OneDrive\Desktop\v0.05\v0.5\source-code\deploy\vps\package-uploa
 ```
 
 That uploads:
+
 - `/root/alrawi-source-code.zip`
 - `/root/deploy-on-vps.sh`
 
@@ -81,6 +83,7 @@ DATABASE_URL=mysql://username:password@db-host:3306/database_name
 ```
 
 Optional only if you use them:
+
 - `VITE_APP_ID`
 - `OAUTH_SERVER_URL`
 - `OWNER_OPEN_ID`
@@ -130,6 +133,7 @@ sudo systemctl status caddy
 ## 8. Smoke test
 
 After the service is live:
+
 - open `https://your-domain.com`
 - open `https://your-domain.com/healthz`
 - log in as admin
@@ -197,6 +201,7 @@ bash /root/deploy-on-vps.sh
 ```
 
 ## Notes
+
 - Keep one app instance only for now because rate limiting is in-memory
 - Turn on automatic database backups before real usage
 - Keep the `.env` file only on the server, never in git

@@ -6,7 +6,7 @@ function isSecureRequest(req: Request) {
 }
 
 function getBaseCookieOptions(
-  req: Request,
+  req: Request
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
   const secure = isSecureRequest(req);
 
@@ -25,8 +25,11 @@ export function getSessionCookieOptions(
 }
 
 export function getAppRefreshCookieOptions(
-  req: Request,
-): Pick<CookieOptions, "domain" | "httpOnly" | "maxAge" | "path" | "sameSite" | "secure"> {
+  req: Request
+): Pick<
+  CookieOptions,
+  "domain" | "httpOnly" | "maxAge" | "path" | "sameSite" | "secure"
+> {
   return {
     ...getBaseCookieOptions(req),
     maxAge: APP_REFRESH_TOKEN_TTL_MS,

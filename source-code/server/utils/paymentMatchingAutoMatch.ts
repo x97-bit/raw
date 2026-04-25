@@ -1,6 +1,6 @@
 import { inArray, sql } from "drizzle-orm";
 import { paymentMatching } from "../../drizzle/schema";
-import type { AppDb } from "../dbTypes";
+import type { AppDb } from "../db/schema/dbTypes";
 
 const AUTO_MATCH_NOTE = "ربط تلقائي";
 
@@ -55,10 +55,13 @@ function formatAmount(value: number, scale: number) {
 
 export function buildAutoMatchAllocations(
   payments: AutoMatchPaymentRow[],
-  invoices: AutoMatchInvoiceRow[],
+  invoices: AutoMatchInvoiceRow[]
 ): AutoMatchAllocation[] {
   const allocations: AutoMatchAllocation[] = [];
-  const invoiceStateByAccount = new Map<number, { invoices: PendingInvoice[]; startIndex: number }>();
+  const invoiceStateByAccount = new Map<
+    number,
+    { invoices: PendingInvoice[]; startIndex: number }
+  >();
 
   for (const invoice of invoices) {
     const accountId = Number(invoice.account_id);
@@ -66,14 +69,29 @@ export function buildAutoMatchAllocations(
       continue;
     }
 
-    const remainingUsd = Math.max(0, roundAmount(parseAmount(invoice.amount_usd) - parseAmount(invoice.paid_usd), 2));
-    const remainingIqd = Math.max(0, roundAmount(parseAmount(invoice.amount_iqd) - parseAmount(invoice.paid_iqd), 0));
+    const remainingUsd = Math.max(
+      0,
+      roundAmount(
+        parseAmount(invoice.amount_usd) - parseAmount(invoice.paid_usd),
+        2
+      )
+    );
+    const remainingIqd = Math.max(
+      0,
+      roundAmount(
+        parseAmount(invoice.amount_iqd) - parseAmount(invoice.paid_iqd),
+        0
+      )
+    );
 
     if (remainingUsd <= 0 && remainingIqd <= 0) {
       continue;
     }
 
-    const state = invoiceStateByAccount.get(accountId) || { invoices: [], startIndex: 0 };
+    const state = invoiceStateByAccount.get(accountId) || {
+      invoices: [],
+      startIndex: 0,
+    };
     state.invoices.push({
       invoiceId: invoice.invoice_id,
       remainingUsd,
@@ -93,14 +111,30 @@ export function buildAutoMatchAllocations(
       continue;
     }
 
-    let availableUsd = Math.max(0, roundAmount(parseAmount(payment.total_usd) - parseAmount(payment.used_usd), 2));
-    let availableIqd = Math.max(0, roundAmount(parseAmount(payment.total_iqd) - parseAmount(payment.used_iqd), 0));
+    let availableUsd = Math.max(
+      0,
+      roundAmount(
+        parseAmount(payment.total_usd) - parseAmount(payment.used_usd),
+        2
+      )
+    );
+    let availableIqd = Math.max(
+      0,
+      roundAmount(
+        parseAmount(payment.total_iqd) - parseAmount(payment.used_iqd),
+        0
+      )
+    );
 
     if (availableUsd <= 0 && availableIqd <= 0) {
       continue;
     }
 
-    for (let invoiceIndex = state.startIndex; invoiceIndex < state.invoices.length; invoiceIndex += 1) {
+    for (
+      let invoiceIndex = state.startIndex;
+      invoiceIndex < state.invoices.length;
+      invoiceIndex += 1
+    ) {
       const invoice = state.invoices[invoiceIndex];
 
       if (invoice.remainingUsd <= 0 && invoice.remainingIqd <= 0) {
@@ -114,8 +148,14 @@ export function buildAutoMatchAllocations(
       const allocatedIqd = Math.min(availableIqd, invoice.remainingIqd);
 
       if (allocatedUsd > 0 || allocatedIqd > 0) {
-        invoice.remainingUsd = Math.max(0, roundAmount(invoice.remainingUsd - allocatedUsd, 2));
-        invoice.remainingIqd = Math.max(0, roundAmount(invoice.remainingIqd - allocatedIqd, 0));
+        invoice.remainingUsd = Math.max(
+          0,
+          roundAmount(invoice.remainingUsd - allocatedUsd, 2)
+        );
+        invoice.remainingIqd = Math.max(
+          0,
+          roundAmount(invoice.remainingIqd - allocatedIqd, 0)
+        );
         availableUsd = Math.max(0, roundAmount(availableUsd - allocatedUsd, 2));
         availableIqd = Math.max(0, roundAmount(availableIqd - allocatedIqd, 0));
 
@@ -141,20 +181,28 @@ export function buildAutoMatchAllocations(
   return allocations;
 }
 
-export async function rebuildPaymentMatchesForAccounts(db: AppDb, accountIds: number[]) {
-  const normalizedAccountIds = Array.from(new Set(
-    (accountIds || [])
-      .map((accountId) => Number(accountId))
-      .filter((accountId) => Number.isInteger(accountId) && accountId > 0),
-  ));
+export async function rebuildPaymentMatchesForAccounts(
+  db: AppDb,
+  accountIds: number[]
+) {
+  const normalizedAccountIds = Array.from(
+    new Set(
+      (accountIds || [])
+        .map(accountId => Number(accountId))
+        .filter(accountId => Number.isInteger(accountId) && accountId > 0)
+    )
+  );
 
   if (normalizedAccountIds.length === 0) {
     return { matched: 0 };
   }
 
-  const accountIdTokens = sql.join(normalizedAccountIds.map((accountId) => sql`${accountId}`), sql`, `);
+  const accountIdTokens = sql.join(
+    normalizedAccountIds.map(accountId => sql`${accountId}`),
+    sql`, `
+  );
 
-  const payments = await db.execute(sql`
+  const payments = (await db.execute(sql`
     SELECT
       t.id AS payment_id,
       t.account_id,
@@ -166,9 +214,9 @@ export async function rebuildPaymentMatchesForAccounts(db: AppDb, accountIds: nu
     WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
       AND t.account_id IN (${accountIdTokens})
     ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-  `) as unknown as AutoMatchPaymentRow[];
+  `)) as unknown as AutoMatchPaymentRow[];
 
-  const invoices = await db.execute(sql`
+  const invoices = (await db.execute(sql`
     SELECT
       t.id AS invoice_id,
       t.account_id,
@@ -180,24 +228,26 @@ export async function rebuildPaymentMatchesForAccounts(db: AppDb, accountIds: nu
     WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
       AND t.account_id IN (${accountIdTokens})
     ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-  `) as unknown as AutoMatchInvoiceRow[];
+  `)) as unknown as AutoMatchInvoiceRow[];
 
   const allocations = buildAutoMatchAllocations(payments, invoices);
-  const relatedMatches = await db.execute(sql`
+  const relatedMatches = (await db.execute(sql`
     SELECT pm.id
     FROM payment_matching pm
     LEFT JOIN transactions invoice ON invoice.id = pm.invoiceId
     LEFT JOIN transactions payment ON payment.id = pm.paymentId
     WHERE invoice.account_id IN (${accountIdTokens})
        OR payment.account_id IN (${accountIdTokens})
-  `) as unknown as Array<{ id: number }>;
+  `)) as unknown as Array<{ id: number }>;
 
   const relatedMatchIds = relatedMatches
-    .map((row) => Number(row.id))
-    .filter((id) => Number.isInteger(id) && id > 0);
+    .map(row => Number(row.id))
+    .filter(id => Number.isInteger(id) && id > 0);
 
   if (relatedMatchIds.length > 0) {
-    await db.delete(paymentMatching).where(inArray(paymentMatching.id, relatedMatchIds));
+    await db
+      .delete(paymentMatching)
+      .where(inArray(paymentMatching.id, relatedMatchIds));
   }
 
   if (allocations.length > 0) {

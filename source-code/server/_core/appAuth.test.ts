@@ -8,8 +8,10 @@ vi.mock("../db", () => ({
   getDb: getDbMock,
 }));
 vi.mock("./sessionSecret", () => ({
-  getAppAccessTokenSecret: () => new TextEncoder().encode("test-access-secret-that-is-long-enough"),
-  getAppRefreshTokenSecret: () => new TextEncoder().encode("test-refresh-secret-that-is-long-enough"),
+  getAppAccessTokenSecret: () =>
+    new TextEncoder().encode("test-access-secret-that-is-long-enough"),
+  getAppRefreshTokenSecret: () =>
+    new TextEncoder().encode("test-refresh-secret-that-is-long-enough"),
 }));
 
 import {
@@ -101,7 +103,9 @@ describe("authMiddleware", () => {
   });
 
   it("rejects inactive users after token verification", async () => {
-    const req = createRequest(`Bearer ${await signToken({ userId: 7, role: "user" })}`);
+    const req = createRequest(
+      `Bearer ${await signToken({ userId: 7, role: "user" })}`
+    );
     const res = createResponse();
     const next = vi.fn();
 
@@ -115,7 +119,9 @@ describe("authMiddleware", () => {
 
   it("attaches the typed app user for valid tokens", async () => {
     const user = createFakeUser();
-    const req = createRequest(`Bearer ${await signToken({ userId: 7, role: "admin" })}`);
+    const req = createRequest(
+      `Bearer ${await signToken({ userId: 7, role: "admin" })}`
+    );
     const res = createResponse();
     const next = vi.fn();
 

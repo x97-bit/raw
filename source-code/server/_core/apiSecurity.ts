@@ -47,7 +47,9 @@ export function normalizeHostHeader(value?: string | string[]) {
 
   try {
     const parsed = new URL(`http://${normalized}`);
-    const hasUnsafeParts = Boolean(parsed.username || parsed.password || parsed.search || parsed.hash);
+    const hasUnsafeParts = Boolean(
+      parsed.username || parsed.password || parsed.search || parsed.hash
+    );
     const hasUnexpectedPath = parsed.pathname !== "/" && parsed.pathname !== "";
 
     if (hasUnsafeParts || hasUnexpectedPath) {
@@ -67,16 +69,16 @@ function resolveConfiguredAllowedOrigins() {
     process.env.SITE_URL,
     ...(process.env.ALLOWED_ORIGINS || "")
       .split(",")
-      .map((entry) => entry.trim())
+      .map(entry => entry.trim())
       .filter(Boolean),
   ];
 
   return Array.from(
     new Set(
       configuredOrigins
-        .map((value) => normalizeConfiguredOrigin(value))
-        .filter((value): value is string => Boolean(value)),
-    ),
+        .map(value => normalizeConfiguredOrigin(value))
+        .filter((value): value is string => Boolean(value))
+    )
   );
 }
 
@@ -91,7 +93,10 @@ export function isMutatingRequest(req: Pick<Request, "method">) {
 }
 
 export function hasRequestBody(req: Request) {
-  const contentLength = Number.parseInt(String(req.get("content-length") || ""), 10);
+  const contentLength = Number.parseInt(
+    String(req.get("content-length") || ""),
+    10
+  );
   if (Number.isFinite(contentLength)) {
     return contentLength > 0;
   }
@@ -116,7 +121,9 @@ export function isJsonContentType(value?: string | string[]) {
   if (!rawValue) return false;
 
   const mediaType = rawValue.split(";")[0]?.trim().toLowerCase();
-  return mediaType === "application/json" || Boolean(mediaType?.endsWith("+json"));
+  return (
+    mediaType === "application/json" || Boolean(mediaType?.endsWith("+json"))
+  );
 }
 
 export function resolveRequestOrigin(req: Request) {
@@ -127,9 +134,12 @@ export function resolveRequestOrigin(req: Request) {
 
 export function isAllowedMutationOrigin(req: Request) {
   const configuredAllowedOrigins = resolveConfiguredAllowedOrigins();
-  const allowedOrigins = configuredAllowedOrigins.length > 0
-    ? configuredAllowedOrigins
-    : [resolveRequestOrigin(req)].filter((value): value is string => Boolean(value));
+  const allowedOrigins =
+    configuredAllowedOrigins.length > 0
+      ? configuredAllowedOrigins
+      : [resolveRequestOrigin(req)].filter((value): value is string =>
+          Boolean(value)
+        );
 
   if (allowedOrigins.length === 0) {
     return !req.get("origin") && !req.get("referer");
@@ -162,24 +172,43 @@ export const apiSecurityMiddleware: RequestHandler = (req, res, next) => {
   }
 
   if (!isAllowedMutationOrigin(req)) {
-    return res.status(403).json({ error: "Cross-site requests are not allowed." });
+    return res
+      .status(403)
+      .json({ error: "Cross-site requests are not allowed." });
   }
 
-  if (BODY_METHODS.has(req.method.toUpperCase()) && hasRequestBody(req) && !isJsonContentType(req.get("content-type"))) {
-    return res.status(415).json({ error: "Requests with a body must use application/json." });
+  if (
+    BODY_METHODS.has(req.method.toUpperCase()) &&
+    hasRequestBody(req) &&
+    !isJsonContentType(req.get("content-type"))
+  ) {
+    return res
+      .status(415)
+      .json({ error: "Requests with a body must use application/json." });
   }
 
   return mutationRateLimitGuard.middleware(req, res, next);
 };
 
-export const apiBodyParserErrorMiddleware: ErrorRequestHandler = (error, _req, res, next) => {
-  const details = error as { status?: number; type?: string; body?: unknown } | undefined;
+export const apiBodyParserErrorMiddleware: ErrorRequestHandler = (
+  error,
+  _req,
+  res,
+  next
+) => {
+  const details = error as
+    | { status?: number; type?: string; body?: unknown }
+    | undefined;
 
   if (details?.type === "entity.too.large") {
     return res.status(413).json({ error: "Request payload is too large." });
   }
 
-  if (error instanceof SyntaxError && details?.status === 400 && "body" in details) {
+  if (
+    error instanceof SyntaxError &&
+    details?.status === 400 &&
+    "body" in details
+  ) {
     return res.status(400).json({ error: "Malformed JSON payload." });
   }
 

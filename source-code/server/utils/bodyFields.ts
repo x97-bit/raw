@@ -30,5 +30,5 @@ export function pickBodyField(body: BodyRecord, ...keys: string[]) {
 }
 
 export function hasBodyKey(body: BodyRecord, ...keys: string[]) {
-  return keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
+  return keys.some(key => Object.prototype.hasOwnProperty.call(body, key));
 }

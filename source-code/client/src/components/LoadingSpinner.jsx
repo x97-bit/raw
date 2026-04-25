@@ -1,7 +1,7 @@
 export default function LoadingSpinner({
-  label = 'جارٍ التحميل...',
+  label = "جارٍ التحميل...",
   message,
-  className = '',
+  className = "",
   fullScreen = false,
 }) {
   const text = message || label;

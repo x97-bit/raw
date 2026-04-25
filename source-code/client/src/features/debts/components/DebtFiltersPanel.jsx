@@ -1,4 +1,4 @@
-import AutocompleteInput from '../../../components/AutocompleteInput';
+import AutocompleteInput from "../../../components/AutocompleteInput";
 
 export default function DebtFiltersPanel({
   filterText,
@@ -12,7 +12,9 @@ export default function DebtFiltersPanel({
   return (
     <div className="surface-card grid gap-4 p-4 md:grid-cols-4">
       <div className="md:col-span-2">
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">اسم الحساب</label>
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          اسم الحساب
+        </label>
         <AutocompleteInput
           value={filterText}
           options={accountOptions}
@@ -25,20 +27,24 @@ export default function DebtFiltersPanel({
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">من تاريخ</label>
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          من تاريخ
+        </label>
         <input
           type="date"
           value={filters.from}
-          onChange={(event) => onDateChange('from', event.target.value)}
+          onChange={event => onDateChange("from", event.target.value)}
           className="input-field"
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">إلى تاريخ</label>
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          إلى تاريخ
+        </label>
         <input
           type="date"
           value={filters.to}
-          onChange={(event) => onDateChange('to', event.target.value)}
+          onChange={event => onDateChange("to", event.target.value)}
           className="input-field"
         />
       </div>
