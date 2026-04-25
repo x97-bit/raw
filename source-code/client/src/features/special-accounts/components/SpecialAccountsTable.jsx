@@ -1,4 +1,5 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Search } from "lucide-react";
+import { useState } from "react";
 import { isSpecialHaiderSettlementRow } from "../../../utils/specialHaiderMath";
 import {
   getAccountAccentLineStyle,
@@ -21,15 +22,35 @@ export default function SpecialAccountsTable({
   onEdit,
   onDelete,
 }) {
+  const [columnFilters, setColumnFilters] = useState({});
   const surfaceStyle = getAccountCardOutlineStyle(account, "12");
   const accentLineStyle = getAccountAccentLineStyle(account);
   const headerStyle = getAccountTableHeaderStyle(account);
   const editButtonStyle = getAccountEditButtonStyle(account);
   const footerStyle = getAccountTableFooterStyle(account);
+  
   const isDateColumn = column =>
     column?.format === "date" ||
     column?.key === "trans_date" ||
     column?.dataKey === "TransDate";
+
+  const filteredRows = rows.filter(row => {
+    if (row.isDailySummary) return true;
+    for (const [key, value] of Object.entries(columnFilters)) {
+      if (!value) continue;
+      const term = value.toLowerCase();
+      const col = visibleColumns.find(c => c.key === key);
+      if (!col) continue;
+      
+      const rawVal = row[col.dataKey] || "";
+      if (!String(rawVal).toLowerCase().includes(term)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const hasActiveFilters = Object.values(columnFilters).some(Boolean);
 
   return (
     <div
@@ -40,6 +61,18 @@ export default function SpecialAccountsTable({
         className="pointer-events-none absolute inset-x-6 top-0 h-px"
         style={accentLineStyle}
       />
+      
+      {hasActiveFilters && (
+        <div className="flex justify-end p-2 bg-panel-border/10 border-b border-panel-border/30">
+           <button
+             onClick={() => setColumnFilters({})}
+             className="text-xs text-utility-muted hover:text-utility-active transition-colors flex items-center gap-1 px-3 py-1 bg-utility-bg rounded-md"
+           >
+             مسح التصفية
+           </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -47,18 +80,41 @@ export default function SpecialAccountsTable({
               {visibleColumns.map(column => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 font-semibold ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
+                  className={`px-4 py-3 align-top ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
                 >
-                  {column.label}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-semibold">{column.label}</span>
+                    <div className={`flex items-center gap-1.5 rounded px-2 py-1 transition-colors focus-within:bg-utility-bg focus-within:ring-1 focus-within:ring-utility-active ${columnFilters[column.key] ? 'ring-1 ring-utility-active bg-utility-bg' : 'bg-black/10 hover:bg-black/20'}`}>
+                      <Search size={12} className={columnFilters[column.key] ? 'text-utility-active' : 'opacity-50'} />
+                      {isDateColumn(column) ? (
+                        <input
+                          type="date"
+                          value={columnFilters[column.key] || ""}
+                          onChange={e => setColumnFilters(prev => ({ ...prev, [column.key]: e.target.value }))}
+                          className="w-full min-w-[60px] bg-transparent text-[11px] font-normal outline-none cursor-pointer"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={columnFilters[column.key] || ""}
+                          onChange={e => setColumnFilters(prev => ({ ...prev, [column.key]: e.target.value }))}
+                          placeholder="تصفية..."
+                          className="w-full min-w-[60px] bg-transparent text-[11px] font-normal outline-none placeholder:opacity-50"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </th>
               ))}
               {canEdit && (
-                <th className="w-24 px-4 py-3 font-semibold">إجراءات</th>
+                <th className="w-24 px-4 py-3 font-semibold align-top">إجراءات</th>
               )}
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <tr>
                 <td
                   colSpan={(visibleColumns.length || 1) + (canEdit ? 1 : 0)}
@@ -68,7 +124,7 @@ export default function SpecialAccountsTable({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => {
+              filteredRows.map((row, index) => {
                 if (row.isDailySummary) {
                   return (
                     <tr
@@ -151,7 +207,7 @@ export default function SpecialAccountsTable({
               })
             )}
           </tbody>
-          {derivedTotals && rows.length > 0 && (
+          {derivedTotals && filteredRows.length > 0 && (
             <tfoot>
               <tr
                 className="border-t border-white/[0.08] font-bold"

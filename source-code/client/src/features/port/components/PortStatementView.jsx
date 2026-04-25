@@ -35,6 +35,7 @@ export default function PortStatementView({
   portViewLabels,
 }) {
   const [localSearch, setLocalSearch] = useState("");
+  const [columnFilters, setColumnFilters] = useState({});
   const labels = portViewLabels || {};
   const statementTitle = `${labels.statementTitlePrefix || "كشف حساب"} - ${statement.account.AccountName}`;
 
@@ -111,6 +112,17 @@ export default function PortStatementView({
                 placeholder="تصفية حسب التاجر أو الملاحظات..."
                 className="input-field pr-10"
               />
+              {(localSearch || Object.values(columnFilters).some(Boolean)) && (
+                <button
+                  onClick={() => {
+                    setLocalSearch("");
+                    setColumnFilters({});
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
+                >
+                  مسح
+                </button>
+              )}
             </div>
             <div className="text-sm font-medium text-utility-muted ml-2">
               تصفية الكشف
@@ -123,9 +135,54 @@ export default function PortStatementView({
                   {activeStatementColumns.map(column => (
                     <th
                       key={column.key}
-                      className="whitespace-nowrap px-3 py-3 text-panel-text"
+                      className="whitespace-nowrap px-3 py-3 text-panel-text align-top"
                     >
-                      {column.label}
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[13px] font-semibold text-panel-text">{column.label}</span>
+                        <div className={`flex items-center gap-1.5 rounded px-2 py-1 transition-colors focus-within:bg-utility-bg focus-within:ring-1 focus-within:ring-utility-active ${columnFilters[column.key] ? 'ring-1 ring-utility-active bg-utility-bg' : 'bg-panel-border/30 hover:bg-panel-border/50'}`}>
+                          <Search size={12} className={columnFilters[column.key] ? 'text-utility-active' : 'text-utility-muted'} />
+                          {column.key.toLowerCase() === "currency" || column.key === "TransTypeName" ? (
+                            <select
+                              value={columnFilters[column.key] || ""}
+                              onChange={e => setColumnFilters(prev => ({ ...prev, [column.key]: e.target.value }))}
+                              className="w-full min-w-[60px] bg-transparent text-[11px] font-normal text-panel-text outline-none cursor-pointer appearance-auto"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <option value="">الكل</option>
+                              {column.key.toLowerCase() === "currency" ? (
+                                <>
+                                  <option value="دولار">دولار</option>
+                                  <option value="دينار">دينار</option>
+                                  <option value="دولار ودينار">دولار ودينار</option>
+                                </>
+                              ) : (
+                                <>
+                                  <option value="قبض">سند قبض</option>
+                                  <option value="فاتورة">فاتورة</option>
+                                  <option value="إضافة">سند إضافة</option>
+                                </>
+                              )}
+                            </select>
+                          ) : column.key.toLowerCase() === "trans_date" || column.key === "TransDate" ? (
+                            <input
+                              type="date"
+                              value={columnFilters[column.key] || ""}
+                              onChange={e => setColumnFilters(prev => ({ ...prev, [column.key]: e.target.value }))}
+                              className="w-full min-w-[60px] bg-transparent text-[11px] font-normal text-panel-text outline-none cursor-pointer"
+                              onClick={e => e.stopPropagation()}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={columnFilters[column.key] || ""}
+                              onChange={e => setColumnFilters(prev => ({ ...prev, [column.key]: e.target.value }))}
+                              placeholder="تصفية..."
+                              className="w-full min-w-[60px] bg-transparent text-[11px] font-normal text-panel-text outline-none placeholder:text-utility-muted/70"
+                              onClick={e => e.stopPropagation()}
+                            />
+                          )}
+                        </div>
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -134,10 +191,9 @@ export default function PortStatementView({
               <tbody>
                 {(statement.statement || [])
                   .filter(transaction => {
-                    if (!localSearch) return true;
-                    const term = localSearch.toLowerCase();
-                    return (
-                      String(transaction.TraderNote || "")
+                    if (localSearch) {
+                      const term = localSearch.toLowerCase();
+                      const matchGlobal = String(transaction.TraderNote || "")
                         .toLowerCase()
                         .includes(term) ||
                       String(transaction.Notes || "")
@@ -145,8 +201,48 @@ export default function PortStatementView({
                         .includes(term) ||
                       String(transaction.RefNo || "")
                         .toLowerCase()
-                        .includes(term)
-                    );
+                        .includes(term);
+                      if (!matchGlobal) return false;
+                    }
+
+                    for (const [key, value] of Object.entries(columnFilters)) {
+                      if (!value) continue;
+                      const term = value.toLowerCase();
+                      
+                      let rawVal = "";
+                      const normalizedKey = key.toLowerCase();
+                      
+                      if (normalizedKey === "ref_no" || normalizedKey === "refno") rawVal = transaction.RefNo || transaction.ref_no;
+                      else if (normalizedKey === "trans_type" || normalizedKey === "transtypename" || normalizedKey === "direction") {
+                        const tn = String(transaction.TransTypeName || transaction.transTypeName || "");
+                        const rt = String(transaction.RecordType || transaction.recordType || "");
+                        rawVal = tn + " " + rt + (rt === "payment" ? " قبض دفع" : rt === "invoice" ? " فاتورة" : rt === "debit-note" ? " إضافة اضافة" : "");
+                      }
+                      else if (normalizedKey === "trans_date" || normalizedKey === "transdate") rawVal = transaction.TransDate || transaction.trans_date;
+                      else if (normalizedKey === "currency") {
+                        const cur = String(transaction.Currency || transaction.currency || "").toUpperCase();
+                        rawVal = cur === "USD" ? "دولار" : cur === "IQD" ? "دينار" : cur === "BOTH" ? "دولار ودينار" : cur;
+                      }
+                      else if (normalizedKey === "driver_name" || normalizedKey === "drivername") rawVal = transaction.DriverName || transaction.driver_name;
+                      else if (normalizedKey === "vehicle_plate" || normalizedKey === "vehicleplate") rawVal = transaction.VehiclePlate || transaction.vehicle_plate || transaction.CarNumber || transaction.car_number;
+                      else if (normalizedKey === "good_type" || normalizedKey === "goodtypename") rawVal = transaction.GoodTypeName || transaction.goodTypeName;
+                      else if (normalizedKey === "weight") rawVal = transaction.Weight || transaction.weight;
+                      else if (normalizedKey === "meters") rawVal = transaction.Meters || transaction.meters;
+                      else if (normalizedKey === "qty") rawVal = transaction.Qty || transaction.qty;
+                      else if (normalizedKey === "cost_usd" || normalizedKey === "costusd") rawVal = transaction.CostUSD || transaction.costUsd;
+                      else if (normalizedKey === "amount_usd" || normalizedKey === "amountusd") rawVal = transaction.AmountUSD || transaction.amountUsd;
+                      else if (normalizedKey === "cost_iqd" || normalizedKey === "costiqd") rawVal = transaction.CostIQD || transaction.costIqd;
+                      else if (normalizedKey === "amount_iqd" || normalizedKey === "amountiqd") rawVal = transaction.AmountIQD || transaction.amountIqd;
+                      else if (normalizedKey === "notes") rawVal = transaction.Notes || transaction.notes;
+                      else if (normalizedKey === "trader_note" || normalizedKey === "tradernote") rawVal = transaction.TraderNote || transaction.trader_note;
+                      else rawVal = transaction[key] || "";
+
+                      if (!String(rawVal || "").toLowerCase().includes(term)) {
+                        return false;
+                      }
+                    }
+
+                    return true;
                   })
                   .map((transaction, index) => {
                     let typeId = Number(
