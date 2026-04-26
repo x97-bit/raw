@@ -88,7 +88,7 @@ function openPrintWindow(title, body, extraCss = "") {
         border: 1px solid transparent;
         border-radius: 999px;
         padding: 10px 18px;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 700;
         cursor: pointer;
         transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
@@ -470,7 +470,7 @@ function getShellCss({
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? "64px" : "58px"};
+      font-size: ${isPortrait ? "83px" : "76px"};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
       line-height: 1.5;
@@ -478,7 +478,7 @@ function getShellCss({
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
-      font-size: 44px;
+      font-size: 60px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
       font-weight: 700;
     }
@@ -500,12 +500,12 @@ function getShellCss({
       display: block;
       margin-bottom: 6px;
       color: #5c6482;
-      font-size: 50px;
+      font-size: 69px;
       font-weight: 800;
     }
     .tay-summary-card strong {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 80px;
+      font-size: 103px;
     }
     .tay-sections {
       position: relative;
@@ -529,13 +529,13 @@ function getShellCss({
     .tay-section-title {
       margin: 0;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 54px;
+      font-size: 74px;
       font-weight: 800;
     }
     .tay-section-subtitle {
       margin-top: 3px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
-      font-size: 40px;
+      font-size: 55px;
       font-weight: 700;
     }
     .tay-table-wrap {
@@ -562,7 +562,7 @@ function getShellCss({
       word-break: break-word;
     }
     .tay-table td {
-      font-size: ${isPortrait ? "40px" : "36px"};
+      font-size: ${isPortrait ? "55px" : "51px"};
     }
     .tay-table .tay-date-cell {
       white-space: nowrap;
@@ -575,7 +575,7 @@ function getShellCss({
       white-space: nowrap;
       word-break: normal;
       padding: 8px 6px;
-      font-size: ${isPortrait ? "54px" : "50px"};
+      font-size: ${isPortrait ? "74px" : "69px"};
     }
     .tay-table tbody tr:nth-child(even) td {
       background: transparent;
@@ -634,7 +634,7 @@ function getShellCss({
       display: flex;
       align-items: center;
       color: #fff;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
       direction: ltr;
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
@@ -664,7 +664,7 @@ function getShellCss({
       gap: 12px 22px;
       flex-wrap: wrap;
       color: #1f2937;
-      font-size: 55px;
+      font-size: 74px;
       font-weight: 700;
     }
     .tay-meta-stack {
