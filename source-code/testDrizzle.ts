@@ -1,0 +1,1 @@
+import * as schema from './drizzle/schema'; import { getTableName, getTableColumns } from 'drizzle-orm'; import { MySqlTable } from 'drizzle-orm/mysql-core'; const tables = Object.values(schema).filter((obj) => obj instanceof MySqlTable); for (const table of tables) { console.log('Table:', getTableName(table), 'Columns:', Object.keys(getTableColumns(table)).join(', ')); }

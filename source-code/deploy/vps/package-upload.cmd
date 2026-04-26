@@ -43,7 +43,13 @@ if errorlevel 1 (
 
 echo.
 echo Upload complete.
-echo Next on the VPS run:
-echo chmod +x %REMOTE_SCRIPT%
-echo bash %REMOTE_SCRIPT%
+echo Executing deployment script on the VPS automatically...
+ssh %SERVER_USER%@%SERVER_IP% "chmod +x %REMOTE_SCRIPT% && bash %REMOTE_SCRIPT%"
+if errorlevel 1 (
+  echo Deployment script failed!
+  exit /b 1
+)
+
+echo.
+echo Deployment finished successfully!
 exit /b 0

@@ -457,6 +457,29 @@ export default function PortPage({
     [accountType, api, portId, setAccounts]
   );
 
+  const handleDeleteAccount = useCallback(
+    async id => {
+      if (!id || !window.confirm("هل أنت متأكد من حذف هذا الحساب؟")) return;
+      try {
+        await api(`/accounts/${id}`, { method: "DELETE" });
+        setFilters(current => ({ ...current, accountId: "" }));
+        setAccounts(current =>
+          current.filter(a => String(a.AccountID) !== String(id))
+        );
+        if (stAccount === String(id)) {
+          setStAccount(null);
+          setStatement(null);
+          setView("list");
+        }
+        await loadData();
+      } catch (error) {
+        console.error("Error deleting account:", error);
+        alert("تعذر حذف الحساب. قد يكون مرتبطاً بحركات.");
+      }
+    },
+    [api, loadData, stAccount, setAccounts]
+  );
+
   const handleListFromChange = useCallback(value => {
     setFilters(current => ({ ...current, from: value }));
     setPage(0);
@@ -516,6 +539,7 @@ export default function PortPage({
         search={search}
         onAccountChange={handleStatementAccountChange}
         onAddAccount={handleAddAccount}
+        onDeleteAccount={can.isAdmin ? handleDeleteAccount : null}
         onFromChange={handleStatementFromChange}
         onToChange={handleStatementToChange}
         onReset={resetStatementFilters}
@@ -550,6 +574,7 @@ export default function PortPage({
         onSearchChange={handleListSearchChange}
         onAccountFilterChange={handleListAccountFilterChange}
         onAddAccount={handleAddAccount}
+        onDeleteAccount={can.isAdmin ? handleDeleteAccount : null}
         onFromChange={handleListFromChange}
         onToChange={handleListToChange}
         onResetFilters={handleListResetFilters}
@@ -610,6 +635,7 @@ export default function PortPage({
         to={filters.to}
         onAccountChange={handleStatementAccountChange}
         onAddAccount={handleAddAccount}
+        onDeleteAccount={can.isAdmin ? handleDeleteAccount : null}
         onFromChange={handleStatementFromChange}
         onToChange={handleStatementToChange}
         onReset={resetStatementFilters}

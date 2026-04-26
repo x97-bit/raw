@@ -5,6 +5,7 @@ import {
   Eye,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import ExportButtons from "../../../components/ExportButtons";
 import PageHeader from "../../../components/PageHeader";
@@ -29,6 +30,7 @@ export default function PortListView({
   onSearchChange,
   onAccountFilterChange,
   onAddAccount,
+  onDeleteAccount,
   onFromChange,
   onToChange,
   onResetFilters,
@@ -127,24 +129,35 @@ export default function PortListView({
         onBack={onBack}
         onHome={onHome}
       >
-        <ExportButtons
-          inHeader
-          rows={transactions}
-          columns={listExportColumns}
-          title={listTitle}
-          subtitle={`${total} معاملة`}
-          filename={`${portName}_${labels.listTitleSuffix || "قائمة_الحركات"}`}
-          summaryCards={listSummaryCards.map(card => ({
-            label: card.label,
-            value: card.value,
-          }))}
-          templates={listExportTemplates}
-          selectedTemplateId={selectedListTemplateId}
-          onTemplateChange={onTemplateChange}
-          printStrategy="table"
-          sectionKey={sectionKey}
-        />
-        {actionButtons}
+        <div className="flex items-center gap-2">
+          {filters.accountId && onDeleteAccount && (
+            <button
+              onClick={() => onDeleteAccount(filters.accountId)}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/30 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+              title="حذف الحساب"
+            >
+              <Trash2 size={16} /> حذف الحساب
+            </button>
+          )}
+          <ExportButtons
+            inHeader
+            rows={transactions}
+            columns={listExportColumns}
+            title={listTitle}
+            subtitle={`${total} معاملة`}
+            filename={`${portName}_${labels.listTitleSuffix || "قائمة_الحركات"}`}
+            summaryCards={listSummaryCards.map(card => ({
+              label: card.label,
+              value: card.value,
+            }))}
+            templates={listExportTemplates}
+            selectedTemplateId={selectedListTemplateId}
+            onTemplateChange={onTemplateChange}
+            printStrategy="table"
+            sectionKey={sectionKey}
+          />
+          {actionButtons}
+        </div>
       </PageHeader>
 
       <div className="space-y-4 p-5">
@@ -172,6 +185,7 @@ export default function PortListView({
           accounts={accounts}
           accountId={filters.accountId}
           onAddAccount={onAddAccount}
+          onDeleteAccount={onDeleteAccount}
           from={filters.from}
           to={filters.to}
           onAccountChange={onAccountFilterChange}

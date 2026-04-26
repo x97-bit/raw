@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import ExportButtons from "../../components/ExportButtons";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import PageHeader from "../../components/PageHeader";
@@ -37,6 +37,7 @@ export default function DebtsPage({ onBack }) {
     handleResetFilters,
     handleSave,
     handleToggleSummaryAccount,
+    handleDeleteAccount,
     loading,
     message,
     openCreateModal,
@@ -57,24 +58,38 @@ export default function DebtsPage({ onBack }) {
         subtitle="قائمة الديون والحركات"
         onBack={onBack}
       >
-        {filteredDebts.length > 0 && (
-          <ExportButtons
-            inHeader
-            rows={filteredDebts}
-            columns={exportColumns}
-            title="الديون"
-            filename="الديون"
-            printStrategy="table"
-          />
-        )}
-        {can.manageDebts && (
-          <button
-            onClick={openCreateModal}
-            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium transition-all hover:bg-white/20"
-          >
-            <Plus size={16} /> إضافة دين
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {can.isAdmin && filters.accountName && handleDeleteAccount && (
+            <button
+              onClick={() => {
+                const acc = accountOptions.find(o => o.name === filters.accountName);
+                if (acc && acc.id) handleDeleteAccount(acc.id);
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/30 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+              title="حذف الحساب"
+            >
+              <Trash2 size={16} /> حذف الحساب
+            </button>
+          )}
+          {filteredDebts.length > 0 && (
+            <ExportButtons
+              inHeader
+              rows={filteredDebts}
+              columns={exportColumns}
+              title="الديون"
+              filename="الديون"
+              printStrategy="table"
+            />
+          )}
+          {can.manageDebts && (
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium transition-all hover:bg-white/20"
+            >
+              <Plus size={16} /> إضافة دين
+            </button>
+          )}
+        </div>
       </PageHeader>
 
       <div className="space-y-5 p-5">
@@ -98,6 +113,7 @@ export default function DebtsPage({ onBack }) {
               onAccountSelect={handleFilterSelect}
               onDateChange={handleFilterDateChange}
               onReset={handleResetFilters}
+              onDeleteAccount={handleDeleteAccount}
             />
 
             <DebtSummaryGrid

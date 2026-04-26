@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "testsprite": {
+      "command": "npx",
+      "args": ["-y", "@testsprite/mcp-server", "--workspace", "."],
+      "env": {
+        "NODE_ENV": "test",
+        "DATABASE_URL": "mysql://root:password@localhost:3306/alrawi_test"
+      }
+    },
+    "drizzle-auditor": {
+      "command": "node",
+      "args": ["scripts/mcp/drizzle-audit.js"],
+      "env": {}
+    }
+  }
+}

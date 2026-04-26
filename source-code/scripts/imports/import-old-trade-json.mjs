@@ -1031,8 +1031,10 @@ function buildApplyPayload(src) {
 }
 
 async function loadSourceFromJson(sourceJsonPath) {
-  const raw = JSON.parse(await fs.readFile(sourceJsonPath, "utf8"));
-  const tables = loadTables(raw);
+  const fileContent = await fs.readFile(sourceJsonPath, "utf8");
+  const raw = JSON.parse(fileContent.replace(/^\uFEFF/, ''));
+  const dataToLoad = raw.tables ? raw.tables : raw;
+  const tables = loadTables(dataToLoad);
   const source = {};
 
   for (const [legacyName, sourceKey] of Object.entries(SOURCE_TABLE_MAP)) {

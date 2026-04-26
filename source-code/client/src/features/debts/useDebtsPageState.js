@@ -226,6 +226,19 @@ export default function useDebtsPageState({ api }) {
     setForm(current => ({ ...current, AccountName: normalized }));
   };
 
+  const handleDeleteAccount = async id => {
+    if (!id || !window.confirm("هل أنت متأكد من حذف هذا الحساب؟")) return;
+    try {
+      await api(`/accounts/${id}`, { method: "DELETE" });
+      setFilters(current => ({ ...current, accountName: "" }));
+      setFilterText("");
+      await load();
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("تعذر حذف الحساب. قد يكون مرتبطاً بحركات.");
+    }
+  };
+
   return {
     accountOptions,
     accountText,
@@ -243,6 +256,7 @@ export default function useDebtsPageState({ api }) {
     handleAccountTextChange,
     handleAddAccountName,
     handleDelete,
+    handleDeleteAccount,
     handleFilterDateChange,
     handleFilterSelect,
     handleFilterTextChange,

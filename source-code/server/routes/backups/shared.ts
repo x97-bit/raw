@@ -342,7 +342,13 @@ async function openBackupConnection() {
     dateStrings: true,
   };
 
-  return mysql.createConnection(connectionOptions);
+  const connection = await mysql.createConnection(connectionOptions);
+  
+  connection.on("error", (error) => {
+    console.warn("[Backup] Background MySQL connection error:", error.message);
+  });
+  
+  return connection;
 }
 
 async function listExportableTables(connection: mysql.Connection) {
@@ -570,13 +576,13 @@ export async function validateSchemaDrift(liveSchema: Record<string, BackupColum
     const liveColNames = new Set(liveColumns.map(c => c.name));
 
     const drizzleCols = getTableColumns(table);
-    const missingCols = Object.keys(drizzleCols).filter(
-      (cKey) => !liveColNames.has(drizzleCols[cKey].name)
+    const missingCols = Object.values(drizzleCols).filter(
+      (col) => !liveColNames.has(col.name)
     );
 
     if (missingCols.length > 0) {
       throw new RequestValidationError(
-        `تم اكتشاف عدم تطابق في المخطط: الجدول '${tableName}' يفتقد للأعمدة التالية: ${missingCols.map(c => drizzleCols[c].name).join(", ")}`
+        `تم اكتشاف عدم تطابق في المخطط: الجدول '${tableName}' يفتقد للأعمدة التالية: ${missingCols.map(c => c.name).join(", ")}`
       );
     }
   }
@@ -699,66 +705,81 @@ export async function saveImportReport(payload: unknown) {
 }
 
 export async function getBackupStatus() {
-  const databaseUrl = getDatabaseUrl();
-  const databaseInfo = parseDatabaseInfo(databaseUrl);
-  const connection = await openBackupConnection();
-
-  try {
-    const tableNames = sortTablesByPriority(
-      await listExportableTables(connection)
-    );
-    const tableCounts: Record<string, number> = {};
-
-    for (const tableName of tableNames) {
-      const [rows] = await connection.query(
-        `SELECT COUNT(*) AS count FROM \`${tableName}\``
-      );
-      tableCounts[tableName] = Number(
-        (rows as Array<Record<string, unknown>>)[0]?.count || 0
-      );
+  const databaseUrl = process.env.DATABASE_URL;
+  let databaseInfo = { database: "unknown", port: 3306 };
+  
+  if (databaseUrl) {
+    try {
+      databaseInfo = parseDatabaseInfo(databaseUrl);
+    } catch {
+      // ignore
     }
-
-    const appGenerated = await readBackupFiles(APP_BACKUP_DIR, /\.json$/i);
-    const dailySql = await readBackupFiles(SQL_BACKUP_DIR, /\.sql(?:\.gz)?$/i);
-    const scriptExists = await pathExists(DAILY_BACKUP_SCRIPT_PATH);
-    const sqlDirectoryExists = await pathExists(SQL_BACKUP_DIR);
-    const latestDailyBackup = dailySql[0] || null;
-    const latestDailyBackupAgeMs = latestDailyBackup
-      ? Date.now() - Date.parse(latestDailyBackup.modifiedAt)
-      : Number.POSITIVE_INFINITY;
-
-    return {
-      format: BACKUP_FORMAT,
-      generatedAt: new Date().toISOString(),
-      database: {
-        name: databaseInfo.database,
-        port: databaseInfo.port,
-      },
-      directories: {
-        appJson: APP_BACKUP_DIR,
-        importReports: IMPORT_REPORT_DIR,
-        dailySql: SQL_BACKUP_DIR,
-      },
-      tableCounts,
-      latestBackups: {
-        appGenerated,
-        dailySql,
-      },
-      dailyBackup: {
-        scriptPath: DAILY_BACKUP_SCRIPT_PATH,
-        scriptExists,
-        sqlDirectoryExists,
-        recommendedCron: DAILY_BACKUP_RECOMMENDED_CRON,
-        retentionDays: DAILY_BACKUP_RETENTION_DAYS,
-        latestBackup: latestDailyBackup,
-        healthy:
-          Boolean(latestDailyBackup) &&
-          latestDailyBackupAgeMs <= 36 * 60 * 60 * 1000,
-      },
-    };
-  } finally {
-    await connection.end();
   }
+
+  const tableCounts: Record<string, number> = {};
+  
+  try {
+    if (databaseUrl) {
+      const connection = await openBackupConnection();
+      try {
+        const tableNames = sortTablesByPriority(
+          await listExportableTables(connection)
+        );
+
+        for (const tableName of tableNames) {
+          const [rows] = await connection.query(
+            `SELECT COUNT(*) AS count FROM \`${tableName}\``
+          );
+          tableCounts[tableName] = Number(
+            (rows as Array<Record<string, unknown>>)[0]?.count || 0
+          );
+        }
+      } finally {
+        await connection.end();
+      }
+    }
+  } catch (error) {
+    console.warn("[Backup] Failed to fetch table counts from remote database:", error);
+  }
+
+  const appGenerated = await readBackupFiles(APP_BACKUP_DIR, /\.json$/i);
+  const dailySql = await readBackupFiles(SQL_BACKUP_DIR, /\.sql(?:\.gz)?$/i);
+  const scriptExists = await pathExists(DAILY_BACKUP_SCRIPT_PATH);
+  const sqlDirectoryExists = await pathExists(SQL_BACKUP_DIR);
+  const latestDailyBackup = dailySql[0] || null;
+  const latestDailyBackupAgeMs = latestDailyBackup
+    ? Date.now() - Date.parse(latestDailyBackup.modifiedAt)
+    : Number.POSITIVE_INFINITY;
+
+  return {
+    format: BACKUP_FORMAT,
+    generatedAt: new Date().toISOString(),
+    database: {
+      name: databaseInfo.database,
+      port: databaseInfo.port,
+    },
+    directories: {
+      appJson: APP_BACKUP_DIR,
+      importReports: IMPORT_REPORT_DIR,
+      dailySql: SQL_BACKUP_DIR,
+    },
+    tableCounts,
+    latestBackups: {
+      appGenerated,
+      dailySql,
+    },
+    dailyBackup: {
+      scriptPath: DAILY_BACKUP_SCRIPT_PATH,
+      scriptExists,
+      sqlDirectoryExists,
+      recommendedCron: DAILY_BACKUP_RECOMMENDED_CRON,
+      retentionDays: DAILY_BACKUP_RETENTION_DAYS,
+      latestBackup: latestDailyBackup,
+      healthy:
+        Boolean(latestDailyBackup) &&
+        latestDailyBackupAgeMs <= 36 * 60 * 60 * 1000,
+    },
+  };
 }
 
 export function buildDownloadFileName(prefix: string, extension = "json") {

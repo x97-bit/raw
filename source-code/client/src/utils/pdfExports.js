@@ -288,7 +288,7 @@ function drawText(
   {
     align = "right",
     color = "#000",
-    size = 24,
+    size = 22,
     weight = "700",
     maxWidth = null,
     family = PDF_BODY_FONT_FAMILY,
@@ -310,7 +310,7 @@ function measureWrappedText(
     maxWidth,
     lineHeight = 32,
     maxLines = 4,
-    size = 24,
+    size = 22,
     weight = "500",
     family = PDF_BODY_FONT_FAMILY,
   } = {}
@@ -330,7 +330,7 @@ function drawWrappedText(
     maxLines = 4,
     align = "right",
     color = "#000",
-    size = 24,
+    size = 22,
     weight = "500",
     family = PDF_BODY_FONT_FAMILY,
   } = {}
@@ -449,7 +449,7 @@ function drawFooterOverlay(
   drawText(ctx, dateText, spec.width * 0.055, footerY, {
     align: "left",
     color: "#ffffff",
-    size: 30,
+    size: 28,
     weight: "500",
     maxWidth: spec.width * 0.2,
   });
@@ -461,7 +461,7 @@ function drawFooterOverlay(
     {
       align: "right",
       color: "#ffffff",
-      size: 30,
+      size: 28,
       weight: "500",
       maxWidth: spec.width * 0.12,
     }
@@ -483,14 +483,14 @@ function drawInvoiceFooterOverlay(
   drawText(ctx, dateText, spec.width * 0.145, textY, {
     align: "center",
     color: "#ffffff",
-    size: 28,
+    size: 26,
     weight: "500",
     maxWidth: spec.width * 0.24,
   });
   drawText(ctx, pageText, spec.width * 0.84, textY, {
     align: "center",
     color: "#ffffff",
-    size: 28,
+    size: 26,
     weight: "500",
     maxWidth: spec.width * 0.15,
   });
@@ -555,14 +555,14 @@ function splitRowsIntoPages(
 function drawReportHeader(ctx, spec, xRight, startY, { title, subtitle }) {
   let y = startY;
   drawText(ctx, title || "", xRight, y, {
-    size: 65,
+    size: 63,
     weight: "800",
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
   });
   y += 75;
   if (subtitle) {
     drawText(ctx, subtitle, xRight, y, {
-      size: 45,
+      size: 43,
       weight: "700",
       color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
     });
@@ -603,13 +603,13 @@ function drawSummaryCards(ctx, spec, x, y, width, summaryCards) {
         2
       );
       drawText(ctx, card.label, cardX + cardWidth - 24, cardY + 34, {
-        size: 36,
+        size: 34,
         weight: "700",
         color: "#5c6482",
         maxWidth: cardWidth - 34,
       });
       drawText(ctx, card.value, cardX + cardWidth - 24, cardY + 74, {
-        size: 54,
+        size: 52,
         weight: "700",
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
         maxWidth: cardWidth - 34,
@@ -646,7 +646,7 @@ function drawTable(
     drawText(ctx, column.label, cursorX + cellWidth / 2, y + headerHeight / 2, {
       align: "center",
       color: "#ffffff",
-      size: orientation === "portrait" ? 44 : 38,
+      size: orientation === "portrait" ? 42 : 36,
       weight: "700",
       maxWidth: cellWidth - 20,
     });
@@ -730,7 +730,7 @@ function drawTable(
         {
           align: "center",
           color: textColor,
-          size: orientation === "portrait" ? 38 : 34,
+          size: orientation === "portrait" ? 36 : 32,
           weight: textWeight,
           maxWidth: cellWidth - 18,
         }
@@ -764,7 +764,7 @@ function drawTable(
       drawText(ctx, value, currentX + cellWidth / 2, rowY + rowHeight / 2, {
         align: "center",
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
-        size: orientation === "portrait" ? 38 : 34,
+        size: orientation === "portrait" ? 36 : 32,
         weight: "700",
         maxWidth: cellWidth - 18,
       });
@@ -918,37 +918,37 @@ function getAdaptiveTableMetrics(orientation, columnCount) {
     headerFontSize:
       orientation === "portrait"
         ? dense
-          ? 67
+          ? 50
           : compact
-            ? 81
-            : 100
+            ? 65
+            : 85
         : dense
-          ? 58
+          ? 40
           : compact
-            ? 72
-            : 95,
+            ? 55
+            : 75,
     cellFontSize:
       orientation === "portrait"
         ? dense
-          ? 64
+          ? 52
           : compact
-            ? 76
-            : 90
+            ? 64
+            : 79
         : dense
-          ? 54
+          ? 42
           : compact
-            ? 68
-            : 85,
+            ? 56
+            : 72,
     headerLineHeight: orientation === "portrait" ? 106 : 95,
     cellLineHeight: orientation === "portrait" ? 86 : 78,
-    maxHeaderLines: 2,
-    maxCellLines: 2,
+    maxHeaderLines: 1,
+    maxCellLines: 1,
     paddingX: dense ? 4 : 8,
     paddingY: dense ? 10 : 12,
     minHeaderHeight: orientation === "portrait" ? 160 : 140,
     minRowHeight: orientation === "portrait" ? 140 : 120,
-    summaryLabelSize: orientation === "portrait" ? 57 : 62,
-    summaryValueSize: orientation === "portrait" ? 83 : 88,
+    summaryLabelSize: orientation === "portrait" ? 55 : 60,
+    summaryValueSize: orientation === "portrait" ? 81 : 86,
     summaryLabelLineHeight: orientation === "portrait" ? 59 : 65,
     summaryValueLineHeight: orientation === "portrait" ? 85 : 91,
   };
@@ -1091,7 +1091,7 @@ function measureAdaptiveTableLayout(
   metrics.headerFontSize = fitted.headerFontSize;
 
   if (metrics.headerFontSize < originalHeaderFontSize) {
-    metrics.cellFontSize = Math.max(20, metrics.headerFontSize - 6);
+    metrics.cellFontSize = Math.max(20, metrics.headerFontSize - 2);
     metrics.headerLineHeight = metrics.headerFontSize + 16;
     metrics.cellLineHeight = metrics.cellFontSize + 16;
   }
@@ -1102,7 +1102,7 @@ function measureAdaptiveTableLayout(
       maxWidth: innerWidth,
       maxLines: metrics.maxHeaderLines,
       size: metrics.headerFontSize,
-      weight: "700",
+      weight: "800",
     });
     return Math.max(
       maxHeight,
@@ -1190,7 +1190,7 @@ function drawCenteredReportHeader(ctx, spec, startY, { title, subtitle }) {
   const maxWidth = spec.width * 0.78;
   const titleHeight = drawWrappedText(ctx, title || "", centerX, y, {
     align: "center",
-    size: 52,
+    size: 50,
     weight: "800",
     lineHeight: 64,
     maxLines: 2,
@@ -1203,7 +1203,7 @@ function drawCenteredReportHeader(ctx, spec, startY, { title, subtitle }) {
   if (subtitle) {
     const subtitleHeight = drawWrappedText(ctx, subtitle, centerX, y, {
       align: "center",
-      size: 24,
+      size: 22,
       weight: "600",
       lineHeight: 32,
       maxLines: 2,
@@ -1346,7 +1346,7 @@ function drawAdaptiveTable(
       height: headerHeight,
       color: "#ffffff",
       size: metrics.headerFontSize,
-      weight: "700",
+      weight: "800",
       lineHeight: metrics.headerLineHeight,
       maxLines: metrics.maxHeaderLines,
       align: "center",
@@ -2209,7 +2209,7 @@ function getInvoiceSectionTone(section = {}) {
 }
 
 function measureInvoiceNoteCardHeight(ctx, value, width) {
-  setFont(ctx, "500", 72);
+  setFont(ctx, "500", 70);
   const lineCount = wrapTextLines(ctx, value, width).slice(0, 5).length;
   return Math.max(240, 150 + lineCount * 82);
 }
@@ -2219,7 +2219,7 @@ function measureInvoiceSectionHeight(ctx, section, width) {
   let contentHeight = 82;
 
   if (section.subtitle) {
-    setFont(ctx, "500", 18);
+    setFont(ctx, "500", 16);
     const subtitleLines = wrapTextLines(
       ctx,
       section.subtitle,
@@ -2253,7 +2253,7 @@ function measureInvoiceSectionHeight(ctx, section, width) {
 function drawInvoiceMetaCard(ctx, x, y, width, height, label, value) {
   drawRoundedRect(ctx, x, y, width, height, 12, "#f8fafc", "#d7ddea", 1);
   drawText(ctx, label, x + width - 16, y + 22, {
-    size: 15,
+    size: 13,
     weight: "700",
     color: "#64748b",
     maxWidth: width - 32,
@@ -2262,7 +2262,7 @@ function drawInvoiceMetaCard(ctx, x, y, width, height, label, value) {
     maxWidth: width - 32,
     lineHeight: 19,
     maxLines: 2,
-    size: 19,
+    size: 17,
     weight: "700",
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
   });
@@ -2288,7 +2288,7 @@ function drawInvoiceHeaderBlock(
     maxWidth: titleWidth,
     lineHeight: 38,
     maxLines: 2,
-    size: 48,
+    size: 46,
     weight: "800",
     family: PDF_TITLE_FONT_FAMILY,
   });
@@ -2297,7 +2297,7 @@ function drawInvoiceHeaderBlock(
     maxWidth: shellWidth - 300,
     lineHeight: 24,
     maxLines: 2,
-    size: 22,
+    size: 20,
     weight: "700",
     family: PDF_BODY_FONT_FAMILY,
   });
@@ -2330,7 +2330,7 @@ function drawInvoiceHeaderBlock(
     maxWidth: titleWidth,
     lineHeight: 38,
     maxLines: 2,
-    size: 48,
+    size: 46,
     weight: "800",
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
     family: PDF_TITLE_FONT_FAMILY,
@@ -2340,7 +2340,7 @@ function drawInvoiceHeaderBlock(
     maxWidth: shellWidth - 300,
     lineHeight: 24,
     maxLines: 2,
-    size: 22,
+    size: 20,
     weight: "700",
     color: "#475569",
     family: PDF_BODY_FONT_FAMILY,
@@ -2348,7 +2348,7 @@ function drawInvoiceHeaderBlock(
   if (shouldShowSideType) {
     drawText(ctx, transactionTypeLabel, textLeftX, companyY + 2, {
       align: "left",
-      size: 22,
+      size: 20,
       weight: "700",
       color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
       maxWidth: 240,
@@ -2395,7 +2395,7 @@ function drawInvoiceContinuationHeader(
   );
   drawWrappedText(ctx, title, titleCenterX, startY + 26, {
     align: "center",
-    size: 30,
+    size: 28,
     weight: "800",
     lineHeight: 28,
     maxLines: 1,
@@ -2405,7 +2405,7 @@ function drawInvoiceContinuationHeader(
   });
   drawText(ctx, referenceText, shellX + 20, startY + 28, {
     align: "left",
-    size: 18,
+    size: 16,
     weight: "600",
     color: "#334155",
     maxWidth: 280,
@@ -2434,7 +2434,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
   );
   drawRoundedRect(ctx, shellX, startY, width, 46, 16, tone.fill);
   drawText(ctx, section.title || "-", shellX + width - 22, startY + 42, {
-    size: 42,
+    size: 40,
     weight: "800",
     color: tone.accent,
     maxWidth: width - 44,
@@ -2451,7 +2451,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
         maxWidth: width - 44,
         lineHeight: 20,
         maxLines: 2,
-        size: 16,
+        size: 14,
         weight: "500",
         color: "#64748b",
       }
@@ -2478,7 +2478,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
         1
       );
       drawText(ctx, item.label, shellX + width - 36, contentY + 52, {
-        size: 52,
+        size: 50,
         weight: "700",
         color: tone.accent,
         maxWidth: contentWidth - 32,
@@ -2487,7 +2487,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
         maxWidth: contentWidth - 32,
         lineHeight: 82,
         maxLines: 5,
-        size: 72,
+        size: 70,
         weight: "500",
         color: "#1f2937",
       });
@@ -2542,7 +2542,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
       const currentWidth = rowItems.length === 1 ? rowWidth : cellWidth;
 
       drawText(ctx, item.label, cellX + currentWidth - 16, rowY + 56, {
-        size: 46,
+        size: 44,
         weight: "700",
         color: "#64748b",
         maxWidth: currentWidth - 32,
@@ -2551,7 +2551,7 @@ function drawInvoiceSection(ctx, spec, section, startY, width) {
         maxWidth: currentWidth - 32,
         lineHeight: 76,
         maxLines: 2,
-        size: 72,
+        size: 70,
         weight: "700",
         color: tone.value,
       });
@@ -2745,13 +2745,13 @@ async function exportInvoiceAsCanvasPdf({
   const xRight = spec.width - 52;
 
   drawText(ctx, title || transactionTypeLabel, xRight, headerHeight + 34, {
-    size: 46,
+    size: 44,
     weight: "700",
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
     maxWidth: spec.width - 120,
   });
   drawText(ctx, companyName, xRight, headerHeight + 68, {
-    size: 28,
+    size: 26,
     weight: "700",
     color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
     maxWidth: spec.width - 120,
@@ -2764,7 +2764,7 @@ async function exportInvoiceAsCanvasPdf({
     headerHeight + 34,
     {
       align: "left",
-      size: 26,
+      size: 24,
       weight: "600",
       color: "#1f2937",
       maxWidth: 300,
@@ -2777,7 +2777,7 @@ async function exportInvoiceAsCanvasPdf({
     headerHeight + 68,
     {
       align: "left",
-      size: 26,
+      size: 24,
       weight: "600",
       color: "#1f2937",
       maxWidth: 300,
@@ -2807,13 +2807,13 @@ async function exportInvoiceAsCanvasPdf({
       2
     );
     drawText(ctx, field.label, x + cardWidth - 16, y + 20, {
-      size: 22,
+      size: 20,
       weight: "700",
       color: "#5c6482",
       maxWidth: cardWidth - 24,
     });
     drawText(ctx, field.value, x + cardWidth - 16, y + 46, {
-      size: 30,
+      size: 28,
       weight: "700",
       color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
       maxWidth: cardWidth - 24,
@@ -2839,13 +2839,13 @@ async function exportInvoiceAsCanvasPdf({
       1.5
     );
     drawText(ctx, "الملاحظات", spec.width - 70, noteY + 24, {
-      size: 24,
+      size: 22,
       weight: "700",
       color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
       maxWidth: 300,
     });
     drawText(ctx, notes.join(" | "), spec.width - 70, noteY + 58, {
-      size: 24,
+      size: 22,
       weight: "500",
       color: "#1f2937",
       maxWidth: spec.width - 150,
