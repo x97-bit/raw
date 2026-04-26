@@ -1,7 +1,6 @@
 import {
   getDefaultSpecialAccountName,
   hasAnyBodyKey,
-  hasBodyValue,
   normalizeDateValue,
   normalizeDecimal,
   normalizeInteger,

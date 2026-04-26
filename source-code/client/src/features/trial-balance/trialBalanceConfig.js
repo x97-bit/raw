@@ -1,10 +1,10 @@
 export const formatTrialBalanceNumber = value =>
   value ? Number(value).toLocaleString("en-US") : "0";
 
-const POSITIVE_TONE = "text-[#8eb8ad]";
-const NEGATIVE_TONE = "text-[#c697a1]";
-const ACCENT_TONE = "text-[#9ab6ca]";
-const NEUTRAL_TONE = "text-[#c8d4df]";
+const POSITIVE_TONE = "text-utility-success-text";
+const NEGATIVE_TONE = "text-utility-danger-text";
+const ACCENT_TONE = "text-utility-accent-text";
+const NEUTRAL_TONE = "text-utility-muted";
 
 const getBalanceTone = value =>
   (value || 0) >= 0 ? POSITIVE_TONE : NEGATIVE_TONE;

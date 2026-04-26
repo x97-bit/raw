@@ -8,7 +8,7 @@ export default function TrialBalanceFiltersBar({
   return (
     <div className="surface-card flex flex-wrap items-end gap-3 no-print">
       <div className="min-w-[10.5rem] flex-1">
-        <label className="mb-1.5 block text-sm font-semibold text-[#b7c3ce]">
+        <label className="mb-1.5 block text-sm font-semibold text-utility-muted">
           من تاريخ
         </label>
         <input
@@ -22,7 +22,7 @@ export default function TrialBalanceFiltersBar({
       </div>
 
       <div className="min-w-[10.5rem] flex-1">
-        <label className="mb-1.5 block text-sm font-semibold text-[#b7c3ce]">
+        <label className="mb-1.5 block text-sm font-semibold text-utility-muted">
           إلى تاريخ
         </label>
         <input
@@ -36,7 +36,7 @@ export default function TrialBalanceFiltersBar({
       </div>
 
       <div className="min-w-[10.5rem] flex-1">
-        <label className="mb-1.5 block text-sm font-semibold text-[#b7c3ce]">
+        <label className="mb-1.5 block text-sm font-semibold text-utility-muted">
           المنفذ
         </label>
         <select
@@ -56,7 +56,7 @@ export default function TrialBalanceFiltersBar({
       </div>
 
       <div className="min-w-[10.5rem] flex-1">
-        <label className="mb-1.5 block text-sm font-semibold text-[#b7c3ce]">
+        <label className="mb-1.5 block text-sm font-semibold text-utility-muted">
           نوع الحساب
         </label>
         <select

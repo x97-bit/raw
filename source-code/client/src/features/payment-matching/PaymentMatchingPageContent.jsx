@@ -3,9 +3,10 @@ import PaymentMatchingAccountDetailView from "./components/PaymentMatchingAccoun
 import PaymentMatchingDashboardView from "./components/PaymentMatchingDashboardView";
 import { useAuth } from "../../contexts/AuthContext";
 import { buildPaymentDashboardStats } from "../../utils/paymentMatchingConfig";
+import { trpc } from "../../utils/trpc";
 
 export default function PaymentMatchingPage({ onBack }) {
-  const { api, can } = useAuth();
+  const { can } = useAuth();
   const [view, setView] = useState("dashboard");
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,14 +22,14 @@ export default function PaymentMatchingPage({ onBack }) {
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api("/payment-matching/dashboard");
+      const response = await trpc.paymentMatching.getDashboard.query();
       setDashboard(response);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     loadDashboard();
@@ -45,9 +46,7 @@ export default function PaymentMatchingPage({ onBack }) {
 
     setMatching(true);
     try {
-      const result = await api("/payment-matching/auto-match-all", {
-        method: "POST",
-      });
+      const result = await trpc.paymentMatching.autoMatchAll.mutate();
       window.alert(result.message);
       loadDashboard();
     } catch (error) {
@@ -61,10 +60,8 @@ export default function PaymentMatchingPage({ onBack }) {
     setSelectedAccount(account);
     try {
       const [shipments, summary] = await Promise.all([
-        api(
-          `/payment-matching/shipments?account=${account.account_id}&limit=200`
-        ),
-        api(`/payment-matching/summary/${account.account_id}`),
+        trpc.paymentMatching.getShipments.query({ account: account.account_id, limit: 200 }),
+        trpc.paymentMatching.getSummary.query({ accountId: account.account_id }),
       ]);
       setAccountShipments(shipments);
       setAccountDetail(summary);
@@ -76,7 +73,7 @@ export default function PaymentMatchingPage({ onBack }) {
 
   const openShipment = async shipmentId => {
     try {
-      const response = await api(`/payment-matching/shipments/${shipmentId}`);
+      const response = await trpc.paymentMatching.getShipmentDetail.query({ shipmentId });
       setShipmentDetail(response);
     } catch (error) {
       console.error(error);
@@ -89,9 +86,7 @@ export default function PaymentMatchingPage({ onBack }) {
     }
 
     try {
-      await api(`/payment-matching/allocate/${allocationId}`, {
-        method: "DELETE",
-      });
+      await trpc.paymentMatching.deleteAllocation.mutate({ allocationId });
       if (shipmentDetail) {
         openShipment(shipmentDetail.shipment.shipment_id);
       }

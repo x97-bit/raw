@@ -600,48 +600,59 @@ export async function buildBackupPayload({
   const connection = await openBackupConnection();
 
   try {
-    const drizzleTables = Object.values(drizzleSchema).filter(
-      (obj) => obj instanceof MySqlTable
-    ).map(t => getTableName(t));
+    // 1. Establish point-in-time consistency for the backup process
+    // This ensures that all tables read during this transaction see the exact same snapshot
+    // of the database, preventing race conditions or foreign key discrepancies if data is being
+    // inserted or updated while the backup is running.
+    await connection.query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    await connection.beginTransaction();
 
-    // Combine derived tables with prioritized sorting.
-    const allKnownTables = Array.from(new Set([...tablePriorityOrder, ...drizzleTables]));
-    const tableNames = sortTablesByPriority(
-      (await listExportableTables(connection)).filter(t => allKnownTables.includes(t))
-    );
+    try {
+      const drizzleTables = Object.values(drizzleSchema).filter(
+        (obj) => obj instanceof MySqlTable
+      ).map(t => getTableName(t));
 
-    const schema = await getTableSchemas(
-      connection,
-      databaseInfo.database,
-      tableNames
-    );
+      // Combine derived tables with prioritized sorting.
+      const allKnownTables = Array.from(new Set([...tablePriorityOrder, ...drizzleTables]));
+      const tableNames = sortTablesByPriority(
+        (await listExportableTables(connection)).filter(t => allKnownTables.includes(t))
+      );
 
-    await validateSchemaDrift(schema);
+      const schema = await getTableSchemas(
+        connection,
+        databaseInfo.database,
+        tableNames
+      );
 
-    const data: Record<string, Array<Record<string, unknown>>> = {};
-    const counts: Record<string, number> = {};
+      await validateSchemaDrift(schema);
 
-    for (const tableName of tableNames) {
-      let rows = templateOnly
-        ? []
-        : await readTableRows(connection, tableName);
+      const data: Record<string, Array<Record<string, unknown>>> = {};
+      const counts: Record<string, number> = {};
 
-      if (tableName === "app_users" || tableName === "users") {
-        rows = rows.map(row => {
-          const safeRow = { ...row };
-          if ("password" in safeRow) safeRow.password = "***MASKED***";
-          return safeRow;
-        });
+      for (const tableName of tableNames) {
+        let rows = templateOnly
+          ? []
+          : await readTableRows(connection, tableName);
+
+        if (tableName === "app_users" || tableName === "users") {
+          rows = rows.map(row => {
+            const safeRow = { ...row };
+            if ("password" in safeRow) safeRow.password = "***MASKED***";
+            return safeRow;
+          });
+        }
+
+        data[tableName] = rows;
+        counts[tableName] = rows.length;
       }
-
-      data[tableName] = rows;
-      counts[tableName] = rows.length;
-    }
-
-    const payloadChecksum = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(data))
-      .digest("hex");
+      
+      // Successfully read all tables at the exact same point in time
+      await connection.commit();
+      
+      const payloadChecksum = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(data))
+        .digest("hex");
 
     return {
       meta: {
@@ -672,6 +683,10 @@ export async function buildBackupPayload({
       counts,
       data,
     };
+    } catch (e) {
+      await connection.rollback();
+      throw e;
+    }
   } finally {
     await connection.end();
   }

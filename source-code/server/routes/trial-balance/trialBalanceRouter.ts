@@ -1,9 +1,12 @@
-import { Router, Response } from "express";
+import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { accountTypes, accounts, transactions } from "../../../drizzle/schema";
-import { AuthRequest, authMiddleware } from "../../_core/appAuth";
-import { respondRouteError } from "../../_core/routeResponses";
+import { router, protectedProcedure } from "../../_core/trpc";
+import { accountTypes, accounts } from "../../../drizzle/schema";
 import { getDb } from "../../db/db";
+import {
+  financialReportsCache,
+  buildRequestCacheKey,
+} from "../../utils/reportsCache";
 
 type AccountTypeRow = typeof accountTypes.$inferSelect;
 
@@ -44,22 +47,6 @@ type TrialBalanceNumericKey =
   | "shipment_count"
   | "trans_count";
 
-function readQueryString(value: unknown): string | undefined {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : undefined;
-  }
-
-  if (Array.isArray(value)) {
-    const [firstValue] = value;
-    return typeof firstValue === "string"
-      ? readQueryString(firstValue)
-      : undefined;
-  }
-
-  return undefined;
-}
-
 function parseNum(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -72,22 +59,29 @@ function sumTrialBalanceField(
   return rows.reduce((sum, row) => sum + row[field], 0);
 }
 
-export function registerReportTrialBalanceRoutes(router: Router) {
-  router.get(
-    "/reports/trial-balance",
-    authMiddleware,
-    async (req: AuthRequest, res: Response) => {
-      try {
-        const db = await getDb();
-        if (!db) return res.status(500).json({ error: "Database unavailable" });
+export const trialBalanceRouter = router({
+  getTrialBalance: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.string().optional().catch(undefined),
+        endDate: z.string().optional().catch(undefined),
+        portId: z.string().optional().catch(undefined),
+        accountType: z.string().optional().catch(undefined),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
 
-        const { startDate, endDate, portId, accountType } = req.query;
-        const requestedStartDate = readQueryString(startDate);
-        const requestedEndDate = readQueryString(endDate);
-        const requestedPortId = readQueryString(portId);
-        const requestedAccountType = readQueryString(accountType);
+      // We normalize empty strings to undefined
+      const requestedStartDate = input.startDate?.trim() || undefined;
+      const requestedEndDate = input.endDate?.trim() || undefined;
+      const requestedPortId = input.portId?.trim() || undefined;
+      const requestedAccountType = input.accountType?.trim() || undefined;
 
-        // Build optional filter fragments
+      const cacheKey = buildRequestCacheKey("/reports/trial-balance", input);
+
+      const result = await financialReportsCache.getOrLoad(cacheKey, async () => {
         const portFilter = requestedPortId
           ? sql` AND t.port_id = ${requestedPortId}`
           : sql``;
@@ -101,77 +95,73 @@ export function registerReportTrialBalanceRoutes(router: Router) {
           ? sql` AND t.trans_date <= ${requestedEndDate}`
           : sql``;
 
-        // Opening balance filter (transactions before the start date — no period end cap)
         const openingEndFilter = requestedStartDate
           ? sql` AND t.trans_date < ${requestedStartDate}`
           : sql``;
 
-        // Run all queries in parallel
         const [allAccountTypes, periodAgg, openingAgg] = await Promise.all([
           db.select().from(accountTypes),
 
-          // Period aggregations: GROUP BY account_id — single SQL query replaces O(n×m) JS filter
           db.execute(sql`
-          SELECT
-            t.account_id AS accountId,
-            COUNT(*) AS trans_count,
-            SUM(CASE
-              WHEN UPPER(t.direction) IN ('IN','DR')
-                AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
-              THEN 1 ELSE 0
-            END) AS shipment_count,
-            SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS debit_usd,
-            SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS debit_iqd,
-            SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS credit_usd,
-            SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS credit_iqd,
-            SUM(CASE
-              WHEN UPPER(t.direction) IN ('IN','DR')
-                AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
-              THEN ABS(COALESCE(CAST(t.cost_usd AS DECIMAL(15,2)),0)) ELSE 0
-            END) AS cost_usd,
-            SUM(CASE
-              WHEN UPPER(t.direction) IN ('IN','DR')
-                AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
-              THEN ABS(COALESCE(CAST(t.cost_iqd AS DECIMAL(15,0)),0)) ELSE 0
-            END) AS cost_iqd,
-            SUM(CASE
-              WHEN UPPER(t.direction) IN ('IN','DR')
-                AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
-              THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) - ABS(COALESCE(CAST(t.cost_usd AS DECIMAL(15,2)),0))
-              ELSE 0
-            END) AS profit_usd,
-            SUM(CASE
-              WHEN UPPER(t.direction) IN ('IN','DR')
-                AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
-              THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) - ABS(COALESCE(CAST(t.cost_iqd AS DECIMAL(15,0)),0))
-              ELSE 0
-            END) AS profit_iqd
-          FROM transactions t
-          WHERE 1=1
-            ${portFilter}
-            ${acctTypeFilter}
-            ${periodStartFilter}
-            ${periodEndFilter}
-          GROUP BY t.account_id
-        `),
+            SELECT
+              t.account_id AS accountId,
+              COUNT(*) AS trans_count,
+              SUM(CASE
+                WHEN UPPER(t.direction) IN ('IN','DR')
+                  AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
+                THEN 1 ELSE 0
+              END) AS shipment_count,
+              SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS debit_usd,
+              SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS debit_iqd,
+              SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS credit_usd,
+              SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS credit_iqd,
+              SUM(CASE
+                WHEN UPPER(t.direction) IN ('IN','DR')
+                  AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
+                THEN ABS(COALESCE(CAST(t.cost_usd AS DECIMAL(15,2)),0)) ELSE 0
+              END) AS cost_usd,
+              SUM(CASE
+                WHEN UPPER(t.direction) IN ('IN','DR')
+                  AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
+                THEN ABS(COALESCE(CAST(t.cost_iqd AS DECIMAL(15,0)),0)) ELSE 0
+              END) AS cost_iqd,
+              SUM(CASE
+                WHEN UPPER(t.direction) IN ('IN','DR')
+                  AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
+                THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) - ABS(COALESCE(CAST(t.cost_usd AS DECIMAL(15,2)),0))
+                ELSE 0
+              END) AS profit_usd,
+              SUM(CASE
+                WHEN UPPER(t.direction) IN ('IN','DR')
+                  AND LOWER(COALESCE(t.record_type,'shipment')) NOT IN ('expense-charge','debit-note')
+                THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) - ABS(COALESCE(CAST(t.cost_iqd AS DECIMAL(15,0)),0))
+                ELSE 0
+              END) AS profit_iqd
+            FROM transactions t
+            WHERE 1=1
+              ${portFilter}
+              ${acctTypeFilter}
+              ${periodStartFilter}
+              ${periodEndFilter}
+            GROUP BY t.account_id
+          `),
 
-          // Opening balance aggregations (before startDate)
           requestedStartDate
             ? db.execute(sql`
-              SELECT
-                t.account_id AS accountId,
-                SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) -
-                SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS opening_usd,
-                SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) -
-                SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS opening_iqd
-              FROM transactions t
-              WHERE 1=1
-                ${openingEndFilter}
-                ${portFilter}
-                ${acctTypeFilter}
-              GROUP BY t.account_id
-            `)
-            : Promise.resolve([]),
+                SELECT
+                  t.account_id AS accountId,
+                  SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) -
+                  SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)),0)) ELSE 0 END) AS opening_usd,
+                  SUM(CASE WHEN UPPER(t.direction) IN ('IN','DR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) -
+                  SUM(CASE WHEN UPPER(t.direction) IN ('OUT','CR') THEN ABS(COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)),0)) ELSE 0 END) AS opening_iqd
+                FROM transactions t
+                WHERE 1=1
+                  ${openingEndFilter}
+                  ${portFilter}
+                  ${acctTypeFilter}
+                GROUP BY t.account_id
+              `)
+            : Promise.resolve([[], []]),
         ]);
 
         const accountTypeNameMap = new Map(
@@ -181,29 +171,27 @@ export function registerReportTrialBalanceRoutes(router: Router) {
           ])
         );
 
-        // Map period aggregations by accountId
         type PeriodAggRow = Record<string, unknown>;
         const periodMap = new Map<number, PeriodAggRow>();
-        for (const row of periodAgg as unknown as PeriodAggRow[]) {
+        const [periodRows] = periodAgg as unknown as [PeriodAggRow[], unknown];
+        for (const row of periodRows) {
           periodMap.set(Number(row.accountId), row);
         }
 
-        // Map opening aggregations by accountId
         type OpeningAggRow = Record<string, unknown>;
         const openingMap = new Map<number, OpeningAggRow>();
-        for (const row of openingAgg as unknown as OpeningAggRow[]) {
+        const [openingRows] = openingAgg as unknown as [OpeningAggRow[], unknown];
+        for (const row of openingRows) {
           openingMap.set(Number(row.accountId), row);
         }
 
-        // Fetch all accounts (small table — metadata only)
         const allAccounts = await db.select().from(accounts);
 
         const rows: TrialBalanceRow[] = allAccounts
-          .map((account): TrialBalanceRow | null => {
+          .map((account: any): TrialBalanceRow | null => {
             const period = periodMap.get(account.id);
             const opening = openingMap.get(account.id);
 
-            // Skip accounts with no activity
             if (!period && !opening) return null;
 
             const openingUSD = parseNum(opening?.opening_usd ?? 0);
@@ -247,7 +235,7 @@ export function registerReportTrialBalanceRoutes(router: Router) {
               trans_count: transCount,
             };
           })
-          .filter((row): row is TrialBalanceRow => row !== null);
+          .filter((row: TrialBalanceRow | null): row is TrialBalanceRow => row !== null);
 
         const totals = {
           account_count: rows.length,
@@ -267,10 +255,9 @@ export function registerReportTrialBalanceRoutes(router: Router) {
           trans_count: sumTrialBalanceField(rows, "trans_count"),
         };
 
-        return res.json({ rows, totals });
-      } catch (error) {
-        return respondRouteError(res, error);
-      }
-    }
-  );
-}
+        return { rows, totals };
+      });
+
+      return result.value;
+    }),
+});

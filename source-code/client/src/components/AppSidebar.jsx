@@ -60,7 +60,7 @@ function SidebarNavButton({
               : "var(--sidebar-nav-icon-inactive)"
           }
           borderColor={active ? `${accentColor}3b` : "rgba(255,255,255,0.08)"}
-          className={`relative z-10 shrink-0 transition-all duration-200 group-hover:scale-[1.03] ${
+          className={`relative z-10 shrink-0 transition-all duration-300 group-hover:scale-[1.08] group-hover:-rotate-3 ${
             collapsed
               ? "h-9 min-w-[3.85rem] px-1.5 text-[7px]"
               : "h-10 min-w-[5.1rem] px-2 text-[8px]"
@@ -68,20 +68,22 @@ function SidebarNavButton({
         />
       ) : (
         <span
-          className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] transition-all duration-200 group-hover:scale-[1.03]"
+          className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300 group-hover:scale-[1.08] ${active ? "ring-1 ring-inset" : "border border-transparent"}`}
           style={{
             color: active
               ? "var(--sidebar-nav-icon-active)"
               : "var(--sidebar-nav-icon-inactive)",
             background: active
-              ? `${accentColor}20`
+              ? `linear-gradient(135deg, ${accentColor}25 0%, ${accentColor}10 100%)`
               : "var(--sidebar-nav-icon-bg)",
             boxShadow: active
-              ? "var(--sidebar-nav-icon-shadow-active)"
+              ? `var(--sidebar-nav-icon-shadow-active), inset 0 2px 4px ${accentColor}15`
               : "var(--sidebar-nav-icon-shadow)",
+            borderColor: active ? `${accentColor}40` : "var(--sidebar-border)",
+            "--tw-ring-color": active ? `${accentColor}30` : "transparent",
           }}
         >
-          <Icon size={18} strokeWidth={1.9} />
+          <Icon size={20} strokeWidth={1.6} className="transition-transform duration-300 group-hover:-rotate-3" />
         </span>
       )}
 

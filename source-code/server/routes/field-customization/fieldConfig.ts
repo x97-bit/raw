@@ -61,11 +61,7 @@ export function registerFieldConfigRoutes(router: Router) {
         if (!Array.isArray(fields))
           return res.status(400).json({ error: FIELDS_ARRAY_REQUIRED_MESSAGE });
 
-        const beforeConfigs = await db
-          .select()
-          .from(fieldConfig)
-          .where(eq(fieldConfig.sectionKey, sectionKey))
-          .orderBy(asc(fieldConfig.sortOrder));
+
 
         for (const field of fields) {
           const displayLabel =
@@ -107,11 +103,7 @@ export function registerFieldConfigRoutes(router: Router) {
           }
         }
 
-        const afterConfigs = await db
-          .select()
-          .from(fieldConfig)
-          .where(eq(fieldConfig.sectionKey, sectionKey))
-          .orderBy(asc(fieldConfig.sortOrder));
+
 
         return res.json({ message: FIELD_SETTINGS_UPDATED_MESSAGE });
       } catch (error: any) {

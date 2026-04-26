@@ -59,15 +59,7 @@ export function registerCustomFieldValueRoutes(router: Router) {
         if (!Array.isArray(values))
           return res.status(400).json({ error: VALUES_ARRAY_REQUIRED_MESSAGE });
 
-        const beforeValues = await db
-          .select()
-          .from(customFieldValues)
-          .where(
-            and(
-              eq(customFieldValues.entityType, entityType),
-              eq(customFieldValues.entityId, entityId)
-            )
-          );
+
 
         await db
           .delete(customFieldValues)
@@ -93,15 +85,7 @@ export function registerCustomFieldValueRoutes(router: Router) {
           }
         }
 
-        const afterValues = await db
-          .select()
-          .from(customFieldValues)
-          .where(
-            and(
-              eq(customFieldValues.entityType, entityType),
-              eq(customFieldValues.entityId, entityId)
-            )
-          );
+
 
         return res.json({ message: CUSTOM_FIELD_VALUES_SAVED_MESSAGE });
       } catch (error: any) {

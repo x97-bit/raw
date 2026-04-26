@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  buildTrialBalanceQuery,
   createTrialBalanceFieldConfigState,
 } from "./trialBalanceHelpers";
 import { TRIAL_BALANCE_ALL_COLUMNS } from "./trialBalanceConfig";
+import { trpc } from "../../utils/trpc";
 
 const INITIAL_FILTERS = { from: "", to: "", port: "", accountType: "" };
 
 export default function useTrialBalancePageData({ api }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [ports, setPorts] = useState([]);
   const [accountTypes, setAccountTypes] = useState([]);
@@ -37,19 +38,25 @@ export default function useTrialBalancePageData({ api }) {
   const loadData = useCallback(
     async nextFilters => {
       setLoading(true);
+      setError(null);
       try {
-        const query = buildTrialBalanceQuery(nextFilters || filtersRef.current);
-        const nextData = await api(
-          `/reports/trial-balance${query ? `?${query}` : ""}`
-        );
+        const isEvent = nextFilters && typeof nextFilters.preventDefault === "function";
+        const activeFilters = (!isEvent && nextFilters) ? nextFilters : filtersRef.current;
+        const nextData = await trpc.trialBalance.getTrialBalance.query({
+          startDate: activeFilters.from || undefined,
+          endDate: activeFilters.to || undefined,
+          portId: activeFilters.port || undefined,
+          accountType: activeFilters.accountType || undefined,
+        });
         setData(nextData);
       } catch (error) {
-        console.error(error);
+        console.error("TrialBalance Error:", error);
+        setError(error.message || String(error));
       } finally {
         setLoading(false);
       }
     },
-    [api]
+    []
   );
 
   useEffect(() => {
@@ -70,6 +77,7 @@ export default function useTrialBalancePageData({ api }) {
     filters,
     loadData,
     loading,
+    error,
     ports,
     setFilters,
     visibleColumns,

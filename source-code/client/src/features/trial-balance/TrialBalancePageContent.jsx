@@ -23,6 +23,7 @@ export default function TrialBalancePage({ onBack }) {
     filters,
     loadData,
     loading,
+    error,
     ports,
     setFilters,
     visibleColumns,
@@ -64,6 +65,12 @@ export default function TrialBalancePage({ onBack }) {
           accountTypes={accountTypes}
           onSubmit={loadData}
         />
+
+        {error && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-500 shadow-sm">
+            {error}
+          </div>
+        )}
 
         {data?.totals && (
           <TrialBalanceSummaryGrid

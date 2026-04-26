@@ -120,14 +120,13 @@ export default function AccountsPage({ onBack }) {
           <div className="flex items-center gap-2">
             <button
               onClick={openPaymentModal}
-              className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 bg-[#d8a2a8]/10 text-[#d8a2a8] hover:bg-[#d8a2a8]/20 border border-[#d8a2a8]/20"
+              className="btn-outline flex items-center gap-1.5 px-4 py-2.5 text-sm"
             >
               <Plus size={16} /> سند قبض / تسديد
             </button>
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-[#eef3f7] transition-all duration-200 hover:-translate-y-0.5"
-              style={addButtonStyle}
+              className="btn-primary flex items-center gap-1.5 px-4 py-2.5 text-sm"
             >
               <Plus size={16} /> إضافة سجل
             </button>

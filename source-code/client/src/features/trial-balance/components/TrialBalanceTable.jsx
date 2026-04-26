@@ -15,8 +15,8 @@ export default function TrialBalanceTable({
   if (loading) {
     return (
       <div className="py-16 text-center">
-        <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-2 border-white/[0.12] border-t-[#9ab6ca]" />
-        <p className="text-sm text-[#91a0ad]">جارِ التحميل...</p>
+        <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-2 border-white/[0.12] border-t-utility-accent-text" />
+        <p className="text-sm text-utility-muted">جارِ التحميل...</p>
       </div>
     );
   }
@@ -28,11 +28,11 @@ export default function TrialBalanceTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] text-right">
+            <tr className="bg-gradient-to-l from-white/[0.06] via-white/[0.04] to-white/[0.02] text-right shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)] text-utility-strong">
               {columns.map(column => (
                 <th
                   key={column.key}
-                  className="whitespace-nowrap px-3 py-3 font-semibold"
+                  className="whitespace-nowrap px-3 py-3 font-bold"
                 >
                   {column.label}
                 </th>
@@ -46,7 +46,7 @@ export default function TrialBalanceTable({
                 <tr className="bg-white/[0.04]">
                   <td
                     colSpan={colCount}
-                    className="px-4 py-2.5 text-sm font-bold text-[#dce8f2]"
+                    className="px-4 py-2.5 text-sm font-bold text-utility-strong shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]"
                   >
                     {typeName}
                   </td>
@@ -57,14 +57,14 @@ export default function TrialBalanceTable({
                     key={row.AccountID}
                     className={`border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${
                       (row.balance_usd || 0) < 0 || (row.balance_iqd || 0) < 0
-                        ? "bg-[#c697a1]/[0.06]"
+                        ? "bg-utility-danger-bg/50"
                         : ""
                     }`}
                   >
                     {columns.map(column => (
                       <td
                         key={column.key}
-                        className={`px-3 py-2.5 ${column.isBold ? "font-bold" : ""} ${column.isMedium ? "font-semibold" : ""} ${column.isSmall ? "text-xs text-[#91a0ad]" : ""} ${column.isCenter ? "text-center" : ""} ${column.colorFn ? column.colorFn(row[column.dataKey]) : column.colorClass || ""}`}
+                        className={`px-3 py-2.5 ${column.isBold ? "font-bold text-utility-strong" : ""} ${column.isMedium ? "font-semibold text-utility-strong" : ""} ${column.isSmall ? "text-xs text-utility-muted" : ""} ${column.isCenter ? "text-center" : ""} ${column.colorFn ? column.colorFn(row[column.dataKey]) : column.colorClass || ""}`}
                       >
                         {column.render(row[column.dataKey])}
                       </td>
@@ -96,7 +96,7 @@ export default function TrialBalanceTable({
                       return (
                         <td
                           key={column.key}
-                          className="px-3 py-2 text-[#dce8f2]"
+                          className="px-3 py-2 text-utility-strong font-bold"
                         >{`مجموع ${typeName}`}</td>
                       );
                     }
@@ -131,7 +131,7 @@ export default function TrialBalanceTable({
 
                 if (index === 0) {
                   return (
-                    <td key={column.key} className="px-3 py-3 text-[#eef3f7]">
+                    <td key={column.key} className="px-3 py-3 text-utility-strong text-lg">
                       الإجمالي الكلي
                     </td>
                   );

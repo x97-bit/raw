@@ -2,9 +2,20 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "@shared/const";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { logSystemError } from "./logger";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error, type, path, input, ctx }) {
+    // Log unexpected or internal server errors
+    if (error.code === 'INTERNAL_SERVER_ERROR' && !error.message.includes("UNAUTHORIZED")) {
+      void logSystemError(`tRPC Error: [${type}] ${path}`, error, {
+        input,
+        userId: ctx?.user?.id,
+      });
+    }
+    return shape;
+  },
 });
 
 export const router = t.router;

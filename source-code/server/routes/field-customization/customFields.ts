@@ -1,12 +1,11 @@
 import { Router, Response } from "express";
-import { asc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   customFieldValues,
   customFields,
   fieldConfig,
 } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
-import { respondRouteError } from "../../_core/routeResponses";
 import { assertPositiveIntegerParam } from "../../_core/requestValidation";
 import { getDb } from "../../db/db";
 import {
@@ -134,12 +133,6 @@ export function registerCustomFieldRoutes(router: Router) {
             .status(404)
             .json({ error: CUSTOM_FIELD_NOT_FOUND_MESSAGE });
 
-        const beforeSections = await db
-          .select()
-          .from(fieldConfig)
-          .where(eq(fieldConfig.fieldKey, existingField.fieldKey))
-          .orderBy(asc(fieldConfig.sectionKey), asc(fieldConfig.sortOrder));
-
         await db
           .update(customFields)
           .set({
@@ -155,17 +148,6 @@ export function registerCustomFieldRoutes(router: Router) {
         if (Array.isArray(sections)) {
           await syncCustomFieldSections(db, existingField.fieldKey, sections);
         }
-
-        const [updatedField] = await db
-          .select()
-          .from(customFields)
-          .where(eq(customFields.id, id))
-          .limit(1);
-        const afterSections = await db
-          .select()
-          .from(fieldConfig)
-          .where(eq(fieldConfig.fieldKey, existingField.fieldKey))
-          .orderBy(asc(fieldConfig.sectionKey), asc(fieldConfig.sortOrder));
 
         return res.json({ message: CUSTOM_FIELD_UPDATED_MESSAGE });
       } catch (error: any) {
@@ -196,15 +178,6 @@ export function registerCustomFieldRoutes(router: Router) {
             .json({ error: CUSTOM_FIELD_NOT_FOUND_MESSAGE });
 
         const fieldKey = field[0].fieldKey;
-        const existingSections = await db
-          .select()
-          .from(fieldConfig)
-          .where(eq(fieldConfig.fieldKey, fieldKey))
-          .orderBy(asc(fieldConfig.sectionKey), asc(fieldConfig.sortOrder));
-        const existingValues = await db
-          .select()
-          .from(customFieldValues)
-          .where(eq(customFieldValues.customFieldId, id));
 
         await db
           .delete(customFieldValues)

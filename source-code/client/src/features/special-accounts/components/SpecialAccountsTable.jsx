@@ -1,5 +1,5 @@
-import { Pencil, Trash2, Search } from "lucide-react";
-import { useState } from "react";
+import { Pencil, Trash2, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
 import { isSpecialHaiderSettlementRow } from "../../../utils/specialHaiderMath";
 import {
   getAccountAccentLineStyle,
@@ -23,6 +23,13 @@ export default function SpecialAccountsTable({
   onDelete,
 }) {
   const [columnFilters, setColumnFilters] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 100;
+
+  // Reset page when filters or data change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [columnFilters, rows]);
   const surfaceStyle = getAccountCardOutlineStyle(account, "12");
   const accentLineStyle = getAccountAccentLineStyle(account);
   const headerStyle = getAccountTableHeaderStyle(account);
@@ -49,6 +56,12 @@ export default function SpecialAccountsTable({
     }
     return true;
   });
+
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  const paginatedRows = filteredRows.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   const hasActiveFilters = Object.values(columnFilters).some(Boolean);
 
@@ -124,7 +137,7 @@ export default function SpecialAccountsTable({
                 </td>
               </tr>
             ) : (
-              filteredRows.map((row, index) => {
+              paginatedRows.map((row, index) => {
                 if (row.isDailySummary) {
                   return (
                     <tr
@@ -239,6 +252,33 @@ export default function SpecialAccountsTable({
           )}
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-white/[0.05] bg-black/10 px-4 py-3 text-sm text-[#8f9daa]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 rounded bg-white/5 px-3 py-1.5 transition-colors hover:bg-white/10 disabled:opacity-50"
+            >
+              <ChevronLeft size={16} /> التالي
+            </button>
+            <span className="font-semibold text-[#e6edf4]">
+              صفحة {currentPage} من {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 rounded bg-white/5 px-3 py-1.5 transition-colors hover:bg-white/10 disabled:opacity-50"
+            >
+              السابق <ChevronRight size={16} />
+            </button>
+          </div>
+          <div>
+            إجمالي السجلات: <span className="font-semibold text-[#e6edf4]">{filteredRows.length}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

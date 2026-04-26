@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import { financialReportsCache } from "../utils/reportsCache";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -14,6 +15,19 @@ import {
 import { securityHeadersMiddleware } from "./securityHeaders";
 import { closeDb } from "../db/db";
 import { parseTrustProxySetting } from "./trustProxy";
+import { logSystemError } from "./logger";
+
+// Capture unhandled exceptions
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  void logSystemError("Uncaught Exception", error);
+});
+
+// Capture unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  void logSystemError("Unhandled Rejection", reason);
+});
 
 const API_BODY_LIMIT = process.env.API_BODY_LIMIT || "25mb";
 const URLENCODED_PARAMETER_LIMIT = 250;
@@ -65,6 +79,22 @@ async function startServer() {
       timestamp: new Date().toISOString(),
     });
   });
+
+  // Cache Invalidation Middleware
+  app.use((req, res, next) => {
+    res.on("finish", () => {
+      if (
+        ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
+        res.statusCode >= 200 &&
+        res.statusCode < 400
+      ) {
+        // If a modifying request succeeds, wipe the reports cache to ensure data is fresh
+        financialReportsCache.clear();
+      }
+    });
+    next();
+  });
+
   // REST API routes for the business app
   app.use("/api", apiRoutes);
   // tRPC API
@@ -75,6 +105,19 @@ async function startServer() {
       createContext,
     })
   );
+
+  // Global Error Handler for Express
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    void logSystemError(`Express Error: ${req.method} ${req.url}`, err, {
+      body: req.body,
+      query: req.query,
+      ip: req.ip,
+    });
+    
+    // Don't leak error details to client in production
+    res.status(500).json({ error: "Internal Server Error" });
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

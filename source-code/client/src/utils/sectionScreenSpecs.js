@@ -792,6 +792,99 @@ const RAW_SECTION_SCREEN_SPECS = {
       ],
     },
   },
+  "fx-1": {
+    targets: ["list", "statement", "invoice", "payment", "debit-note"],
+    "debit-note": createDebitNoteSpec(),
+    list: {
+      columns: [
+        createColumn("ref_no", "RefNo", "رقم الفاتورة"),
+        createColumn("direction", "TransTypeName", "نوع الحركة", "badge"),
+        createColumn("trans_date", "TransDate", "التاريخ", "date"),
+        createColumn("account_name", "AccountName", "اسم الحساب"),
+        createColumn("currency", "Currency", "العملة", "currency"),
+        createColumn(
+          "amount_usd",
+          "AmountUSD",
+          "المبلغ دولار",
+          "money_usd_bold"
+        ),
+        createColumn(
+          "amount_iqd",
+          "AmountIQD",
+          "المبلغ دينار",
+          "money_iqd_bold"
+        ),
+        createColumn("trader_note", "TraderNote", "ملاحظات الحساب", "notes"),
+        createColumn("notes", "Notes", "الملاحظات", "notes"),
+      ],
+    },
+    statement: {
+      columns: withStatementCoreColumns([
+        createColumn("account_name", "AccountName", "اسم الحساب", "text", {
+          defaultVisible: false,
+        }),
+        createColumn("currency", "Currency", "العملة", "currency"),
+        createColumn(
+          "amount_usd",
+          "AmountUSD",
+          "المبلغ دولار",
+          "money_usd_bold"
+        ),
+        createColumn(
+          "amount_iqd",
+          "AmountIQD",
+          "المبلغ دينار",
+          "money_iqd_bold"
+        ),
+        createColumn("trader_note", "TraderNote", "ملاحظات الحساب", "notes"),
+        createColumn("notes", "Notes", "الملاحظات", "notes"),
+      ]),
+    },
+    invoice: {
+      fields: [
+        createField("ref_no", "رقم الفاتورة", "text", { readOnly: true }),
+        createField("trans_date", "التاريخ", "date"),
+        createField("account_name", "اسم الحساب", "text"),
+        createField("currency", "العملة", "text"),
+        createField("amount_usd", "المبلغ دولار", "money"),
+        createField("amount_iqd", "المبلغ دينار", "money"),
+        createField("trader_note", "ملاحظات الحساب", "text"),
+        createField("notes", "ملاحظات المالك", "text"),
+      ],
+      layout: [
+        createFormSection("المعلومات الأساسية", [
+          "ref_no",
+          "trans_date",
+          "account_name",
+          "currency",
+        ]),
+        createFormSection("القيم المالية", ["amount_usd", "amount_iqd"]),
+        createFormSection("الملاحظات", ["trader_note", "notes"]),
+      ],
+    },
+    payment: {
+      fields: [
+        createField("ref_no", "رقم سند القبض", "text", { readOnly: true }),
+        createField("trans_date", "التاريخ", "date"),
+        createField("account_name", "اسم الحساب", "text"),
+        createField("currency", "العملة", "text"),
+        createField("amount_usd", "المبلغ دولار", "money"),
+        createField("amount_iqd", "المبلغ دينار", "money"),
+        createField("trader_note", "ملاحظات الحساب", "text"),
+        createField("notes", "ملاحظات المالك", "text"),
+      ],
+      layout: [
+        createFormSection("المعلومات الأساسية", [
+          "ref_no",
+          "trans_date",
+          "account_name",
+          "currency",
+        ]),
+        createFormSection("القيم المالية", ["amount_usd", "amount_iqd"]),
+        createFormSection("الملاحظات", ["trader_note", "notes"]),
+      ],
+    },
+  },
 };
 
 export const SECTION_SCREEN_SPECS = normalizeSectionScreenSpecs(
