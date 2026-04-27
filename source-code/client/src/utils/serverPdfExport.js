@@ -192,6 +192,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @page { margin: 0 0 ${options.footerBase64 ? '32mm' : '10mm'} 0; }
