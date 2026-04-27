@@ -62,7 +62,7 @@ const FALLBACK_LAYOUTS = {
 };
 
 function formatDateValue(value) {
-  return value ? String(value).split(" ")[0] : "-";
+  return value ? String(value).split("T")[0].split(" ")[0] : "-";
 }
 
 function formatNumericValue(value) {

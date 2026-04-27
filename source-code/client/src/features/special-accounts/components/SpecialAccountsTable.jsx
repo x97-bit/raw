@@ -93,7 +93,7 @@ export default function SpecialAccountsTable({
               {visibleColumns.map(column => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 align-top ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
+                  className={`px-4 py-3 align-top ${isDateColumn(column) ? "whitespace-nowrap min-w-[110px] text-center" : ""}`}
                 >
                   <div className="flex flex-col gap-1.5">
                     <span className="font-semibold">{column.label}</span>
@@ -184,7 +184,7 @@ export default function SpecialAccountsTable({
                     {visibleColumns.map(column => (
                       <td
                         key={column.key}
-                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? "font-bold text-[#f4f8fb]" : ""} ${column.isMedium ? "font-semibold" : ""} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ""} ${column.isNotes ? "max-w-[220px] truncate text-xs text-[#91a0ad]" : ""} ${isDateColumn(column) ? "whitespace-nowrap" : ""}`}
+                        className={`px-4 py-3 text-[#e6edf4] ${column.isBold ? "font-bold text-[#f4f8fb]" : ""} ${column.isMedium ? "font-semibold" : ""} ${column.colorFn ? column.colorFn(row[column.dataKey]) : ""} ${column.isNotes ? "max-w-[220px] truncate text-xs text-[#91a0ad]" : ""} ${isDateColumn(column) ? "whitespace-nowrap min-w-[110px] text-center" : ""}`}
                       >
                         {column.render(row[column.dataKey], row)}
                       </td>

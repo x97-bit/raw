@@ -22,7 +22,7 @@ const HAIDER_COLUMNS = [
     dataKey: "TransDate",
     label: "التاريخ",
     format: "date",
-    render: value => value?.split(" ")[0] || "-",
+    render: value => value?.split("T")[0].split(" ")[0] || "-",
   },
   {
     key: "destination",
@@ -118,7 +118,7 @@ const PARTNER_COLUMNS = [
     dataKey: "TransDate",
     label: "التاريخ",
     format: "date",
-    render: value => value?.split(" ")[0] || "-",
+    render: value => value?.split("T")[0].split(" ")[0] || "-",
   },
   {
     key: "trader_name",
@@ -521,7 +521,7 @@ export function getInitialSpecialForm(accountId, accountLabel, record = null) {
     type,
     name: accountLabel,
     date:
-      record?.TransDate?.split(" ")[0] ||
+      record?.TransDate?.split("T")[0].split(" ")[0] ||
       new Date().toISOString().split("T")[0],
     traderName: record?.TraderName || "",
     driverName: record?.DriverName || "",

@@ -14,7 +14,7 @@ export default function ReportsAddTraderView({
   return (
     <div className="page-shell">
       <PageHeader
-        title={`إضافة تاجر - ${activePort?.name || ""}`}
+        title={`إضافة حساب - ${activePort?.name || ""}`}
         subtitle="التقارير"
         onBack={onBack}
       />
@@ -23,7 +23,7 @@ export default function ReportsAddTraderView({
         <div className="card border border-border shadow-sm space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-muted-foreground">
-              اسم التاجر *
+              اسم الحساب *
             </label>
             <AutocompleteInput
               value={traderForm.AccountName}
@@ -34,7 +34,7 @@ export default function ReportsAddTraderView({
               onSelect={account =>
                 onFieldChange("AccountName", account.AccountName)
               }
-              placeholder="ابدأ بكتابة اسم التاجر..."
+              placeholder="ابدأ بكتابة اسم الحساب..."
               className="input-field"
             />
           </div>

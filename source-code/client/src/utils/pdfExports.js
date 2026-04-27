@@ -12,6 +12,7 @@ import {
   resolveBrandAssets,
   TAY_ALRAWI_BRAND_COLORS,
 } from "./exportBranding";
+import { exportToServerPdf } from "./serverPdfExport";
 
 const imageElementCache = new Map();
 
@@ -31,9 +32,9 @@ const CANVAS_PAGE_SPECS = {
 };
 
 const PDF_BODY_FONT_FAMILY =
-  '"Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
+  '"Cordale Trial Bold Italic", "Cordale Trial", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
 const PDF_TITLE_FONT_FAMILY =
-  '"Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
+  '"Cordale Trial Bold Italic", "Cordale Trial", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
 
 async function ensurePdfFontsReady() {
   if (typeof document === "undefined" || !document.fonts?.ready) return;
@@ -50,15 +51,21 @@ async function ensurePdfFontsReady() {
   }
 }
 
-function formatCellValue(val, format) {
-  if (val === null || val === undefined || val === "") return "-";
-  if (format === "date") return String(val).split(" ")[0];
-  if (format === "currency") return getCurrencyLabel(val);
-  if (format === "number") return Number(val).toLocaleString("en-US");
-  if (format === "money") return `$${Number(val).toLocaleString("en-US")}`;
+function formatCellValue(value, format) {
+  if (value === null || value === undefined || value === "") return "-";
+  
+  // For dates, wrap in LRM (\u200E) to prevent RTL BiDi algorithm from scrambling dashes
+  if (format === "date") {
+    const dateOnly = String(value).split("T")[0].split(" ")[0];
+    return "\u200E" + dateOnly + "\u200E";
+  }
+
+  if (format === "currency") return getCurrencyLabel(value);
+  if (format === "number") return Number(value).toLocaleString("en-US");
+  if (format === "money") return `$${Number(value).toLocaleString("en-US")}`;
   if (format === "money_iqd")
-    return `${Number(val).toLocaleString("en-US")} د.ع`;
-  return String(val);
+    return `${Number(value).toLocaleString("en-US")} د.ع`;
+  return String(value);
 }
 
 function resolveAssetUrl(path) {
@@ -95,6 +102,51 @@ async function loadBrandAssets(assetOverrides = {}, { sectionKey } = {}) {
   ]);
 
   return { header, footer, logo, logoOnWhite };
+}
+
+/**
+ * Converts an image URL to a base64 data URI by loading it into a canvas.
+ * This is needed for Puppeteer server-side PDF generation, because
+ * the headless browser on the server cannot reach client-origin URLs.
+ */
+async function imageToBase64(url) {
+  if (!url) return null;
+  const img = await loadImage(url);
+  if (!img) return null;
+  try {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth || img.width;
+    c.height = img.naturalHeight || img.height;
+    const cx = c.getContext("2d");
+    cx.drawImage(img, 0, 0);
+    return c.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Converts header image to base64 and bakes in the navy separator line
+ * at the bottom — exactly matching Canvas drawPageBackdrop:
+ *   ctx.strokeStyle = "#1c2b59"; ctx.lineWidth = 3;
+ *   ctx.moveTo(0, headerHeight); ctx.lineTo(spec.width, headerHeight);
+ */
+async function headerImageToBase64(url) {
+  if (!url) return null;
+  const img = await loadImage(url);
+  if (!img) return null;
+  try {
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const cx = c.getContext("2d");
+    cx.drawImage(img, 0, 0);
+    return c.toDataURL("image/png");
+  } catch {
+    return null;
+  }
 }
 
 function createCanvasPage(orientation) {
@@ -184,6 +236,7 @@ function drawImageFitWidth(ctx, image, x, y, width) {
 }
 
 function setFont(ctx, weight, size, family = PDF_BODY_FONT_FAMILY) {
+  // Use the requested weight without forcing italic
   ctx.font = `${weight} ${size}px ${family}`;
 }
 
@@ -192,14 +245,18 @@ function truncateText(ctx, text, maxWidth) {
   if (!maxWidth || ctx.measureText(value).width <= maxWidth) return value;
 
   const ellipsis = "...";
-  let result = value;
+  const cleanValue = value.replace(/\u200E/g, '');
+  const hasMarkers = value !== cleanValue;
+  
+  let result = cleanValue;
   while (
     result.length > 1 &&
-    ctx.measureText(`${result}${ellipsis}`).width > maxWidth
+    ctx.measureText(hasMarkers ? `\u200E${result}${ellipsis}\u200E` : `${result}${ellipsis}`).width > maxWidth
   ) {
     result = result.slice(0, -1);
   }
-  return `${result}${ellipsis}`;
+  
+  return hasMarkers ? `\u200E${result}${ellipsis}\u200E` : `${result}${ellipsis}`;
 }
 
 function splitLongToken(ctx, token, maxWidth) {
@@ -510,13 +567,16 @@ function getColumnWeights(columns) {
       key.includes("company")
     )
       return 1.35;
+    if (key.includes("date") || label.includes("تاريخ")) return 1.5;
     if (key.includes("amount") || key.includes("cost")) return 1.15;
     if (
-      key.includes("date") ||
-      key.includes("currency") ||
-      key.includes("direction")
+      key.includes("weight") ||
+      key.includes("meter") ||
+      label.includes("وزن") ||
+      label.includes("أمتار") ||
+      label.includes("امتار")
     )
-      return 1.0;
+      return 0.8;
     return 1.0;
   });
 }
@@ -555,14 +615,14 @@ function splitRowsIntoPages(
 function drawReportHeader(ctx, spec, xRight, startY, { title, subtitle }) {
   let y = startY;
   drawText(ctx, title || "", xRight, y, {
-    size: 72,
+    size: 68,
     weight: "800",
     color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
   });
   y += 75;
   if (subtitle) {
     drawText(ctx, subtitle, xRight, y, {
-      size: 49,
+      size: 52,
       weight: "700",
       color: TAY_ALRAWI_BRAND_COLORS.accentRedDark,
     });
@@ -603,14 +663,14 @@ function drawSummaryCards(ctx, spec, x, y, width, summaryCards) {
         2
       );
       drawText(ctx, card.label, cardX + cardWidth - 24, cardY + 34, {
-        size: 39,
+        size: 45,
         weight: "700",
         color: "#5c6482",
         maxWidth: cardWidth - 34,
       });
       drawText(ctx, card.value, cardX + cardWidth - 24, cardY + 74, {
-        size: 60,
-        weight: "700",
+        size: 52,
+        weight: "800",
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
         maxWidth: cardWidth - 34,
       });
@@ -624,8 +684,8 @@ function drawTable(
   ctx,
   { x, y, width, columns, rows, totalsRow, orientation }
 ) {
-  const headerHeight = orientation === "portrait" ? 90 : 78;
-  const rowHeight = orientation === "portrait" ? 78 : 68;
+  const headerHeight = orientation === "portrait" ? 40 : 38;
+  const rowHeight = orientation === "portrait" ? 38 : 36;
   const columnWidths = computeColumnLayouts(columns, width);
 
   let cursorX = x + width;
@@ -646,9 +706,9 @@ function drawTable(
     drawText(ctx, column.label, cursorX + cellWidth / 2, y + headerHeight / 2, {
       align: "center",
       color: "#ffffff",
-      size: orientation === "portrait" ? 57 : 51,
+      size: orientation === "portrait" ? 26 : 24,
       weight: "700",
-      maxWidth: cellWidth - 20,
+      maxWidth: cellWidth - 8,
     });
   });
 
@@ -662,7 +722,6 @@ function drawTable(
     const tn = String(
       row?.TransTypeName || row?.transTypeName || ""
     ).toLowerCase();
-
     let rowClass = "default";
     if (
       transTypeId === 1 ||
@@ -694,19 +753,8 @@ function drawTable(
 
     let rowFill =
       rowIndex % 2 === 1 ? TAY_ALRAWI_BRAND_COLORS.rowTint : "#ffffff";
-    if (rowClass === "invoice") rowFill = "#374151";
-    if (rowClass === "payment") rowFill = "#fee2e2";
-    if (rowClass === "debit") rowFill = "#dcfce7";
-
-    const textColor =
-      rowClass === "invoice"
-        ? "#ffffff"
-        : rowClass === "payment"
-          ? "#b91c1c"
-          : rowClass === "debit"
-            ? "#15803d"
-            : "#1f2937";
-    const textWeight = "700";
+    const textColor = "#000000";
+    const textWeight = "500";
     let currentX = x + width;
     columns.forEach((column, index) => {
       const cellWidth = columnWidths[index];
@@ -722,6 +770,7 @@ function drawTable(
         "#d7dbe4",
         1
       );
+      const isDate = column.format === "date" || column.key.toLowerCase().includes("date");
       drawText(
         ctx,
         formatCellValue(row[column.key], column.format),
@@ -730,9 +779,9 @@ function drawTable(
         {
           align: "center",
           color: textColor,
-          size: orientation === "portrait" ? 51 : 44,
+          size: isDate ? (orientation === "portrait" ? 22 : 20) : (orientation === "portrait" ? 26 : 24),
           weight: textWeight,
-          maxWidth: cellWidth - 18,
+          maxWidth: cellWidth - 8,
         }
       );
     });
@@ -764,9 +813,9 @@ function drawTable(
       drawText(ctx, value, currentX + cellWidth / 2, rowY + rowHeight / 2, {
         align: "center",
         color: TAY_ALRAWI_BRAND_COLORS.headerNavy,
-        size: orientation === "portrait" ? 51 : 44,
+        size: orientation === "portrait" ? 26 : 24,
         weight: "700",
-        maxWidth: cellWidth - 18,
+        maxWidth: cellWidth - 8,
       });
     });
     rowY += rowHeight;
@@ -785,7 +834,7 @@ function resolveExportColumnValue(row, column) {
 
 function formatExportCellValue(val, format) {
   if (val === null || val === undefined || val === "") return "-";
-  if (format === "date") return String(val).split(" ")[0];
+  if (format === "date") return String(val).split("T")[0].split(" ")[0];
   if (format === "currency") return getCurrencyLabel(val);
   if (format === "number") return Number(val).toLocaleString("en-US");
   if (format === "money") return `$${Number(val).toLocaleString("en-US")}`;
@@ -822,7 +871,7 @@ function computeAdaptiveColumnLayouts(
       key.includes("price")
     )
       return (isPortrait ? 132 : 150) * compactScale;
-    if (key.includes("date")) return (isPortrait ? 126 : 148) * compactScale;
+    if (key.includes("date")) return (isPortrait ? 150 : 170) * compactScale;
     if (key.includes("weight") || key.includes("qty") || key.includes("meter"))
       return (isPortrait ? 112 : 126) * compactScale;
     return (isPortrait ? 124 : 142) * compactScale;
@@ -914,39 +963,49 @@ function getAdaptiveTableMetrics(orientation, columnCount) {
   const compact = columnCount >= (orientation === "portrait" ? 7 : 9);
   const dense = columnCount >= (orientation === "portrait" ? 9 : 11);
 
+  const headerFontSize =
+    orientation === "portrait"
+      ? dense
+        ? 65
+        : compact
+          ? 80
+          : 100
+      : dense
+        ? 55
+        : compact
+          ? 70
+          : 103;
+
+  const cellFontSize =
+    orientation === "portrait"
+      ? dense
+        ? 65
+        : compact
+          ? 75
+          : 90
+      : dense
+        ? 55
+        : compact
+          ? 65
+          : 94;
+
+  const paddingX = dense ? 4 : 9;
+  const paddingY = dense ? 16 : 22;
+
+  const headerLineHeight = headerFontSize * 1.2;
+  const cellLineHeight = cellFontSize * 1.2;
+
   return {
-    headerFontSize:
-      orientation === "portrait"
-        ? dense
-          ? 65
-          : compact
-            ? 80
-            : 100
-        : dense
-          ? 55
-          : compact
-            ? 70
-            : 103,
-    cellFontSize:
-      orientation === "portrait"
-        ? dense
-          ? 65
-          : compact
-            ? 75
-            : 90
-        : dense
-          ? 55
-          : compact
-            ? 65
-            : 94,
-    headerLineHeight: orientation === "portrait" ? 120 : 121,
-    cellLineHeight: orientation === "portrait" ? 100 : 103,
+    headerFontSize,
+    cellFontSize,
+    headerLineHeight,
+    cellLineHeight,
     maxHeaderLines: 1,
     maxCellLines: 1,
-    paddingX: dense ? 4 : 9,
-    paddingY: dense ? 10 : 14,
-    minHeaderHeight: orientation === "portrait" ? 180 : 184,
-    minRowHeight: orientation === "portrait" ? 160 : 161,
+    paddingX,
+    paddingY,
+    minHeaderHeight: headerLineHeight + paddingY * 2,
+    minRowHeight: cellLineHeight + paddingY * 2,
     summaryLabelSize: orientation === "portrait" ? 65 : 81,
     summaryValueSize: orientation === "portrait" ? 95 : 115,
     summaryLabelLineHeight: orientation === "portrait" ? 70 : 86,
@@ -1526,19 +1585,24 @@ function drawAdaptiveTable(
 function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
   if (!grid) return startY;
 
-  const fontSize = 44;
-  const lineHeight = 56;
-  const marginLeft = 60;
-  const marginRight = 60;
+  const fontSize = 38; // Adjusted to prevent overlap while staying readable
+  const lineHeight = 50;
+  const marginLeft = 40;
+  const marginRight = 40;
   const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
-  const red = "#d82534";
+  const red = TAY_ALRAWI_BRAND_COLORS.accentRed;
 
-  const rightColX = spec.width - marginRight - 20;
-  const centerColX = spec.width / 2;
-  const leftColX = marginLeft + 20;
+  // Give the right column (Trader Name) more room by shifting the center column left
+  const rightColX = spec.width - marginRight - 10;
+  const centerColX = (spec.width / 2) - 150; 
+  const leftColX = marginLeft + 10;
 
-  let cursorY = startY + 48;
 
+
+  let cursorY = startY + 58;
+
+  // ROW 1
+  // Right: Trader Name
   if (grid.accountName) {
     drawText(
       ctx,
@@ -1555,6 +1619,7 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
     );
   }
 
+  // Center: Limit Amount (selectedLabel)
   if (grid.selectedLabel) {
     drawText(
       ctx,
@@ -1565,12 +1630,13 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
         align: "center",
         size: fontSize,
         weight: "700",
-        color: navy,
+        color: red, // Limit Amount usually red in center based on requested spec "المبلغ الكلي بالاحمر"
         family: PDF_BODY_FONT_FAMILY,
       }
     );
   }
 
+  // Left: From Date
   drawText(
     ctx,
     `${grid.fromLabel || "من تاريخ"} : ${grid.fromDate || "---"}`,
@@ -1585,37 +1651,40 @@ function drawSaudiStatementHeaderGrid(ctx, spec, startY, grid) {
     }
   );
 
-  cursorY += lineHeight;
+  cursorY += lineHeight + 10;
 
+  // ROW 2
+  // Right: Total Amount
+  if (grid.totalLabel) {
+    drawText(
+      ctx,
+      `${grid.totalLabel}: ${grid.totalValue || "---"}`,
+      rightColX,
+      cursorY,
+      {
+        align: "right",
+        size: fontSize,
+        weight: "700",
+        color: red,
+        family: PDF_BODY_FONT_FAMILY,
+      }
+    );
+  }
+
+  // Left: To Date
   drawText(
     ctx,
     `${grid.toLabel || "الى تاريخ"} : ${grid.toDate || "---"}`,
-    rightColX,
+    leftColX,
     cursorY,
     {
-      align: "right",
+      align: "left",
       size: fontSize,
       weight: "700",
       color: navy,
       family: PDF_BODY_FONT_FAMILY,
     }
   );
-
-  if (grid.totalLabel) {
-    drawText(
-      ctx,
-      `${grid.totalLabel}: ${grid.totalValue || "---"}`,
-      leftColX,
-      cursorY,
-      {
-        align: "left",
-        size: fontSize,
-        weight: "700",
-        color: grid.totalColor || red,
-        family: PDF_BODY_FONT_FAMILY,
-      }
-    );
-  }
 
   cursorY += lineHeight;
   return cursorY + 8;
@@ -2772,7 +2841,7 @@ async function exportInvoiceAsCanvasPdf({
   );
   drawText(
     ctx,
-    `التاريخ: ${transaction.TransDate?.split(" ")[0] || "-"}`,
+    `التاريخ: ${transaction.TransDate?.split("T")[0].split(" ")[0] || "-"}`,
     52,
     headerHeight + 68,
     {
@@ -2881,6 +2950,14 @@ export async function exportToPDF({
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
 
+  // Convert branding images to base64 data URIs for Puppeteer
+  const brandAssets = resolveBrandAssets({ sectionKey });
+  const [headerBase64, footerBase64, logoBase64] = await Promise.all([
+    headerImageToBase64(brandAssets.header),
+    imageToBase64(brandAssets.footer),
+    imageToBase64(brandAssets.logo),
+  ]);
+
   if (sectionKey === "special-partner" && printContext) {
     const totals = printContext.totals || {};
     const fmt = val => Number(val || 0).toLocaleString("en-US");
@@ -2893,19 +2970,12 @@ export async function exportToPDF({
       netValue: `$${fmt(totals.totalNetUSD)}`,
     };
 
-    await exportReportAsCanvasPdf({
+    await exportToServerPdf(
+      { title: undefined, subtitle: undefined, filename },
       rows,
       columns,
-      title: undefined,
-      subtitle: undefined,
-      filename,
-      summaryGrid,
-      totalsRow,
-      orientation,
-      branded,
-      summaryStyle: "partnership-grid",
-      sectionKey,
-    });
+      { summaryGrid, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64, orientation }
+    );
     return;
   }
 
@@ -2914,22 +2984,13 @@ export async function exportToPDF({
     (printContext
       ? buildPortStatementSummaryCards(printContext, rows, sectionKey)
       : undefined);
-  const finalSummaryStyle =
-    summaryStyle || (finalSummaryCards?.length ? "text-lines" : undefined);
 
-  await exportReportAsCanvasPdf({
+  await exportToServerPdf(
+    { title, subtitle, filename },
     rows,
     columns,
-    title,
-    subtitle,
-    filename,
-    summaryCards: finalSummaryCards,
-    totalsRow,
-    orientation,
-    branded,
-    summaryStyle: finalSummaryStyle,
-    sectionKey,
-  });
+    { summaryCards: finalSummaryCards, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64, orientation }
+  );
 }
 
 function buildPortStatementSummaryCards(
@@ -2990,13 +3051,21 @@ export async function exportSaudiStatementPDF({
   title,
   subtitle,
   filename,
-  templateVariant = "both",
-  printContext,
-  sectionKey,
   totalsRow,
+  sectionKey,
+  printContext,
+  templateVariant = "both",
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
   const useGridHeader = templateVariant === "usd" || templateVariant === "iqd";
+
+  // Convert branding images to base64 data URIs for Puppeteer
+  const brandAssets = resolveBrandAssets({ sectionKey });
+  const [headerBase64, footerBase64, logoBase64] = await Promise.all([
+    headerImageToBase64(brandAssets.header),
+    imageToBase64(brandAssets.footer),
+    imageToBase64(brandAssets.logo),
+  ]);
 
   if (useGridHeader) {
     const totals = printContext?.totals || {};
@@ -3011,8 +3080,7 @@ export async function exportSaudiStatementPDF({
         : fmt(totals.balanceIQD);
 
     const summaryGrid = {
-      accountName:
-        sectionKey === "port-3" ? null : printContext?.accountName || "---",
+      accountName: printContext?.accountName || "---",
       fromDate: printContext?.fromDate || "---",
       toDate: printContext?.toDate || "---",
       totalLabel:
@@ -3023,19 +3091,12 @@ export async function exportSaudiStatementPDF({
       selectedValue,
     };
 
-    await exportReportAsCanvasPdf({
+    await exportToServerPdf(
+      { title, subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628", filename },
       rows,
       columns,
-      title,
-      subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628",
-      filename,
-      summaryGrid,
-      totalsRow,
-      summaryStyle: "saudi-statement-grid",
-      orientation: "landscape",
-      branded,
-      sectionKey,
-    });
+      { summaryGrid, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64 }
+    );
     return;
   }
 
@@ -3045,19 +3106,12 @@ export async function exportSaudiStatementPDF({
     sectionKey
   );
 
-  await exportReportAsCanvasPdf({
+  await exportToServerPdf(
+    { title, subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628", filename },
     rows,
     columns,
-    title,
-    subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628",
-    filename,
-    summaryCards,
-    totalsRow,
-    summaryStyle: summaryCards.length ? "text-lines" : undefined,
-    sectionKey,
-    orientation: "landscape",
-    branded,
-  });
+    { summaryCards, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64 }
+  );
 }
 
 export async function exportInvoicePDF({

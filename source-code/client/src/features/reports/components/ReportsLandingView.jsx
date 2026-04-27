@@ -1,4 +1,4 @@
-import { Building2, Receipt, TrendingUp, Users } from "lucide-react";
+import { Building2, Receipt, TrendingUp, Users, Trash2, Pen } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import PortIconBadge from "../../../components/PortIconBadge";
 import {
@@ -9,9 +9,21 @@ import {
 const REPORT_ACTIONS = [
   {
     key: "add-trader",
-    label: "إضافة تاجر",
+    label: "إضافة حساب",
     icon: Users,
     iconClassName: "bg-utility-accent-bg text-utility-accent-text",
+  },
+  {
+    key: "edit-trader",
+    label: "تعديل حساب",
+    icon: Pen,
+    iconClassName: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+  },
+  {
+    key: "delete-trader",
+    label: "حذف حساب",
+    icon: Trash2,
+    iconClassName: "bg-red-50 text-red-600",
   },
   {
     key: "expenses",

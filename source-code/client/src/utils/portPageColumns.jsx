@@ -100,7 +100,7 @@ export function renderPortCell(column, row, options = {}) {
   switch (column.type) {
     case "date":
       return (
-        <span className="whitespace-nowrap">{value?.split(" ")[0] || "-"}</span>
+        <span className="whitespace-nowrap">{value?.split("T")[0].split(" ")[0] || "-"}</span>
       );
     case "badge":
       return (

@@ -2,6 +2,7 @@ export const REPORT_PORTS = [
   { id: "port-1", name: "السعودية", iconLines: ["السعودية"] },
   { id: "port-2", name: "المنذرية", iconLines: ["المنذرية"] },
   { id: "port-3", name: "القائم", iconLines: ["القائم"] },
+  { id: "port-4", name: "النقل", iconLines: ["النقل"] },
 ];
 
 export const REPORT_SPECIAL_ACCOUNTS = [

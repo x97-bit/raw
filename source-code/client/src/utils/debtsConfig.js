@@ -15,7 +15,7 @@ export const DEBTOR_CONFIGS = {
         key: "trans_date",
         dataKey: "TransDate",
         label: "التاريخ",
-        render: value => value?.split(" ")[0] || "-",
+        render: value => value?.split("T")[0].split(" ")[0] || "-",
       },
       {
         key: "amount_usd",
@@ -79,7 +79,7 @@ export const DEBTOR_CONFIGS = {
         key: "trans_date",
         dataKey: "TransDate",
         label: "التاريخ",
-        render: value => value?.split(" ")[0] || "-",
+        render: value => value?.split("T")[0].split(" ")[0] || "-",
       },
       {
         key: "amount_usd",
@@ -143,7 +143,7 @@ export const DEBTOR_CONFIGS = {
         key: "trans_date",
         dataKey: "TransDate",
         label: "التاريخ",
-        render: value => value?.split(" ")[0] || "-",
+        render: value => value?.split("T")[0].split(" ")[0] || "-",
       },
       {
         key: "driver_name",
@@ -201,7 +201,7 @@ export const DEBTOR_CONFIGS = {
         key: "trans_date",
         dataKey: "TransDate",
         label: "التاريخ",
-        render: value => value?.split(" ")[0] || "-",
+        render: value => value?.split("T")[0].split(" ")[0] || "-",
       },
       {
         key: "amount_usd",
@@ -245,7 +245,7 @@ export const DEBTOR_CONFIGS = {
         key: "trans_date",
         dataKey: "TransDate",
         label: "التاريخ",
-        render: value => value?.split(" ")[0] || "-",
+        render: value => value?.split("T")[0].split(" ")[0] || "-",
       },
       {
         key: "driver_name",
@@ -315,7 +315,7 @@ export const DEFAULT_DEBT_COLUMNS = [
     key: "trans_date",
     dataKey: "TransDate",
     label: "التاريخ",
-    render: value => value?.split(" ")[0] || "-",
+    render: value => value?.split("T")[0].split(" ")[0] || "-",
   },
   {
     key: "amount_usd",
@@ -392,7 +392,7 @@ export function getDebtorConfig(accountName) {
 }
 
 export function filterDebtByDate(transDate, from, to) {
-  const value = transDate?.split(" ")[0] || "";
+  const value = transDate?.split("T")[0].split(" ")[0] || "";
   if (from && value < from) return false;
   if (to && value > to) return false;
   return true;
@@ -459,7 +459,7 @@ export function getInitialDebtFormState(debt = null) {
   return {
     AccountName: debt?.AccountName || "",
     TransDate:
-      debt?.TransDate?.split(" ")[0] || new Date().toISOString().split("T")[0],
+      debt?.TransDate?.split("T")[0].split(" ")[0] || new Date().toISOString().split("T")[0],
     AmountUSD: debt?.AmountUSD ?? "",
     AmountIQD: debt?.AmountIQD ?? "",
     FeeUSD: debt?.FeeUSD ?? "",

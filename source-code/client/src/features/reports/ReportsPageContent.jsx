@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import ReportsAddTraderView from "./components/ReportsAddTraderView";
+import ReportsDeleteTraderView from "./components/ReportsDeleteTraderView";
+import ReportsEditTraderView from "./components/ReportsEditTraderView";
 import ReportsExpensesView from "./components/ReportsExpensesView";
 import ReportsHaiderProfitsView from "./components/ReportsHaiderProfitsView";
 import ReportsLandingView from "./components/ReportsLandingView";
@@ -56,6 +58,16 @@ export default function ReportsPage({ onBack }) {
       return;
     }
 
+    if (action === "delete-trader") {
+      setView("delete-trader");
+      return;
+    }
+
+    if (action === "edit-trader") {
+      setView("edit-trader");
+      return;
+    }
+
     const requestPath = buildReportRequestPath(action, portId, filters);
     if (!requestPath) {
       return;
@@ -103,7 +115,7 @@ export default function ReportsPage({ onBack }) {
 
   const handleSaveTrader = async () => {
     if (!traderForm.AccountName) {
-      window.alert("أدخل اسم التاجر");
+      window.alert("أدخل اسم الحساب");
       return;
     }
 
@@ -113,10 +125,51 @@ export default function ReportsPage({ onBack }) {
         method: "POST",
         body: JSON.stringify(traderForm),
       });
-      window.alert("تمت إضافة التاجر بنجاح");
+      window.alert("تمت إضافة الحساب بنجاح");
       backToMain();
     } catch (error) {
       window.alert(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTrader = async (accountId) => {
+    setSaving(true);
+    try {
+      await api(`/accounts/${accountId}`, { method: "DELETE" });
+      window.alert("تم حذف الحساب بنجاح");
+      setAllAccounts(current => current.filter(a => String(a.AccountID) !== String(accountId)));
+      backToMain();
+    } catch (error) {
+      window.alert(error.message || "تعذر حذف الحساب. قد يكون مرتبطاً بحركات.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateTrader = async (accountId, payload) => {
+    setSaving(true);
+    try {
+      await api(`/accounts/${accountId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          AccountName: payload.AccountName,
+          Phone: payload.Phone,
+          Notes: payload.Notes,
+        }),
+      });
+      window.alert("تم تعديل بيانات الحساب بنجاح");
+      
+      // Update local state
+      setAllAccounts(current => current.map(a => 
+        String(a.AccountID) === String(accountId) 
+          ? { ...a, AccountName: payload.AccountName, Phone: payload.Phone, Company: payload.Notes, Notes: payload.Notes }
+          : a
+      ));
+      backToMain();
+    } catch (error) {
+      window.alert(error.message || "تعذر تعديل الحساب.");
     } finally {
       setSaving(false);
     }
@@ -142,6 +195,30 @@ export default function ReportsPage({ onBack }) {
         onBack={backToMain}
         onSave={handleSaveTrader}
         onFieldChange={updateTraderField}
+      />
+    );
+  }
+
+  if (view === "delete-trader") {
+    return (
+      <ReportsDeleteTraderView
+        activePort={activePort}
+        allAccounts={allAccounts}
+        saving={saving}
+        onBack={backToMain}
+        onDelete={handleDeleteTrader}
+      />
+    );
+  }
+
+  if (view === "edit-trader") {
+    return (
+      <ReportsEditTraderView
+        activePort={activePort}
+        allAccounts={allAccounts}
+        saving={saving}
+        onBack={backToMain}
+        onUpdate={handleUpdateTrader}
       />
     );
   }

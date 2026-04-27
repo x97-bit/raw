@@ -61,7 +61,7 @@ export const buildTransactionDetailItems = ({
     : "text-emerald-600";
 
   return [
-    { label: "التاريخ", value: transaction.TransDate?.split(" ")[0] || "-" },
+    { label: "التاريخ", value: transaction.TransDate?.split("T")[0].split(" ")[0] || "-" },
     {
       label: "نوع الحركة",
       value: transactionLabel,

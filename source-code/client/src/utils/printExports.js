@@ -26,7 +26,7 @@ function resolveColumnValue(row, column) {
 
 function formatCellValue(value, format) {
   if (value === null || value === undefined || value === "") return "-";
-  if (format === "date") return String(value).split(" ")[0];
+  if (format === "date") return String(value).split("T")[0].split(" ")[0];
   if (format === "currency") return getCurrencyLabel(value);
   if (format === "number") return Number(value).toLocaleString("en-US");
   if (format === "money") return `$${Number(value).toLocaleString("en-US")}`;
@@ -60,12 +60,13 @@ function openPrintWindow(title, body, extraCss = "") {
     <meta charset="utf-8" />
     <title>${escapeHtml(title || "طباعة")}</title>
     <style>
-      * { box-sizing: border-box; }
+      * { box-sizing: border-box; font-family: "Cordale Trial Bold Italic", "Cordale Trial", Arial, "Traditional Arabic", Tahoma, sans-serif !important; font-weight: bold !important; }
       html, body { margin: 0; padding: 0; background: #eef2f7; }
       body {
-        font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+        font-family: "Cordale Trial Bold Italic", "Cordale Trial", Arial, "Traditional Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+        font-weight: bold !important;
         direction: rtl;
-        color: #17212f;
+        color: #000000;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         text-rendering: optimizeLegibility;
@@ -470,7 +471,7 @@ function getShellCss({
     }
     .tay-title-block h1 {
       margin: 0;
-      font-size: ${isPortrait ? "83px" : "76px"};
+      font-size: ${isPortrait ? "68px" : "62px"};
       color: ${TAY_ALRAWI_BRAND_COLORS.text};
       letter-spacing: 0.2px;
       line-height: 1.5;
@@ -478,7 +479,7 @@ function getShellCss({
     }
     .tay-report-subtitle {
       margin-bottom: 4px;
-      font-size: 60px;
+      font-size: 52px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
       font-weight: 700;
     }
@@ -500,12 +501,13 @@ function getShellCss({
       display: block;
       margin-bottom: 6px;
       color: #5c6482;
-      font-size: 69px;
-      font-weight: 800;
+      font-size: 45px;
+      font-weight: 700;
     }
     .tay-summary-card strong {
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 103px;
+      font-size: 52px;
+      font-weight: 800;
     }
     .tay-sections {
       position: relative;
@@ -529,13 +531,13 @@ function getShellCss({
     .tay-section-title {
       margin: 0;
       color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
-      font-size: 74px;
+      font-size: 52px;
       font-weight: 800;
     }
     .tay-section-subtitle {
       margin-top: 3px;
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRedDark};
-      font-size: 55px;
+      font-size: 45px;
       font-weight: 700;
     }
     .tay-table-wrap {
@@ -554,7 +556,7 @@ function getShellCss({
     .tay-table th,
     .tay-table td {
       border: 1px solid #d7dbe4;
-      padding: 6px 8px;
+      padding: 4px 6px;
       text-align: center;
       vertical-align: middle;
       color: #1f2937;
@@ -562,7 +564,9 @@ function getShellCss({
       word-break: break-word;
     }
     .tay-table td {
-      font-size: ${isPortrait ? "55px" : "51px"};
+      font-size: 11pt;
+      font-weight: 500;
+      color: #000000;
     }
     .tay-table .tay-date-cell {
       white-space: nowrap;
@@ -571,14 +575,17 @@ function getShellCss({
     .tay-table th {
       background: ${TAY_ALRAWI_BRAND_COLORS.tableNavy};
       color: #fff;
-      font-weight: 800;
+      font-weight: 700;
       white-space: nowrap;
       word-break: normal;
-      padding: 8px 6px;
-      font-size: ${isPortrait ? "74px" : "69px"};
+      padding: 6px 4px;
+      font-size: 11pt;
     }
     .tay-table tbody tr:nth-child(even) td {
-      background: transparent;
+      background: #f9f9f9;
+    }
+    .tay-table tbody tr:nth-child(odd) td {
+      background: #ffffff;
     }
     ${
       highlightRows
@@ -634,7 +641,7 @@ function getShellCss({
       display: flex;
       align-items: center;
       color: #fff;
-      font-size: 16px;
+      font-size: 41px;
       font-weight: 500;
       direction: ltr;
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
@@ -664,7 +671,7 @@ function getShellCss({
       gap: 12px 22px;
       flex-wrap: wrap;
       color: #1f2937;
-      font-size: 74px;
+      font-size: 14pt;
       font-weight: 700;
     }
     .tay-meta-stack {
@@ -681,6 +688,10 @@ function getShellCss({
       font-weight: 700;
     }
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 5mm;
+      }
       .tay-print-page { min-height: auto; }
       .tay-table-wrap { break-inside: avoid; }
     }
@@ -771,44 +782,20 @@ export function printSaudiStatementTemplate({
   const rightLines = totalsLines.filter(
     line => !line.label.includes("محدد") && !line.label.includes("متبقي")
   );
-  const centerLines = totalsLines.filter(
+  const hasDateFilter = Boolean(fromDate || toDate);
+  const centerLines = hasDateFilter ? totalsLines.filter(
     line => line.label.includes("محدد") || line.label.includes("متبقي")
-  );
+  ) : [];
 
   const metaHtml = `
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-      <!-- Right Side -->
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+    <hr style="border: none; border-top: 1px solid #1C2B59; margin: 0 0 15px 0;" />
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 20px;">
+      <!-- Right Side: Trader Name, Total Amount -->
+      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0;">
         <div class="tay-meta-inline">
           <span class="tay-meta-label">اسم التاجر:</span>
           <span>${escapeHtml(accountName || "---")}</span>
         </div>
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">من تاريخ:</span>
-          <span>${escapeHtml(fromDate || "---")}</span>
-        </div>
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">إلى تاريخ:</span>
-          <span>${escapeHtml(toDate || "---")}</span>
-        </div>
-      </div>
-
-      <!-- Center Side -->
-      <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; height: 100%;">
-        ${centerLines
-          .map(
-            line => `
-          <div class="tay-meta-inline">
-            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-
-      <!-- Left Side -->
-      <div style="display: flex; flex-direction: column; gap: 8px; direction: rtl;">
         ${rightLines
           .map(
             line => `
@@ -819,6 +806,32 @@ export function printSaudiStatementTemplate({
         `
           )
           .join("")}
+      </div>
+
+      <!-- Center Side: Limit Amount -->
+      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: center; text-align: center; min-width: 0;">
+        ${centerLines
+          .map(
+            line => `
+          <div class="tay-meta-inline" style="justify-content: center;">
+            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
+            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+
+      <!-- Left Side: Dates -->
+      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: flex-end; text-align: left; min-width: 0;">
+        <div class="tay-meta-inline" style="justify-content: flex-end;">
+          <span class="tay-meta-label">من تاريخ:</span>
+          <span>${escapeHtml(fromDate || "---")}</span>
+        </div>
+        <div class="tay-meta-inline" style="justify-content: flex-end;">
+          <span class="tay-meta-label">إلى تاريخ:</span>
+          <span>${escapeHtml(toDate || "---")}</span>
+        </div>
       </div>
     </div>
   `;
@@ -839,7 +852,7 @@ export function printSaudiStatementTemplate({
     subtitle: "كشف حساب",
     metaHtml,
     tableHtml,
-    orientation: "landscape",
+    orientation: "portrait",
     branded,
     watermark: branded,
     showFooterMeta: true,
@@ -849,6 +862,6 @@ export function printSaudiStatementTemplate({
   openPrintWindow(
     title,
     html,
-    getShellCss({ orientation: "landscape", highlightRows: true, branded })
+    getShellCss({ orientation: "portrait", highlightRows: false, branded })
   );
 }

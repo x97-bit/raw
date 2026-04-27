@@ -17,7 +17,6 @@ export default function PortStatementView({
   to,
   onAccountChange,
   onAddAccount,
-  onDeleteAccount,
   onFromChange,
   onToChange,
   onReset,
@@ -49,15 +48,7 @@ export default function PortStatementView({
         onHome={onHome}
       >
         <div className="flex items-center gap-2">
-          {statementFilterAccountId && onDeleteAccount && (
-            <button
-              onClick={() => onDeleteAccount(statementFilterAccountId)}
-              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/30 dark:bg-red-900/20 dark:hover:bg-red-900/40"
-              title="حذف الحساب"
-            >
-              <Trash2 size={16} /> حذف الحساب
-            </button>
-          )}
+
           {statement.statement?.length > 0 && (
             <ExportButtons
               inHeader
@@ -92,7 +83,6 @@ export default function PortStatementView({
             accounts={accounts}
             accountId={statementFilterAccountId}
             onAddAccount={onAddAccount}
-            onDeleteAccount={onDeleteAccount}
             from={from}
             to={to}
             onAccountChange={onAccountChange}

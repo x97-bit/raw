@@ -9,7 +9,7 @@ function resolveDebtCellClass(column, debt) {
 
   return [
     "px-4 py-3",
-    isDateColumn ? "whitespace-nowrap" : "",
+    isDateColumn ? "whitespace-nowrap min-w-[110px] text-center" : "text-center",
     column.bold ? "font-bold" : "",
     column.color && amountValue < 0
       ? "text-red-600"
@@ -32,7 +32,7 @@ export default function DebtTable({ activeColumns, debts, onSelectDebt }) {
               {activeColumns.map(column => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 font-semibold ${column?.key === "trans_date" || column?.dataKey === "TransDate" ? "whitespace-nowrap" : ""}`}
+                  className={`px-4 py-3 font-semibold text-center ${column?.key === "trans_date" || column?.dataKey === "TransDate" ? "whitespace-nowrap min-w-[110px]" : ""}`}
                 >
                   {column.label}
                 </th>

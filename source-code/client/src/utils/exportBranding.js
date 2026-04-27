@@ -22,12 +22,12 @@ export function resolveBrandAssets({ sectionKey } = {}) {
 }
 
 export const TAY_ALRAWI_BRAND_COLORS = {
-  headerNavy: "#1e2a5e",
-  tableNavy: "#17365d",
-  accentRed: "#e52027",
-  accentRedDark: "#d8252c",
-  footerNavy: "#2f3666",
-  rowTint: "#fce8e9",
+  headerNavy: "#1c2b59",
+  tableNavy: "#1c2b59",
+  accentRed: "#e31e24",
+  accentRedDark: "#e31e24",
+  footerNavy: "#1c2b59",
+  rowTint: "#f9f9f9",
   text: "#000000",
 };
 

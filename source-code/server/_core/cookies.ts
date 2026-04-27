@@ -1,5 +1,5 @@
 import type { CookieOptions, Request } from "express";
-import { APP_REFRESH_TOKEN_TTL_MS } from "@shared/const";
+
 
 function isSecureRequest(req: Request) {
   return Boolean(req.secure) || req.protocol === "https";
@@ -32,6 +32,5 @@ export function getAppRefreshCookieOptions(
 > {
   return {
     ...getBaseCookieOptions(req),
-    maxAge: APP_REFRESH_TOKEN_TTL_MS,
   };
 }

@@ -8,6 +8,7 @@ import { registerFieldCustomizationRoutes } from "./routes/field-customization";
 import { registerReportRoutes } from "./routes/reports";
 import { registerSpecialAccountRoutes } from "./routes/special-accounts";
 import { registerTransactionRoutes } from "./routes/transactions";
+import { registerPdfExportRoutes } from "./routes/pdf-export";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ registerFieldCustomizationRoutes(router);
 registerReportRoutes(router);
 registerSpecialAccountRoutes(router);
 registerTransactionRoutes(router);
+registerPdfExportRoutes(router);
 
 export default router;

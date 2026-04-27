@@ -30,7 +30,6 @@ export default function PortListView({
   onSearchChange,
   onAccountFilterChange,
   onAddAccount,
-  onDeleteAccount,
   onFromChange,
   onToChange,
   onResetFilters,
@@ -130,15 +129,7 @@ export default function PortListView({
         onHome={onHome}
       >
         <div className="flex items-center gap-2">
-          {filters.accountId && onDeleteAccount && (
-            <button
-              onClick={() => onDeleteAccount(filters.accountId)}
-              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-900/30 dark:bg-red-900/20 dark:hover:bg-red-900/40"
-              title="حذف الحساب"
-            >
-              <Trash2 size={16} /> حذف الحساب
-            </button>
-          )}
+
           <ExportButtons
             inHeader
             rows={transactions}
@@ -185,7 +176,6 @@ export default function PortListView({
           accounts={accounts}
           accountId={filters.accountId}
           onAddAccount={onAddAccount}
-          onDeleteAccount={onDeleteAccount}
           from={filters.from}
           to={filters.to}
           onAccountChange={onAccountFilterChange}
@@ -208,7 +198,7 @@ export default function PortListView({
                   {activeListColumns.map(column => (
                     <th
                       key={column.key}
-                      className="whitespace-nowrap px-3 py-3"
+                      className={`whitespace-nowrap px-3 py-3 ${column.type === "date" || column.key === "trans_date" ? "min-w-[110px] text-center" : ""}`}
                     >
                       {column.label}
                     </th>
@@ -268,7 +258,7 @@ export default function PortListView({
                       {activeListColumns.map(column => (
                         <td
                           key={column.key}
-                          className={`px-3 py-2 ${column.type === "date" ? "whitespace-nowrap" : ""}`}
+                          className={`px-3 py-2 ${column.type === "date" || column.key === "trans_date" ? "whitespace-nowrap min-w-[110px] text-center" : ""}`}
                         >
                           {renderPortCell(column, transaction)}
                         </td>

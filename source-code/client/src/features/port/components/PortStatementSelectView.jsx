@@ -13,7 +13,6 @@ export default function PortStatementSelectView({
   search,
   onAccountChange,
   onAddAccount,
-  onDeleteAccount,
   onFromChange,
   onToChange,
   onReset,
@@ -40,7 +39,6 @@ export default function PortStatementSelectView({
           accounts={accounts}
           accountId={statementFilterAccountId}
           onAddAccount={onAddAccount}
-          onDeleteAccount={onDeleteAccount}
           from={from}
           to={to}
           onAccountChange={onAccountChange}
