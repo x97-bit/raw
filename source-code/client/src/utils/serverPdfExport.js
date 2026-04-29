@@ -190,23 +190,22 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     ? `<div class="watermark"><img src="${options.logoBase64}" /></div>` 
     : '';
 
-  const numColumns = columns.length;
-  let thFontSize = "11pt";
-  let tdFontSize = "10.5pt";
-  let cellPadding = "6px 8px";
+  // ─── Unified Font & Spacing Structure ───
+  // We use a tight scaling range to ensure all templates look consistent ("مو عشوائي")
+  // without drastic jumps in font size between different templates.
+  let thFontSize = "9.5pt";
+  let tdFontSize = "9pt";
+  let cellPadding = "5px 8px";
 
-  if (numColumns > 12) {
+  if (numColumns > 11) {
     thFontSize = "8pt";
     tdFontSize = "7.5pt";
     cellPadding = "3px 4px";
-  } else if (numColumns > 9) {
-    thFontSize = "9.5pt";
-    tdFontSize = "9pt";
-    cellPadding = "4px 6px";
-  } else if (numColumns === 9) {
-    thFontSize = "10pt";
-    tdFontSize = "9.5pt";
-    cellPadding = "5px 7px";
+  } else if (numColumns > 8) {
+    // Shrink slightly to fit 9-10 columns on A4 without overflowing
+    thFontSize = "8.5pt";
+    tdFontSize = "8pt";
+    cellPadding = "4px 5px";
   }
 
   // ─── Complete HTML Body ───
@@ -239,7 +238,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
         /* ── Summary Grid (matches Canvas drawSaudiStatementHeaderGrid / drawPartnershipHeaderGrid) ── */
         .summary-grid {
-          font-size: 13pt;
+          font-size: 11.5pt;
           font-weight: 700;
           margin-bottom: 5px;
           width: 100%;
@@ -247,9 +246,13 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         .summary-row {
           display: flex;
           justify-content: space-between;
+          align-items: center;
           margin-bottom: 6px;
         }
-        .summary-cell { flex: 1; }
+        .summary-cell { 
+          flex: 0 1 auto; 
+          white-space: nowrap;
+        }
         .summary-cell.right { text-align: right; }
         .summary-cell.center { text-align: center; }
         .summary-cell.left { text-align: left; }
