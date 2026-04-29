@@ -142,7 +142,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
       <table class="summary-grid" style="border:none;">
         <tr>
           <td class="summary-cell right navy">
-            ${g.accountName ? `<span>${escapeHtml(g.accountLabel || "اسم التاجر")} : ${escapeHtml(g.accountName)}</span>` : ''}
+            ${g.accountName ? `<div style="margin-top: -5mm;">${escapeHtml(g.accountLabel || "اسم التاجر")} : ${escapeHtml(g.accountName)}</div>` : ''}
           </td>
           <td class="summary-cell left navy" dir="rtl">
             ${g.fromDate !== undefined ? `<span>${escapeHtml(g.fromLabel || "من تاريخ")} : <span dir="ltr">${escapeHtml(g.fromDate)}</span></span>` : ''}
@@ -211,7 +211,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
       <table class="summary-grid" style="border:none;">
         <tr>
           <td class="summary-cell right navy">
-            ${accountCard ? `<span>${escapeHtml(accountCard.label)} : ${escapeHtml(accountCard.value)}</span>` : ''}
+            ${accountCard ? `<div style="margin-top: -5mm;">${escapeHtml(accountCard.label)} : ${escapeHtml(accountCard.value)}</div>` : ''}
           </td>
           <td class="summary-cell left navy" dir="rtl">
             ${dateCard ? `<span>من تاريخ : <span dir="ltr">${escapeHtml(fromDate)}</span></span>` : ''}
@@ -282,7 +282,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @page { 
           size: A4 ${options.orientation === 'landscape' ? 'landscape' : 'portrait'};
-          margin: 0 0 ${options.footerBase64 ? '32mm' : '10mm'} 0; 
+          margin: ${options.headerBase64 ? (options.orientation === 'landscape' ? '37mm' : '27mm') : '10mm'} 0 ${options.footerBase64 ? '32mm' : '10mm'} 0; 
         }
         body {
           font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
@@ -380,7 +380,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           <thead>
 
             <tr>
-              <th colspan="100" style="border: 0.2px solid #d0d5dd; border-top: 1.5px solid #1C2B59; border-bottom: none; padding: 2px 8px 10px; background: transparent; text-align: right; direction: rtl; font-weight: normal; color: inherit;">
+              <th colspan="100" style="border: none; padding: 5mm 8px 10px; background: transparent; text-align: right; direction: rtl; font-weight: normal; color: inherit;">
                 ${metadataHtml}
               </th>
             </tr>
@@ -395,7 +395,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
   // ─── Header Template: exact brand header image (base64) ───
   const headerTemplate = options.headerBase64
-    ? `<div style="width: 100%; margin: 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact;">
+    ? `<div style="width: 100%; margin: -4mm 0 0 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact; border-bottom: 1px solid #1C2B59;">
          <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
        </div>`
     : null;
@@ -420,7 +420,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   // Footer image: 7017×745 → on A4 210mm width → height ≈ 22.3mm
   const hasHeader = !!options.headerBase64;
   const hasFooter = !!options.footerBase64;
-  const marginTop = hasHeader ? "28mm" : "0mm";
+  const isLandscape = options.orientation === "landscape";
+  const marginTop = hasHeader ? (isLandscape ? "37mm" : "27mm") : "10mm";
   const marginBottom = hasFooter ? "34mm" : "10mm";
 
   try {
@@ -437,7 +438,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         filename: filename || `${title}.pdf`,
         headerTemplate,
         footerTemplate,
-        marginTop: "0",
+        marginTop,
         marginBottom,
         marginRight: "0",
         marginLeft: "0",
