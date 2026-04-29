@@ -131,8 +131,11 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   
   tbodyHtml += `</tbody>`;
 
-  // ─── Summary / Metadata Section (extracted from Canvas layout) ───
+  // ─── Summary / Metadata Section ───
+  // Unified structured layout for ALL templates: organized 2-column grid
+  // Right side = labels+values, Left side = dates (when available)
   let metadataHtml = "";
+
   if (options.summaryGrid) {
     const g = options.summaryGrid;
     metadataHtml = `
@@ -140,7 +143,6 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         <div class="summary-row">
           <div class="summary-cell right navy">
             ${g.accountName ? `<span>${escapeHtml(g.accountLabel || "اسم التاجر")} : ${escapeHtml(g.accountName)}</span>` : ''}
-            ${g.amountOnValue ? `<span>المبلغ عليه: ${escapeHtml(g.amountOnValue)}</span>` : ''}
           </div>
           <div class="summary-cell left navy" dir="rtl">
             ${g.fromDate !== undefined ? `<span>${escapeHtml(g.fromLabel || "من تاريخ")} : <span dir="ltr">${escapeHtml(g.fromDate)}</span></span>` : ''}
@@ -149,8 +151,9 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         <div class="summary-row">
           <div class="summary-cell right red">
             ${g.totalLabel ? `<span>${escapeHtml(g.totalLabel)}: <span dir="ltr">${escapeHtml(g.totalValue || "---")}</span></span>` : ''}
-            ${g.amountForValue ? `<span>المبلغ له: ${escapeHtml(g.amountForValue)}</span>` : ''}
-            ${g.netValue ? `<span style="margin-right: 15px;">الصافي: ${escapeHtml(g.netValue)}</span>` : ''}
+            ${g.amountOnValue ? `<span>المبلغ عليه: ${escapeHtml(g.amountOnValue)}</span>` : ''}
+            ${g.amountForValue ? `<span style="margin-right: 12px;">المبلغ له: ${escapeHtml(g.amountForValue)}</span>` : ''}
+            ${g.netValue ? `<span style="margin-right: 12px;">الصافي: ${escapeHtml(g.netValue)}</span>` : ''}
           </div>
           <div class="summary-cell left navy" dir="rtl">
             ${g.toDate !== undefined ? `<span>${escapeHtml(g.toLabel || "الى تاريخ")} : <span dir="ltr">${escapeHtml(g.toDate)}</span></span>` : ''}
@@ -168,19 +171,78 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     `;
   } else if (Array.isArray(options.summaryCards) && options.summaryCards.length > 0) {
     const cards = options.summaryCards;
+
+    // Extract known fields into a structured grid (same layout as summaryGrid)
+    const accountCard = cards.find(c => (c.label || "").includes("التاجر"));
+    const dateCard = cards.find(c => (c.label || "").includes("الفترة"));
+    const totalIqdCard = cards.find(c => (c.label || "").includes("الاجمالي دينار"));
+    const totalUsdCard = cards.find(c => (c.label || "").includes("الاجمالي دولار"));
+    const selectedIqdCard = cards.find(c => (c.label || "").includes("المحدد دينار"));
+    const selectedUsdCard = cards.find(c => (c.label || "").includes("المحدد دولار"));
+    const weightCard = cards.find(c => (c.label || "").includes("الوزن"));
+    const metersCard = cards.find(c => (c.label || "").includes("الامتار"));
+
+    // Remaining cards that don't match any known field
+    const knownLabels = new Set([accountCard, dateCard, totalIqdCard, totalUsdCard, selectedIqdCard, selectedUsdCard, weightCard, metersCard].filter(Boolean).map(c => c.label));
+    const extraCards = cards.filter(c => !knownLabels.has(c.label));
+
+    // Build totals line: combine IQD + USD on same row
+    const totalsItems = [];
+    if (totalUsdCard) totalsItems.push(`${escapeHtml(totalUsdCard.label)}: <span dir="ltr">${escapeHtml(totalUsdCard.value)}</span>`);
+    if (totalIqdCard) totalsItems.push(`${escapeHtml(totalIqdCard.label)}: <span dir="ltr">${escapeHtml(totalIqdCard.value)}</span>`);
+    if (weightCard) totalsItems.push(`${escapeHtml(weightCard.label)}: <span dir="ltr">${escapeHtml(weightCard.value)}</span>`);
+    if (metersCard) totalsItems.push(`${escapeHtml(metersCard.label)}: <span dir="ltr">${escapeHtml(metersCard.value)}</span>`);
+
+    // Build selected-amounts line
+    const selectedItems = [];
+    if (selectedUsdCard) selectedItems.push(`${escapeHtml(selectedUsdCard.label)}: <span dir="ltr">${escapeHtml(selectedUsdCard.value)}</span>`);
+    if (selectedIqdCard) selectedItems.push(`${escapeHtml(selectedIqdCard.label)}: <span dir="ltr">${escapeHtml(selectedIqdCard.value)}</span>`);
+
+    // Parse date range
+    let fromDate = "---";
+    let toDate = "---";
+    if (dateCard) {
+      const parts = String(dateCard.value).split("→");
+      fromDate = (parts[0] || "---").trim();
+      toDate = (parts[1] || "---").trim();
+    }
+
     metadataHtml = `
       <div class="summary-grid">
         <div class="summary-row">
-          ${cards.map(c => {
-            const isRed = String(c.label || c.title).includes("المبلغ") || String(c.label || c.title).includes("الكلي") || String(c.label || c.title).includes("Total");
-            const valColor = isRed ? "#E31E24" : "#1C2B59";
-            return `
-              <div class="summary-cell center" style="color: ${valColor};">
-                <span style="color: #5c6482;">${escapeHtml(c.label || c.title)}:</span> ${escapeHtml(c.value)}
-              </div>
-            `;
-          }).join("")}
+          <div class="summary-cell right navy">
+            ${accountCard ? `<span>${escapeHtml(accountCard.label)} : ${escapeHtml(accountCard.value)}</span>` : ''}
+          </div>
+          <div class="summary-cell left navy" dir="rtl">
+            ${dateCard ? `<span>من تاريخ : <span dir="ltr">${escapeHtml(fromDate)}</span></span>` : ''}
+          </div>
         </div>
+        ${totalsItems.length > 0 ? `
+        <div class="summary-row">
+          <div class="summary-cell right navy">
+            ${totalsItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px;">|</span>')}
+          </div>
+          <div class="summary-cell left navy" dir="rtl">
+            ${dateCard ? `<span>الى تاريخ : <span dir="ltr">${escapeHtml(toDate)}</span></span>` : ''}
+          </div>
+        </div>
+        ` : ''}
+        ${selectedItems.length > 0 ? `
+        <div class="summary-row">
+          <div class="summary-cell right red">
+            ${selectedItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px; color: #E31E24;">|</span>')}
+          </div>
+          <div class="summary-cell left"></div>
+        </div>
+        ` : ''}
+        ${extraCards.length > 0 ? `
+        <div class="summary-row">
+          <div class="summary-cell right navy">
+            ${extraCards.map(c => `<span>${escapeHtml(c.label)}: <span dir="ltr">${escapeHtml(c.value)}</span></span>`).join('<span style="margin: 0 8px;">|</span>')}
+          </div>
+          <div class="summary-cell left"></div>
+        </div>
+        ` : ''}
       </div>
     `;
   }
@@ -237,23 +299,25 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         }
         .watermark img { width: 280px; height: auto; }
 
-        /* ── Summary Grid (matches Canvas drawSaudiStatementHeaderGrid / drawPartnershipHeaderGrid) ── */
+        /* ── Summary Grid: Unified info box for ALL templates ── */
         .summary-grid {
-          font-size: 11.5pt;
+          font-size: 11pt;
           font-weight: 700;
           margin-bottom: 5px;
           width: 100%;
+          line-height: 1.8;
         }
         .summary-row {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 6px;
+          align-items: baseline;
+          margin-bottom: 4px;
         }
         .summary-cell { 
           flex: 0 1 auto; 
           white-space: nowrap;
         }
+        .summary-cell span + span { margin-right: 0; }
         .summary-cell.right { text-align: right; }
         .summary-cell.center { text-align: center; }
         .summary-cell.left { text-align: left; }
