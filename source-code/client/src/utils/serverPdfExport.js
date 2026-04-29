@@ -260,8 +260,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   let cellPadding = "5px 8px";
 
   if (numColumns > 10) {
-    // النموذج الحالي only — switch to landscape
-    if (!options.orientation) options.orientation = "landscape";
+    // النموذج الحالي — force landscape
+    options.orientation = "landscape";
     thFontSize = "7.5pt";
     tdFontSize = "7pt";
     cellPadding = "3px 3px";
