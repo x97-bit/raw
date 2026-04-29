@@ -375,13 +375,13 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     </head>
     <body>
       ${watermarkHtml}
-      <div style="padding: 0 4.2mm;">
+      <div style="padding: 0;">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             ${options.headerBase64 ? `
             <tr>
               <th colspan="100" style="padding: 0; margin: 0; border: none; background: transparent;">
-                <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
+                <img src="${options.headerBase64}" style="width: 100%; display: block; padding: 0;" />
               </th>
             </tr>
             ` : ''}
@@ -404,8 +404,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
   // ─── Footer Template: exact brand footer image (base64) ───
   const footerTemplate = options.footerBase64
-    ? `<div style="width: 100%; margin: 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
-         <img src="${options.footerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
+    ? `<div style="width: 100%; margin: 0; padding: 0; -webkit-print-color-adjust: exact; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
+         <img src="${options.footerBase64}" style="width: 100%; display: block; padding: 0;" />
          <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #555; padding-top: 4px; direction: rtl;">
            <div>تاريخ الطباعة: <span class="date" style="direction: ltr; display: inline-block;"></span></div>
            <div>الصفحة <span class="pageNumber"></span> من <span class="totalPages"></span></div>
