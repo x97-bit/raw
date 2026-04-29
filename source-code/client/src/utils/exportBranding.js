@@ -15,7 +15,7 @@ export const LOUAY_ALRAWI_BRAND_ASSETS = {
 };
 
 export function resolveBrandAssets({ sectionKey } = {}) {
-  if (sectionKey === "special-partner" || sectionKey === "partnership-yaser") {
+  if (sectionKey === "special-partner" || sectionKey === "partnership-yaser" || sectionKey === "port-3") {
     return LOUAY_ALRAWI_BRAND_ASSETS;
   }
   return TAY_ALRAWI_BRAND_ASSETS;

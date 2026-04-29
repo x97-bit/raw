@@ -2958,17 +2958,33 @@ export async function exportToPDF({
     imageToBase64(brandAssets.logo),
   ]);
 
-  if (sectionKey === "special-partner" && printContext) {
+  if ((sectionKey === "special-partner" || sectionKey === "port-3") && printContext) {
     const totals = printContext.totals || {};
     const fmt = val => Number(val || 0).toLocaleString("en-US");
-    const summaryGrid = {
-      accountName: printContext.accountName || "---",
-      fromDate: printContext.fromDate || "---",
-      toDate: printContext.toDate || "---",
-      amountOnValue: `$${fmt(totals.totalAmountUSD)}`,
-      amountForValue: `$${fmt(totals.totalPartnerUSD)}`,
-      netValue: `$${fmt(totals.totalNetUSD)}`,
-    };
+    
+    let summaryGrid;
+    if (sectionKey === "special-partner") {
+      summaryGrid = {
+        accountName: printContext.accountName || "---",
+        fromDate: printContext.fromDate || "---",
+        toDate: printContext.toDate || "---",
+        amountOnValue: `$${fmt(totals.totalAmountUSD)}`,
+        amountForValue: `$${fmt(totals.totalPartnerUSD)}`,
+        netValue: `$${fmt(totals.totalNetUSD)}`,
+      };
+    } else {
+      // Al-Qaim port (port-3) maps its standard totals to the statement design format
+      const invUsd = totals.totalInvoicesUSD || 0;
+      const balUsd = totals.balanceUSD || 0;
+      summaryGrid = {
+        accountName: printContext.accountName || "---",
+        fromDate: printContext.fromDate || "---",
+        toDate: printContext.toDate || "---",
+        amountOnValue: `$${fmt(invUsd)}`,
+        amountForValue: `$${fmt(invUsd - balUsd)}`,
+        netValue: `$${fmt(balUsd)}`,
+      };
+    }
 
     await exportToServerPdf(
       { title: undefined, subtitle: undefined, filename },
