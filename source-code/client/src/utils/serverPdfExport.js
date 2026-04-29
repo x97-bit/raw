@@ -253,21 +253,21 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     : '';
 
   // ─── Unified Font & Spacing Structure ───
-  // Tight scaling range so all templates look consistent.
-  // Auto-switch to landscape when too many columns to fit portrait A4.
+  // All templates stay portrait. Wide tables use smaller font + fixed layout.
   const numColumns = columns.length;
   let thFontSize = "9.5pt";
   let tdFontSize = "9pt";
   let cellPadding = "5px 8px";
+  let tableLayout = "auto";
 
-  if (numColumns > 10) {
-    // Very wide table — auto-landscape + compact font
-    if (!options.orientation) options.orientation = "landscape";
-    thFontSize = "8pt";
-    tdFontSize = "7.5pt";
-    cellPadding = "3px 4px";
+  if (numColumns > 11) {
+    // Very wide table (13+ columns like النموذج الحالي)
+    thFontSize = "6.5pt";
+    tdFontSize = "6.5pt";
+    cellPadding = "3px 2px";
+    tableLayout = "fixed";
   } else if (numColumns > 8) {
-    // Slightly wide — shrink a bit but stays portrait
+    // Wide table (9-11 columns like دولار+دينار)
     thFontSize = "8.5pt";
     tdFontSize = "8pt";
     cellPadding = "4px 5px";
@@ -332,6 +332,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           border-collapse: collapse;
           margin-bottom: 20px;
           font-size: ${tdFontSize};
+          table-layout: ${tableLayout};
         }
         thead { display: table-header-group; }
         tr { page-break-inside: avoid; }
@@ -344,6 +345,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           font-weight: 800;
           border: 0.5px solid #1C2B59;
           text-align: center;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         
         td {
@@ -353,6 +356,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           border: 0.5px solid #1C2B59;
           color: #1f2937;
           text-align: center;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         /* ── Totals Row (matches Canvas: #eef1f7 bg, navy text) ── */
@@ -375,13 +380,13 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     </head>
     <body>
       ${watermarkHtml}
-      <div style="padding: 0;">
+      <div style="padding: 0 4.2mm;">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             ${options.headerBase64 ? `
             <tr>
               <th colspan="100" style="padding: 0; margin: 0; border: none; background: transparent;">
-                <img src="${options.headerBase64}" style="width: 100%; display: block; padding: 0;" />
+                <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
               </th>
             </tr>
             ` : ''}
@@ -404,8 +409,8 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
   // ─── Footer Template: exact brand footer image (base64) ───
   const footerTemplate = options.footerBase64
-    ? `<div style="width: 100%; margin: 0; padding: 0; -webkit-print-color-adjust: exact; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
-         <img src="${options.footerBase64}" style="width: 100%; display: block; padding: 0;" />
+    ? `<div style="width: 100%; margin: 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
+         <img src="${options.footerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
          <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #555; padding-top: 4px; direction: rtl;">
            <div>تاريخ الطباعة: <span class="date" style="direction: ltr; display: inline-block;"></span></div>
            <div>الصفحة <span class="pageNumber"></span> من <span class="totalPages"></span></div>
