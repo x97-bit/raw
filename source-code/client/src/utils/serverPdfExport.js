@@ -253,19 +253,21 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     : '';
 
   // ─── Unified Font & Spacing Structure ───
-  // We use a tight scaling range to ensure all templates look consistent ("مو عشوائي")
-  // without drastic jumps in font size between different templates.
+  // Tight scaling range so all templates look consistent.
+  // Auto-switch to landscape when too many columns to fit portrait A4.
   const numColumns = columns.length;
   let thFontSize = "9.5pt";
   let tdFontSize = "9pt";
   let cellPadding = "5px 8px";
 
-  if (numColumns > 11) {
+  if (numColumns > 10) {
+    // Very wide table — auto-landscape + compact font
+    if (!options.orientation) options.orientation = "landscape";
     thFontSize = "8pt";
     tdFontSize = "7.5pt";
     cellPadding = "3px 4px";
   } else if (numColumns > 8) {
-    // Shrink slightly to fit 9-10 columns on A4 without overflowing
+    // Slightly wide — shrink a bit but stays portrait
     thFontSize = "8.5pt";
     tdFontSize = "8pt";
     cellPadding = "4px 5px";
