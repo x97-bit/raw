@@ -11,18 +11,24 @@ async function run() {
 
   console.log("Connected to SSH.");
 
-  // Find where the app is. usually /root/raw or something similar.
-  // console.log("Uploading alrawi-source-code.zip...");
-  // await ssh.putFile('../alrawi-source-code.zip', '/root/alrawi-source-code.zip');
-  // console.log("Upload complete.");
+  console.log("Uploading alrawi-source-code.zip...");
+  await ssh.putFile('../alrawi-source-code.zip', '/root/alrawi-source-code.zip');
+  console.log("Upload complete.");
 
-  console.log("Installing missing Puppeteer dependencies...");
-  const result = await ssh.execCommand('apt-get update && apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgtk-3-0 && systemctl restart alrawi', {
+  console.log("Deploying via remote script...");
+  const result = await ssh.execCommand('bash -x /root/deploy-on-vps.sh', {
     onStdout(chunk) { console.log(chunk.toString('utf8')); },
     onStderr(chunk) { console.error(chunk.toString('utf8')); }
   });
   
-  console.log('Dependencies installed with code:', result.code);
+  if (result.code !== 0) {
+      console.log("Fixing pnpm lockfile and building manually...");
+      const result2 = await ssh.execCommand('cd /var/www/alrawi/source-code && corepack enable && pnpm install --no-frozen-lockfile && pnpm build && systemctl restart alrawi', {
+        onStdout(chunk) { console.log(chunk.toString('utf8')); },
+        onStderr(chunk) { console.error(chunk.toString('utf8')); }
+      });
+      console.log('Build finished with code:', result2.code);
+  }
 
   ssh.dispose();
 }

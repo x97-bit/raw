@@ -58,19 +58,29 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
                 ? col.getValue(row) 
                 : row[col.accessorKey || col.key];
               
+              let formattedVal = escapeHtml(val ?? "-");
+              
               if (val !== undefined && val !== null && val !== "") {
                 if (col.format === "money_usd" || col.format === "money") {
-                  val = "$" + Number(val).toLocaleString("en-US");
+                  const num = Number(val);
+                  formattedVal = num < 0 
+                    ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-$${Math.abs(num).toLocaleString("en-US")}</span>`
+                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${num.toLocaleString("en-US")}</span>`;
                 } else if (col.format === "money_iqd" || col.format === "number" || col.format === "currency") {
-                  if (!isNaN(Number(val))) val = Number(val).toLocaleString("en-US");
+                  if (!isNaN(Number(val))) {
+                    const num = Number(val);
+                    formattedVal = num < 0
+                      ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-${Math.abs(num).toLocaleString("en-US")}</span>`
+                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${num.toLocaleString("en-US")}</span>`;
+                  }
                 } else if (col.format === "date") {
-                  val = String(val).split("T")[0].split(" ")[0];
+                  formattedVal = `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${escapeHtml(String(val).split("T")[0].split(" ")[0])}</span>`;
                 }
               }
 
               return `
               <td style="color: ${textColor};">
-                ${escapeHtml(val ?? "-")}
+                ${formattedVal}
               </td>
             `;
             }
@@ -92,16 +102,25 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
                 ? col.getValue(row) 
                 : row[col.accessorKey || col.key];
               
+              let formattedVal = escapeHtml(val ?? "-");
               if (val !== undefined && val !== null && val !== "") {
                 if (col.format === "money_usd" || col.format === "money") {
-                  val = "$" + Number(val).toLocaleString("en-US");
+                  const num = Number(val);
+                  formattedVal = num < 0 
+                    ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-$${Math.abs(num).toLocaleString("en-US")}</span>`
+                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${num.toLocaleString("en-US")}</span>`;
                 } else if (col.format === "money_iqd" || col.format === "number" || col.format === "currency") {
-                  if (!isNaN(Number(val))) val = Number(val).toLocaleString("en-US");
+                  if (!isNaN(Number(val))) {
+                    const num = Number(val);
+                    formattedVal = num < 0
+                      ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-${Math.abs(num).toLocaleString("en-US")}</span>`
+                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${num.toLocaleString("en-US")}</span>`;
+                  }
                 }
               }
 
               return `
-              <td>${escapeHtml(val ?? "-")}</td>
+              <td>${formattedVal}</td>
             `;
             }
           )
@@ -180,10 +199,14 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     thFontSize = "8pt";
     tdFontSize = "7.5pt";
     cellPadding = "3px 4px";
-  } else if (numColumns > 8) {
-    thFontSize = "9pt";
-    tdFontSize = "8.5pt";
+  } else if (numColumns > 9) {
+    thFontSize = "9.5pt";
+    tdFontSize = "9pt";
     cellPadding = "4px 6px";
+  } else if (numColumns === 9) {
+    thFontSize = "10pt";
+    tdFontSize = "9.5pt";
+    cellPadding = "5px 7px";
   }
 
   // ─── Complete HTML Body ───
