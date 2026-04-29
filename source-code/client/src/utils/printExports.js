@@ -689,7 +689,7 @@ function getShellCss({
     }
     @media print {
       @page {
-        size: A4 portrait;
+        size: A4 ${pageOrientation};
         margin: 5mm;
       }
       .tay-print-page { min-height: auto; }

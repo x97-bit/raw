@@ -32,7 +32,7 @@ export function registerPdfExportRoutes(router: Router) {
         // Generate PDF
         const pdfBuffer = await page.pdf({
           format: "A4",
-          landscape: landscape === true,
+          landscape: landscape === true || landscape === "true",
           printBackground: true,
           displayHeaderFooter: useHeaderFooter,
           headerTemplate: headerTemplate || "<span></span>",
