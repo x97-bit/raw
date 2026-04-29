@@ -343,7 +343,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           padding: ${cellPadding};
           font-size: ${thFontSize};
           font-weight: 800;
-          border: 0.5px solid #1C2B59;
+          border: 0.2px solid #d0d5dd;
           text-align: center;
           word-wrap: break-word;
           overflow-wrap: break-word;
@@ -353,7 +353,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           padding: ${cellPadding};
           font-size: ${tdFontSize};
           font-weight: 700;
-          border: 0.5px solid #1C2B59;
+          border: 0.2px solid #e0e4ea;
           color: #1f2937;
           text-align: center;
           word-wrap: break-word;
@@ -391,7 +391,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
             </tr>
             ` : ''}
             <tr>
-              <th colspan="100" style="border: 0.5px solid #1C2B59; border-top: 2.5px solid #1C2B59; border-bottom: none; padding: 2px 8px 10px; background: transparent; text-align: right; direction: rtl; font-weight: normal; color: inherit;">
+              <th colspan="100" style="border: 0.2px solid #d0d5dd; border-top: 1.5px solid #1C2B59; border-bottom: none; padding: 2px 8px 10px; background: transparent; text-align: right; direction: rtl; font-weight: normal; color: inherit;">
                 ${metadataHtml}
               </th>
             </tr>
