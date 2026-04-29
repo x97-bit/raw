@@ -59,12 +59,12 @@ function openPrintWindow(title, body, extraCss = "") {
   <head>
     <meta charset="utf-8" />
     <title>${escapeHtml(title || "طباعة")}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      * { box-sizing: border-box; font-family: "Cordale Trial Bold Italic", "Cordale Trial", Arial, "Traditional Arabic", Tahoma, sans-serif !important; font-weight: bold !important; }
+      * { box-sizing: border-box; font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif !important; }
       html, body { margin: 0; padding: 0; background: #eef2f7; }
       body {
-        font-family: "Cordale Trial Bold Italic", "Cordale Trial", Arial, "Traditional Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
-        font-weight: bold !important;
+        font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
         direction: rtl;
         color: #000000;
         -webkit-print-color-adjust: exact;

@@ -285,7 +285,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           margin: 0 0 ${options.footerBase64 ? '32mm' : '10mm'} 0; 
         }
         body {
-          font-family: "Cordale Trial Bold Italic", "Cordale Trial", "Cairo", "Tajawal", "Traditional Arabic", Tahoma, "Segoe UI", Arial, sans-serif;
+          font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
           direction: rtl;
