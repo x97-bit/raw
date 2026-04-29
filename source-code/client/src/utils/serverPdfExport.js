@@ -193,6 +193,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   // ─── Unified Font & Spacing Structure ───
   // We use a tight scaling range to ensure all templates look consistent ("مو عشوائي")
   // without drastic jumps in font size between different templates.
+  const numColumns = columns.length;
   let thFontSize = "9.5pt";
   let tdFontSize = "9pt";
   let cellPadding = "5px 8px";
