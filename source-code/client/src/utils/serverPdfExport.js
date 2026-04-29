@@ -139,35 +139,35 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   if (options.summaryGrid) {
     const g = options.summaryGrid;
     metadataHtml = `
-      <div class="summary-grid">
-        <div class="summary-row">
-          <div class="summary-cell right navy">
+      <table class="summary-grid" style="border:none;">
+        <tr>
+          <td class="summary-cell right navy">
             ${g.accountName ? `<span>${escapeHtml(g.accountLabel || "اسم التاجر")} : ${escapeHtml(g.accountName)}</span>` : ''}
-          </div>
-          <div class="summary-cell left navy" dir="rtl">
+          </td>
+          <td class="summary-cell left navy" dir="rtl">
             ${g.fromDate !== undefined ? `<span>${escapeHtml(g.fromLabel || "من تاريخ")} : <span dir="ltr">${escapeHtml(g.fromDate)}</span></span>` : ''}
-          </div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-cell right red">
+          </td>
+        </tr>
+        <tr>
+          <td class="summary-cell right red">
             ${g.totalLabel ? `<span>${escapeHtml(g.totalLabel)}: <span dir="ltr">${escapeHtml(g.totalValue || "---")}</span></span>` : ''}
             ${g.amountOnValue ? `<span>المبلغ عليه: ${escapeHtml(g.amountOnValue)}</span>` : ''}
             ${g.amountForValue ? `<span style="margin-right: 12px;">المبلغ له: ${escapeHtml(g.amountForValue)}</span>` : ''}
             ${g.netValue ? `<span style="margin-right: 12px;">الصافي: ${escapeHtml(g.netValue)}</span>` : ''}
-          </div>
-          <div class="summary-cell left navy" dir="rtl">
+          </td>
+          <td class="summary-cell left navy" dir="rtl">
             ${g.toDate !== undefined ? `<span>${escapeHtml(g.toLabel || "الى تاريخ")} : <span dir="ltr">${escapeHtml(g.toDate)}</span></span>` : ''}
-          </div>
-        </div>
+          </td>
+        </tr>
         ${g.selectedLabel ? `
-        <div class="summary-row">
-          <div class="summary-cell right red">
+        <tr>
+          <td class="summary-cell right red">
             <span>${escapeHtml(g.selectedLabel)}: ${escapeHtml(g.selectedValue || "---")}</span>
-          </div>
-          <div class="summary-cell left"></div>
-        </div>
+          </td>
+          <td class="summary-cell left"></td>
+        </tr>
         ` : ''}
-      </div>
+      </table>
     `;
   } else if (Array.isArray(options.summaryCards) && options.summaryCards.length > 0) {
     const cards = options.summaryCards;
@@ -208,42 +208,42 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     }
 
     metadataHtml = `
-      <div class="summary-grid">
-        <div class="summary-row">
-          <div class="summary-cell right navy">
+      <table class="summary-grid" style="border:none;">
+        <tr>
+          <td class="summary-cell right navy">
             ${accountCard ? `<span>${escapeHtml(accountCard.label)} : ${escapeHtml(accountCard.value)}</span>` : ''}
-          </div>
-          <div class="summary-cell left navy" dir="rtl">
+          </td>
+          <td class="summary-cell left navy" dir="rtl">
             ${dateCard ? `<span>من تاريخ : <span dir="ltr">${escapeHtml(fromDate)}</span></span>` : ''}
-          </div>
-        </div>
+          </td>
+        </tr>
         ${totalsItems.length > 0 ? `
-        <div class="summary-row">
-          <div class="summary-cell right navy">
+        <tr>
+          <td class="summary-cell right navy">
             ${totalsItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px;">|</span>')}
-          </div>
-          <div class="summary-cell left navy" dir="rtl">
+          </td>
+          <td class="summary-cell left navy" dir="rtl">
             ${dateCard ? `<span>الى تاريخ : <span dir="ltr">${escapeHtml(toDate)}</span></span>` : ''}
-          </div>
-        </div>
+          </td>
+        </tr>
         ` : ''}
         ${selectedItems.length > 0 ? `
-        <div class="summary-row">
-          <div class="summary-cell right red">
+        <tr>
+          <td class="summary-cell right red">
             ${selectedItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px; color: #E31E24;">|</span>')}
-          </div>
-          <div class="summary-cell left"></div>
-        </div>
+          </td>
+          <td class="summary-cell left"></td>
+        </tr>
         ` : ''}
         ${extraCards.length > 0 ? `
-        <div class="summary-row">
-          <div class="summary-cell right navy">
+        <tr>
+          <td class="summary-cell right navy">
             ${extraCards.map(c => `<span>${escapeHtml(c.label)}: <span dir="ltr">${escapeHtml(c.value)}</span></span>`).join('<span style="margin: 0 8px;">|</span>')}
-          </div>
-          <div class="summary-cell left"></div>
-        </div>
+          </td>
+          <td class="summary-cell left"></td>
+        </tr>
         ` : ''}
-      </div>
+      </table>
     `;
   }
 
@@ -304,20 +304,18 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
         /* ── Summary Grid: Unified info box for ALL templates ── */
         .summary-grid {
-          font-size: 11pt;
-          font-weight: 700;
-          margin-bottom: 5px;
           width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 5px;
+          font-weight: 700;
+          font-size: 11pt;
+          table-layout: fixed;
           line-height: 1.8;
         }
-        .summary-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-          margin-bottom: 4px;
-        }
         .summary-cell { 
-          flex: 0 1 auto; 
+          padding: 3px 0;
+          border: none;
+          background: transparent;
           white-space: nowrap;
         }
         .summary-cell span + span { margin-right: 0; }
