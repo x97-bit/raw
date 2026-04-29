@@ -59,7 +59,7 @@ function openPrintWindow(title, body, extraCss = "") {
   <head>
     <meta charset="utf-8" />
     <title>${escapeHtml(title || "طباعة")}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Cairo:wght@400;600;700&amp;display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif !important; }
       html, body { margin: 0; padding: 0; background: #eef2f7; }

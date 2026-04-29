@@ -25,7 +25,7 @@ export function registerPdfExportRoutes(router: Router) {
         const page = await browser.newPage();
 
         // Set HTML content
-        await page.setContent(html, { waitUntil: "networkidle0" });
+        await page.setContent(html, { waitUntil: "networkidle2", timeout: 20000 });
 
         const useHeaderFooter = !!(headerTemplate || footerTemplate);
 
@@ -43,6 +43,7 @@ export function registerPdfExportRoutes(router: Router) {
             bottom: marginBottom || (useHeaderFooter ? "24mm" : "10mm"),
             left: marginLeft || "8mm",
           },
+          timeout: 30000
         });
 
         await browser.close();
@@ -60,6 +61,7 @@ export function registerPdfExportRoutes(router: Router) {
 
         return res.end(finalBuffer);
       } catch (error) {
+        console.error("[PDF Export Error]:", error);
         return respondRouteError(res, error);
       }
     }
