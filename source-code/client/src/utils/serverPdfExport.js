@@ -253,21 +253,17 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     : '';
 
   // ─── Unified Font & Spacing Structure ───
-  // All templates stay portrait. Wide tables use smaller font + fixed layout.
+  // All templates stay portrait with auto table layout.
   const numColumns = columns.length;
   let thFontSize = "9.5pt";
   let tdFontSize = "9pt";
   let cellPadding = "5px 8px";
-  let tableLayout = "auto";
 
-  if (numColumns > 11) {
-    // Very wide table (13+ columns like النموذج الحالي)
-    thFontSize = "6.5pt";
-    tdFontSize = "6.5pt";
-    cellPadding = "3px 2px";
-    tableLayout = "fixed";
+  if (numColumns > 10) {
+    thFontSize = "7.5pt";
+    tdFontSize = "7pt";
+    cellPadding = "3px 3px";
   } else if (numColumns > 8) {
-    // Wide table (9-11 columns like دولار+دينار)
     thFontSize = "8.5pt";
     tdFontSize = "8pt";
     cellPadding = "4px 5px";
@@ -326,13 +322,12 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         .summary-cell.navy { color: #1C2B59; }
         .summary-cell.red { color: #E31E24; }
 
-        /* ── Table (matches Canvas drawAdaptiveTable: navy header, colored rows) ── */
+        /* ── Table ── */
         table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 20px;
           font-size: ${tdFontSize};
-          table-layout: ${tableLayout};
         }
         thead { display: table-header-group; }
         tr { page-break-inside: avoid; }
@@ -345,8 +340,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           font-weight: 800;
           border: 0.2px solid #d0d5dd;
           text-align: center;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          white-space: nowrap;
         }
         
         td {
@@ -356,8 +350,6 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           border: 0.2px solid #e0e4ea;
           color: #1f2937;
           text-align: center;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         /* ── Totals Row (matches Canvas: #eef1f7 bg, navy text) ── */
