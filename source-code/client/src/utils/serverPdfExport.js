@@ -380,13 +380,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
       <div style="padding: 0 4.2mm;">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
-            ${options.headerBase64 ? `
-            <tr>
-              <th colspan="100" style="padding: 0; margin: 0; border: none; background: transparent;">
-                <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
-              </th>
-            </tr>
-            ` : ''}
+
             <tr>
               <th colspan="100" style="border: 0.2px solid #d0d5dd; border-top: 1.5px solid #1C2B59; border-bottom: none; padding: 2px 8px 10px; background: transparent; text-align: right; direction: rtl; font-weight: normal; color: inherit;">
                 ${metadataHtml}
@@ -401,8 +395,12 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     </html>
   `;
 
-  // ─── Header is now embedded directly in the repeating HTML thead ───
-  const headerTemplate = null;
+  // ─── Header Template: exact brand header image (base64) ───
+  const headerTemplate = options.headerBase64
+    ? `<div style="width: 100%; margin: 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact;">
+         <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
+       </div>`
+    : null;
 
   // ─── Footer Template: exact brand footer image (base64) ───
   const footerTemplate = options.footerBase64
@@ -424,7 +422,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   // Footer image: 7017×745 → on A4 210mm width → height ≈ 22.3mm
   const hasHeader = !!options.headerBase64;
   const hasFooter = !!options.footerBase64;
-  const marginTop = "0mm";
+  const marginTop = hasHeader ? "28mm" : "0mm";
   const marginBottom = hasFooter ? "34mm" : "10mm";
 
   try {
