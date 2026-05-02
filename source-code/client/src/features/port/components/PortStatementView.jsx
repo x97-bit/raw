@@ -70,6 +70,7 @@ export default function PortStatementView({
                 fromDate: from,
                 toDate: to,
                 totals: statement.totals,
+                globalTotals: statement.globalTotals,
               }}
               sectionKey={sectionKey}
             />

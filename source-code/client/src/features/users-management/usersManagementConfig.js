@@ -13,6 +13,12 @@ export const USER_ROLE_CONFIG = {
     icon: Shield,
     description: "صلاحيات محددة حسب الاختيار",
   },
+  merchant: {
+    label: "تاجر",
+    color: "bg-blue-50 text-blue-700",
+    icon: Shield,
+    description: "صلاحيات قراءة كشف الحساب الخاص به فقط",
+  },
 };
 
 export const USER_SECTION_PERMISSIONS = [

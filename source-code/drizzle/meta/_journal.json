@@ -8,6 +8,13 @@
       "when": 1775438093140,
       "tag": "0000_cooing_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1777493777139,
+      "tag": "0001_fuzzy_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

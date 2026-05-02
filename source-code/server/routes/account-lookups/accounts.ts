@@ -15,6 +15,7 @@ import {
   invalidateLookupReadCache,
   respondWithCachedLookup,
 } from "./shared";
+import { normalizeArabicText } from "../../utils/textNormalization";
 
 type AccountInsert = typeof accounts.$inferInsert;
 
@@ -102,23 +103,26 @@ export function registerAccountRoutes(router: Router) {
         };
 
         if (data.name) {
-          const conditions: SQL<unknown>[] = [eq(accounts.name, data.name)];
-          if (data.accountType)
-            conditions.push(eq(accounts.accountType, String(data.accountType)));
-          if (data.portId)
-            conditions.push(eq(accounts.portId, String(data.portId)));
-
-          const [existing] = await db
-            .select()
-            .from(accounts)
-            .where(and(...conditions))
-            .limit(1);
-          if (existing) {
-            return res.json({
-              id: existing.id,
-              message: ACCOUNT_EXISTS_MESSAGE,
-              existing: true,
+          const normalizedInputName = normalizeArabicText(data.name);
+          
+          if (normalizedInputName) {
+            const allAccounts = await db.select().from(accounts);
+            
+            const existing = allAccounts.find(acc => {
+              // Only match if accountType and portId also match (if provided)
+              if (data.accountType && acc.accountType !== String(data.accountType)) return false;
+              if (data.portId && acc.portId !== String(data.portId)) return false;
+              
+              return normalizeArabicText(acc.name) === normalizedInputName;
             });
+
+            if (existing) {
+              return res.json({
+                id: existing.id,
+                message: ACCOUNT_EXISTS_MESSAGE,
+                existing: true,
+              });
+            }
           }
         }
 

@@ -193,6 +193,37 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ─── Security: Clear session on tab/browser close ──────────────────────────
+  // When the user closes the tab or the browser, we clear the admin session
+  // (both the local token and the server-side refresh cookie) so that
+  // re-opening the admin panel requires a fresh login.
+  useEffect(() => {
+    const handlePageHide = (event) => {
+      // persisted === true means the page is going into bfcache (back-forward
+      // cache) and may be restored later. We still clear the session because
+      // the user requirement is strict: any departure must force re-login.
+      // For non-persisted (true close/navigate-away), this is the last chance
+      // to fire a request.
+      clearStoredToken();
+
+      // Fire a server-side logout to clear the httpOnly refresh cookie.
+      // sendBeacon is the most reliable method during page teardown.
+      const logoutUrl = `${API}/auth/logout`;
+      try {
+        if (typeof navigator.sendBeacon === "function") {
+          navigator.sendBeacon(logoutUrl);
+        }
+      } catch {
+        // Best effort
+      }
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 

@@ -1,5 +1,4 @@
-const formatNum = value =>
-  value ? Number(value).toLocaleString("en-US") : "0";
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 
 const PORT_SUMMARY_TONES = {
   usd: "text-[#9ab6ca]",
@@ -75,27 +74,27 @@ export const PORT_SECTION_SUMMARY_META = {
     list: [
       {
         key: "totalInvoicesUSD",
-        label: "الطلب الكلي دولار",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
         key: "totalInvoicesIQD",
-        label: "الطلب الكلي دينار",
+        label: "المبلغ الكلي دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.iqd,
       },
       {
         key: "balanceUSD",
-        label: "مبلغ المفلتر دولار",
+        label: "الرصيد المتبقي دولار",
         format: "usd",
-        accent: PORT_SUMMARY_TONES.filteredUsd,
+        accent: PORT_SUMMARY_TONES.payableUsd,
       },
       {
         key: "balanceIQD",
-        label: "مبلغ المفلتر دينار",
+        label: "الرصيد المتبقي دينار",
         format: "iqd",
-        accent: PORT_SUMMARY_TONES.filteredIqd,
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
       {
         key: "totalMeters",
@@ -107,27 +106,39 @@ export const PORT_SECTION_SUMMARY_META = {
     statement: [
       {
         key: "totalInvoicesUSD",
-        label: "الطلب الكلي دولار",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
-        key: "totalInvoicesIQD",
-        label: "الطلب الكلي دينار",
-        format: "iqd",
-        accent: PORT_SUMMARY_TONES.iqd,
-      },
-      {
-        key: "balanceUSD",
-        label: "مبلغ المفلتر دولار",
+        key: "filteredInvoicesUSD",
+        label: "المبلغ المحدد دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.filteredUsd,
       },
       {
-        key: "balanceIQD",
-        label: "مبلغ المفلتر دينار",
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.payableUsd,
+      },
+      {
+        key: "totalInvoicesIQD",
+        label: "المبلغ الكلي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.iqd,
+      },
+      {
+        key: "filteredInvoicesIQD",
+        label: "المبلغ المحدد دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.filteredIqd,
+      },
+      {
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
       {
         key: "totalMeters",
@@ -141,95 +152,131 @@ export const PORT_SECTION_SUMMARY_META = {
     list: [
       {
         key: "totalInvoicesUSD",
-        label: "الطلب الكلي دولار",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
         key: "totalInvoicesIQD",
-        label: "الطلب الكلي دينار",
+        label: "المبلغ الكلي دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.iqd,
       },
       {
         key: "balanceUSD",
-        label: "مبلغ المفلتر دولار",
+        label: "الرصيد المتبقي دولار",
         format: "usd",
-        accent: PORT_SUMMARY_TONES.filteredUsd,
+        accent: PORT_SUMMARY_TONES.payableUsd,
       },
       {
         key: "balanceIQD",
-        label: "مبلغ المفلتر دينار",
+        label: "الرصيد المتبقي دينار",
         format: "iqd",
-        accent: PORT_SUMMARY_TONES.filteredIqd,
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
     statement: [
       {
         key: "totalInvoicesUSD",
-        label: "الطلب الكلي دولار",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
-        key: "totalInvoicesIQD",
-        label: "الطلب الكلي دينار",
-        format: "iqd",
-        accent: PORT_SUMMARY_TONES.iqd,
-      },
-      {
-        key: "balanceUSD",
-        label: "مبلغ المفلتر دولار",
+        key: "filteredInvoicesUSD",
+        label: "المبلغ المحدد دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.filteredUsd,
       },
       {
-        key: "balanceIQD",
-        label: "مبلغ المفلتر دينار",
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.payableUsd,
+      },
+      {
+        key: "totalInvoicesIQD",
+        label: "المبلغ الكلي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.iqd,
+      },
+      {
+        key: "filteredInvoicesIQD",
+        label: "المبلغ المحدد دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.filteredIqd,
+      },
+      {
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
   },
   "port-3": {
     list: [
       {
-        key: "balanceUSD",
-        label: "الطلب الكلي دولار",
+        key: "totalInvoicesUSD",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
-        key: "balanceIQD",
-        label: "الطلب الكلي دينار",
+        key: "totalInvoicesIQD",
+        label: "المبلغ الكلي دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.iqd,
       },
       {
-        key: "totalInvoicesUSD",
-        label: "إجمالي الفواتير دولار",
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
         format: "usd",
-        accent: PORT_SUMMARY_TONES.filteredUsd,
+        accent: PORT_SUMMARY_TONES.payableUsd,
       },
       {
-        key: "totalInvoicesIQD",
-        label: "إجمالي الفواتير دينار",
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
         format: "iqd",
-        accent: PORT_SUMMARY_TONES.filteredIqd,
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
     statement: [
       {
-        key: "balanceUSD",
-        label: "الطلب الكلي دولار",
+        key: "totalInvoicesUSD",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
-        key: "balanceIQD",
-        label: "الطلب الكلي دينار",
+        key: "filteredInvoicesUSD",
+        label: "المبلغ المحدد دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.filteredUsd,
+      },
+      {
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.payableUsd,
+      },
+      {
+        key: "totalInvoicesIQD",
+        label: "المبلغ الكلي دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.iqd,
+      },
+      {
+        key: "filteredInvoicesIQD",
+        label: "المبلغ المحدد دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.filteredIqd,
+      },
+      {
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
   },
@@ -237,37 +284,73 @@ export const PORT_SECTION_SUMMARY_META = {
     list: [
       {
         key: "totalInvoicesUSD",
-        label: "إجمالي الدولار",
+        label: "المبلغ الكلي دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.usd,
       },
       {
         key: "totalInvoicesIQD",
-        label: "إجمالي الدينار",
+        label: "المبلغ الكلي دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.iqd,
+      },
+      {
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.payableUsd,
+      },
+      {
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
     statement: [
       {
-        key: "balanceUSD",
-        label: "إجمالي الدولار",
+        key: "totalInvoicesUSD",
+        label: "المبلغ الكلي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.usd,
+      },
+      {
+        key: "filteredInvoicesUSD",
+        label: "المبلغ المحدد دولار",
         format: "usd",
         accent: PORT_SUMMARY_TONES.filteredUsd,
       },
       {
-        key: "balanceIQD",
-        label: "إجمالي الدينار",
+        key: "balanceUSD",
+        label: "الرصيد المتبقي دولار",
+        format: "usd",
+        accent: PORT_SUMMARY_TONES.payableUsd,
+      },
+      {
+        key: "totalInvoicesIQD",
+        label: "المبلغ الكلي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.iqd,
+      },
+      {
+        key: "filteredInvoicesIQD",
+        label: "المبلغ المحدد دينار",
         format: "iqd",
         accent: PORT_SUMMARY_TONES.filteredIqd,
+      },
+      {
+        key: "balanceIQD",
+        label: "الرصيد المتبقي دينار",
+        format: "iqd",
+        accent: PORT_SUMMARY_TONES.payableIqd,
       },
     ],
   },
 };
 
 export function formatPortSummaryValue(value, format) {
-  if (format === "usd") return `$${formatNum(value)}`;
-  if (format === "iqd") return formatNum(value);
-  if (format === "number") return formatNum(value);
+  if (format === "usd") return `$${fmtUSD(value)}`;
+  if (format === "iqd") return fmtIQD(value);
+  if (format === "number") return fmtNum(value);
   return value;
 }

@@ -1,3 +1,4 @@
+import { fmtNum } from "./formatNumber";
 export const TRANSACTION_FORMULA_FIELD_MAP = {
   ref_no: "RefNo",
   direction: "TransTypeName",
@@ -125,7 +126,7 @@ export function formatCustomFieldDisplayValue(field, value) {
   if (field?.fieldType === "money" || field?.fieldType === "number") {
     const numericValue = typeof value === "number" ? value : Number(value);
     if (Number.isFinite(numericValue)) {
-      return numericValue.toLocaleString("en-US");
+      return fmtNum(numericValue);
     }
   }
 

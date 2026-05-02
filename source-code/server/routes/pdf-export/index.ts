@@ -1,13 +1,36 @@
 import { Router, Request, Response } from "express";
 import puppeteer from "puppeteer";
-import { authMiddleware } from "../../_core/appAuth";
+import { extractBearerToken, verifyToken, loadAuthenticatedAppUser } from "../../_core/appAuth";
+import { loadAuthenticatedMerchantUser } from "../merchant/merchantAuth";
 import { respondRouteError } from "../../_core/routeResponses";
+
+async function multiAuthMiddleware(req: Request, res: Response, next: any) {
+  try {
+    const token = extractBearerToken(req.headers.authorization as string);
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const payload = await verifyToken(token);
+    if (!payload) return res.status(401).json({ error: "Session expired" });
+
+    if (payload.role === "merchant") {
+      const user = await loadAuthenticatedMerchantUser(payload.userId);
+      if (!user) return res.status(401).json({ error: "Inactive user" });
+    } else {
+      const user = await loadAuthenticatedAppUser(payload.userId);
+      if (!user) return res.status(401).json({ error: "Inactive user" });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Session expired" });
+  }
+}
 
 export function registerPdfExportRoutes(router: Router) {
   console.log("Registering PDF Export Route");
   router.post(
     "/export/pdf",
-    authMiddleware,
+    multiAuthMiddleware,
     async (req: Request, res: Response) => {
       try {
         const { html, filename, headerTemplate, footerTemplate, marginTop, marginBottom, marginRight, marginLeft, landscape } = req.body;

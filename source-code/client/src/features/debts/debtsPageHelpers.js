@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "../../utils/formatNumber";
 import { mergeUniqueDebtNames } from "../../utils/debtsConfig";
 
 const DEBT_CARD_TONES = {

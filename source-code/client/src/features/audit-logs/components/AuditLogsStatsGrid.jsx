@@ -1,3 +1,4 @@
+import { fmtNum } from "../../../utils/formatNumber";
 import { Database, Plus, Pencil, Trash2 } from "lucide-react";
 
 const CARDS = [
@@ -38,7 +39,7 @@ const CARDS = [
 export default function AuditLogsStatsGrid({ stats }) {
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      {CARDS.map(({ key, label, icon: Icon, iconBg, valueColor }) => (
+      {CARDS.map(({ key, label, icon: Icon, iconBg, valueColor }) => fmtNum(
         <div
           key={key}
           className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel p-5 shadow-lg transition-transform hover:scale-[1.02]"
@@ -53,7 +54,7 @@ export default function AuditLogsStatsGrid({ stats }) {
             <p
               className={`mt-0.5 text-2xl font-bold tracking-tight ${valueColor}`}
             >
-              {(stats[key] ?? 0).toLocaleString("en-US")}
+              {(stats[key] ?? 0)}
             </p>
           </div>
         </div>

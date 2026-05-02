@@ -15,7 +15,24 @@ import {
 
 type DecimalLike = string | number | null | undefined;
 
-type TransactionQueryResultRow = {
+type TransactionSummaryRow = {
+  totalCount: DecimalLike;
+  shipmentCount: DecimalLike;
+  totalWeight: DecimalLike;
+  totalMeters: DecimalLike;
+  totalInvoicesUSD: DecimalLike;
+  totalInvoicesIQD: DecimalLike;
+  totalPaymentsUSD: DecimalLike;
+  totalPaymentsIQD: DecimalLike;
+  totalCostUSD: DecimalLike;
+  totalCostIQD: DecimalLike;
+  totalProfitUSD: DecimalLike;
+  totalProfitIQD: DecimalLike;
+  balanceUSD: DecimalLike;
+  balanceIQD: DecimalLike;
+};
+
+type TransactionDataRow = {
   id: number | null;
   refNo?: string | null;
   direction: string | null;
@@ -46,20 +63,6 @@ type TransactionQueryResultRow = {
   portId?: string | null;
   accountType?: string | null;
   createdBy?: DecimalLike;
-  totalCount: DecimalLike;
-  shipmentCount: DecimalLike;
-  totalWeight: DecimalLike;
-  totalMeters: DecimalLike;
-  totalInvoicesUSD: DecimalLike;
-  totalInvoicesIQD: DecimalLike;
-  totalPaymentsUSD: DecimalLike;
-  totalPaymentsIQD: DecimalLike;
-  totalCostUSD: DecimalLike;
-  totalCostIQD: DecimalLike;
-  totalProfitUSD: DecimalLike;
-  totalProfitIQD: DecimalLike;
-  balanceUSD: DecimalLike;
-  balanceIQD: DecimalLike;
 };
 
 function readQueryString(value: unknown): string | undefined {
@@ -108,12 +111,8 @@ function toNullableInteger(value: DecimalLike) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-export function normalizeTransactionQueryResult(
-  rawRows: TransactionQueryResultRow[]
-) {
-  const summarySource = rawRows[0];
-
-  const rows: TransactionEnrichmentRow[] = rawRows
+export function normalizeTransactionRows(rawRows: TransactionDataRow[]) {
+  return rawRows
     .filter(row => row.id !== null && row.id !== undefined)
     .map(row => ({
       id: Number(row.id),
@@ -147,29 +146,40 @@ export function normalizeTransactionQueryResult(
       accountType: row.accountType ?? null,
       createdBy: toNullableInteger(row.createdBy),
     }));
+}
 
+export function normalizeSummaryRow(summaryRow: TransactionSummaryRow | undefined) {
   return {
-    rows,
-    total: toNumber(summarySource?.totalCount),
-    summary: {
-      count: toNumber(summarySource?.totalCount),
-      shipmentCount: toNumber(summarySource?.shipmentCount),
-      totalWeight: toNumber(summarySource?.totalWeight),
-      totalMeters: toNumber(summarySource?.totalMeters),
-      totalInvoicesUSD: toNumber(summarySource?.totalInvoicesUSD),
-      totalInvoicesIQD: toNumber(summarySource?.totalInvoicesIQD),
-      totalPaymentsUSD: toNumber(summarySource?.totalPaymentsUSD),
-      totalPaymentsIQD: toNumber(summarySource?.totalPaymentsIQD),
-      totalCostUSD: toNumber(summarySource?.totalCostUSD),
-      totalCostIQD: toNumber(summarySource?.totalCostIQD),
-      totalProfitUSD: toNumber(summarySource?.totalProfitUSD),
-      totalProfitIQD: toNumber(summarySource?.totalProfitIQD),
-      balanceUSD: toNumber(summarySource?.balanceUSD),
-      balanceIQD: toNumber(summarySource?.balanceIQD),
-    },
+    count: toNumber(summaryRow?.totalCount),
+    shipmentCount: toNumber(summaryRow?.shipmentCount),
+    totalWeight: toNumber(summaryRow?.totalWeight),
+    totalMeters: toNumber(summaryRow?.totalMeters),
+    totalInvoicesUSD: toNumber(summaryRow?.totalInvoicesUSD),
+    totalInvoicesIQD: toNumber(summaryRow?.totalInvoicesIQD),
+    totalPaymentsUSD: toNumber(summaryRow?.totalPaymentsUSD),
+    totalPaymentsIQD: toNumber(summaryRow?.totalPaymentsIQD),
+    totalCostUSD: toNumber(summaryRow?.totalCostUSD),
+    totalCostIQD: toNumber(summaryRow?.totalCostIQD),
+    totalProfitUSD: toNumber(summaryRow?.totalProfitUSD),
+    totalProfitIQD: toNumber(summaryRow?.totalProfitIQD),
+    balanceUSD: toNumber(summaryRow?.balanceUSD),
+    balanceIQD: toNumber(summaryRow?.balanceIQD),
   };
 }
 
+/**
+ * Optimized transaction query implementation.
+ * 
+ * Key improvements over the previous version:
+ * 1. Separates the summary aggregation query from the paginated data query.
+ *    This avoids the expensive Window Functions (SUM() OVER()) that were
+ *    previously computed for every row in the result set.
+ * 2. Runs both queries in parallel using Promise.all for faster response.
+ * 3. The summary query uses simple GROUP BY aggregation which MySQL can
+ *    optimize with covering indexes.
+ * 4. The data query is a simple SELECT with pagination, which is fast
+ *    even on large datasets with proper indexes.
+ */
 export function registerTransactionQueryRoutes(router: Router) {
   router.get(
     "/transactions",
@@ -234,6 +244,7 @@ export function registerTransactionQueryRoutes(router: Router) {
             conditions.push(searchCondition);
           }
         }
+
         const whereClause =
           conditions.length > 0 ? and(...conditions) : undefined;
         const whereFragment = whereClause ? sql`WHERE ${whereClause}` : sql``;
@@ -246,144 +257,117 @@ export function registerTransactionQueryRoutes(router: Router) {
                 ? sql`LIMIT 18446744073709551615 OFFSET ${resolvedOffset}`
                 : sql``;
 
-        const rawRows = (await db.execute(sql`
-        WITH filtered AS (
-          SELECT
-            transactions.id AS id,
-            transactions.ref_no AS refNo,
-            transactions.direction AS direction,
-            transactions.trans_date AS transDate,
-            transactions.account_id AS accountId,
-            transactions.currency AS currency,
-            transactions.driver_id AS driverId,
-            transactions.vehicle_id AS vehicleId,
-            transactions.good_type_id AS goodTypeId,
-            transactions.weight AS weight,
-            transactions.meters AS meters,
-            transactions.qty AS qty,
-            transactions.cost_usd AS costUsd,
-            transactions.amount_usd AS amountUsd,
-            transactions.cost_iqd AS costIqd,
-            transactions.amount_iqd AS amountIqd,
-            transactions.fee_usd AS feeUsd,
-            transactions.syr_cus AS syrCus,
-            transactions.car_qty AS carQty,
-            transactions.trans_price AS transPrice,
-            transactions.carrier_id AS carrierId,
-            transactions.company_name AS companyName,
-            transactions.company_id AS companyId,
-            transactions.gov_id AS govId,
-            transactions.notes AS notes,
-            transactions.trader_note AS traderNote,
-            transactions.record_type AS recordType,
-            transactions.port_id AS portId,
-            transactions.account_type AS accountType,
-            transactions.created_by AS createdBy
-          FROM transactions
-          ${whereFragment}
-        ),
-        windowed AS (
-          SELECT
-            filtered.*,
-            COUNT(*) OVER() AS totalCount,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN 1
-              ELSE 0
-            END) OVER() AS shipmentCount,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.weight AS DECIMAL(15,2)), 0))
-              ELSE 0
-            END) OVER() AS totalWeight,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.meters AS DECIMAL(15,2)), 0))
-              ELSE 0
-            END) OVER() AS totalMeters,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalInvoicesUSD,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalInvoicesIQD,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0)) ELSE 0 END) OVER() AS totalPaymentsUSD,
-            SUM(CASE WHEN UPPER(filtered.direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0)) ELSE 0 END) OVER() AS totalPaymentsIQD,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.amountUsd AS DECIMAL(15,2)), 0))
-              ELSE 0
-            END) OVER() AS profitSourceInvoicesUSD,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.amountIqd AS DECIMAL(15,0)), 0))
-              ELSE 0
-            END) OVER() AS profitSourceInvoicesIQD,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.costUsd AS DECIMAL(15,2)), 0))
-              ELSE 0
-            END) OVER() AS totalCostUSD,
-            SUM(CASE
-              WHEN UPPER(filtered.direction) IN ('IN', 'DR')
-                AND COALESCE(LOWER(filtered.recordType), 'shipment') NOT IN ('expense-charge', 'debit-note')
-              THEN ABS(COALESCE(CAST(filtered.costIqd AS DECIMAL(15,0)), 0))
-              ELSE 0
-            END) OVER() AS totalCostIQD
-          FROM filtered
-        ),
-        summary AS (
-          SELECT
-            COALESCE(MAX(totalCount), 0) AS totalCount,
-            COALESCE(MAX(shipmentCount), 0) AS shipmentCount,
-            COALESCE(MAX(totalWeight), 0) AS totalWeight,
-            COALESCE(MAX(totalMeters), 0) AS totalMeters,
-            COALESCE(MAX(totalInvoicesUSD), 0) AS totalInvoicesUSD,
-            COALESCE(MAX(totalInvoicesIQD), 0) AS totalInvoicesIQD,
-            COALESCE(MAX(totalPaymentsUSD), 0) AS totalPaymentsUSD,
-            COALESCE(MAX(totalPaymentsIQD), 0) AS totalPaymentsIQD,
-            COALESCE(MAX(profitSourceInvoicesUSD), 0) AS profitSourceInvoicesUSD,
-            COALESCE(MAX(profitSourceInvoicesIQD), 0) AS profitSourceInvoicesIQD,
-            COALESCE(MAX(totalCostUSD), 0) AS totalCostUSD,
-            COALESCE(MAX(totalCostIQD), 0) AS totalCostIQD
-          FROM windowed
-        ),
-        paged AS (
-          SELECT *
-          FROM filtered
-          ORDER BY id ASC
-          ${paginationFragment}
-        )
-        SELECT
-          paged.*,
-          summary.totalCount,
-          summary.shipmentCount,
-          summary.totalWeight,
-          summary.totalMeters,
-          summary.totalInvoicesUSD,
-          summary.totalInvoicesIQD,
-          summary.totalPaymentsUSD,
-          summary.totalPaymentsIQD,
-          summary.totalCostUSD,
-          summary.totalCostIQD,
-          (summary.profitSourceInvoicesUSD - summary.totalCostUSD) AS totalProfitUSD,
-          (summary.profitSourceInvoicesIQD - summary.totalCostIQD) AS totalProfitIQD,
-          (summary.totalInvoicesUSD - summary.totalPaymentsUSD) AS balanceUSD,
-          (summary.totalInvoicesIQD - summary.totalPaymentsIQD) AS balanceIQD
-        FROM summary
-        LEFT JOIN paged ON TRUE
-        ORDER BY paged.id ASC
-      `)) as unknown as TransactionQueryResultRow[];
+        // Run summary and data queries in parallel for maximum speed
+        const [summaryResult, dataResult] = await Promise.all([
+          // Summary query: simple aggregation without Window Functions
+          db.execute(sql`
+            SELECT
+              COUNT(*) AS totalCount,
+              SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN 1 ELSE 0
+              END) AS shipmentCount,
+              SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(weight AS DECIMAL(15,2)), 0)) ELSE 0
+              END) AS totalWeight,
+              SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(meters AS DECIMAL(15,2)), 0)) ELSE 0
+              END) AS totalMeters,
+              SUM(CASE WHEN UPPER(direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)), 0)) ELSE 0 END) AS totalInvoicesUSD,
+              SUM(CASE WHEN UPPER(direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(amount_iqd AS DECIMAL(15,0)), 0)) ELSE 0 END) AS totalInvoicesIQD,
+              SUM(CASE WHEN UPPER(direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)), 0)) ELSE 0 END) AS totalPaymentsUSD,
+              SUM(CASE WHEN UPPER(direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(amount_iqd AS DECIMAL(15,0)), 0)) ELSE 0 END) AS totalPaymentsIQD,
+              SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(cost_usd AS DECIMAL(15,2)), 0)) ELSE 0
+              END) AS totalCostUSD,
+              SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(cost_iqd AS DECIMAL(15,0)), 0)) ELSE 0
+              END) AS totalCostIQD,
+              (SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)), 0)) ELSE 0
+              END) - SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(cost_usd AS DECIMAL(15,2)), 0)) ELSE 0
+              END)) AS totalProfitUSD,
+              (SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(amount_iqd AS DECIMAL(15,0)), 0)) ELSE 0
+              END) - SUM(CASE
+                WHEN UPPER(direction) IN ('IN', 'DR')
+                  AND COALESCE(LOWER(record_type), 'shipment') NOT IN ('expense-charge', 'debit-note')
+                THEN ABS(COALESCE(CAST(cost_iqd AS DECIMAL(15,0)), 0)) ELSE 0
+              END)) AS totalProfitIQD,
+              (SUM(CASE WHEN UPPER(direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)), 0)) ELSE 0 END)
+               - SUM(CASE WHEN UPPER(direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(amount_usd AS DECIMAL(15,2)), 0)) ELSE 0 END)) AS balanceUSD,
+              (SUM(CASE WHEN UPPER(direction) IN ('IN', 'DR') THEN ABS(COALESCE(CAST(amount_iqd AS DECIMAL(15,0)), 0)) ELSE 0 END)
+               - SUM(CASE WHEN UPPER(direction) IN ('OUT', 'CR') THEN ABS(COALESCE(CAST(amount_iqd AS DECIMAL(15,0)), 0)) ELSE 0 END)) AS balanceIQD
+            FROM transactions
+            ${whereFragment}
+          `),
+          // Data query: simple paginated select without aggregation
+          db.execute(sql`
+            SELECT
+              id,
+              ref_no AS refNo,
+              direction,
+              trans_date AS transDate,
+              account_id AS accountId,
+              currency,
+              driver_id AS driverId,
+              vehicle_id AS vehicleId,
+              good_type_id AS goodTypeId,
+              weight,
+              meters,
+              qty,
+              cost_usd AS costUsd,
+              amount_usd AS amountUsd,
+              cost_iqd AS costIqd,
+              amount_iqd AS amountIqd,
+              fee_usd AS feeUsd,
+              syr_cus AS syrCus,
+              car_qty AS carQty,
+              trans_price AS transPrice,
+              carrier_id AS carrierId,
+              company_name AS companyName,
+              company_id AS companyId,
+              gov_id AS govId,
+              notes,
+              trader_note AS traderNote,
+              record_type AS recordType,
+              port_id AS portId,
+              account_type AS accountType,
+              created_by AS createdBy
+            FROM transactions
+            ${whereFragment}
+            ORDER BY id ASC
+            ${paginationFragment}
+          `),
+        ]);
 
-        const normalized = normalizeTransactionQueryResult(rawRows);
-        const enrichedRows = await enrichTransactions(db, normalized.rows);
+        const summaryRows = summaryResult as unknown as TransactionSummaryRow[];
+        const dataRows = dataResult as unknown as TransactionDataRow[];
+
+        const rows = normalizeTransactionRows(dataRows);
+        const summary = normalizeSummaryRow(summaryRows[0]);
+        const enrichedRows = await enrichTransactions(db, rows);
 
         return res.json({
           transactions: enrichedRows,
-          total: normalized.total,
-          summary: normalized.summary,
+          total: summary.count,
+          summary,
         });
       } catch (error) {
         return respondRouteError(res, error);

@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 export const REPORT_PORTS = [
   { id: "port-1", name: "السعودية", iconLines: ["السعودية"] },
   { id: "port-2", name: "المنذرية", iconLines: ["المنذرية"] },
@@ -38,8 +39,6 @@ export const PROFITS_BY_TRADER_EXPORT_COLUMNS = [
   { key: "totalProfitIQD", label: "الربح (د.ع)", format: "money_iqd" },
 ];
 
-const formatNum = value =>
-  value ? Number(value).toLocaleString("en-US") : "0";
 
 export function buildExpensesSummaryCards(data) {
   return [
@@ -49,19 +48,19 @@ export function buildExpensesSummaryCards(data) {
     },
     {
       label: "على المنفذ ($)",
-      value: `$${formatNum(data?.totals?.directExpenseUSD)}`,
+      value: `$${fmtUSD(data?.totals?.directExpenseUSD)}`,
     },
     {
       label: "على المنفذ (د.ع)",
-      value: formatNum(data?.totals?.directExpenseIQD),
+      value: fmtNum(data?.totals?.directExpenseIQD),
     },
     {
       label: "محمل على التاجر ($)",
-      value: `$${formatNum(data?.totals?.chargedToTraderUSD)}`,
+      value: `$${fmtUSD(data?.totals?.chargedToTraderUSD)}`,
     },
     {
       label: "محمل على التاجر (د.ع)",
-      value: formatNum(data?.totals?.chargedToTraderIQD),
+      value: fmtNum(data?.totals?.chargedToTraderIQD),
     },
   ];
 }
@@ -69,13 +68,13 @@ export function buildExpensesSummaryCards(data) {
 export function buildProfitSummaryCards(totals = {}) {
   return [
     { label: "عدد الشحنات", value: totals.shipmentCount || 0 },
-    { label: "إجمالي التكلفة", value: `$${formatNum(totals.totalCostUSD)}` },
-    { label: "إجمالي المبلغ", value: `$${formatNum(totals.totalAmountUSD)}` },
+    { label: "إجمالي التكلفة", value: `$${fmtUSD(totals.totalCostUSD)}` },
+    { label: "إجمالي المبلغ", value: `$${fmtUSD(totals.totalAmountUSD)}` },
     {
       label: "إجمالي الربح ($)",
-      value: `$${formatNum(totals.totalProfitUSD)}`,
+      value: `$${fmtUSD(totals.totalProfitUSD)}`,
     },
-    { label: "إجمالي الربح (د.ع)", value: formatNum(totals.totalProfitIQD) },
+    { label: "إجمالي الربح (د.ع)", value: fmtNum(totals.totalProfitIQD) },
   ];
 }
 
@@ -106,19 +105,19 @@ export const HAIDER_REPORT_EXPORT_COLUMNS = [
 export function buildHaiderReportSummaryCards(totals = {}) {
   return [
     { label: "عدد العمليات", value: totals.count || 0 },
-    { label: "إجمالي الكلفة ($)", value: `$${formatNum(totals.totalCostUSD)}` },
+    { label: "إجمالي الكلفة ($)", value: `$${fmtUSD(totals.totalCostUSD)}` },
     {
       label: "إجمالي المبلغ ($)",
-      value: `$${formatNum(totals.totalAmountUSD)}`,
+      value: `$${fmtUSD(totals.totalAmountUSD)}`,
     },
     {
       label: "إجمالي الربح ($)",
-      value: `$${formatNum(totals.totalProfitUSD)}`,
+      value: `$${fmtUSD(totals.totalProfitUSD)}`,
     },
-    { label: "إجمالي الربح (د.ع)", value: formatNum(totals.totalNetIQD) },
+    { label: "إجمالي الربح (د.ع)", value: fmtNum(totals.totalNetIQD) },
     {
       label: "إجمالي الفرق (د.ع)",
-      value: formatNum(totals.totalDifferenceIQD),
+      value: fmtNum(totals.totalDifferenceIQD),
     },
   ];
 }

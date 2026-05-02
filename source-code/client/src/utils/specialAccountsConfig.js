@@ -1,10 +1,9 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 import { Building2, Handshake } from "lucide-react";
 import { getFieldLabel } from "./fieldConfigMetadata";
 import { buildSpecialPartnerTotals } from "./specialPartnerMath";
 import { buildSpecialHaiderTotals } from "./specialHaiderMath";
 
-const formatNum = value =>
-  value ? Number(value).toLocaleString("en-US") : "0";
 
 const SPECIAL_CARD_TONES = {
   usd: "text-[#9ab6ca]",
@@ -53,49 +52,49 @@ const HAIDER_COLUMNS = [
     dataKey: "Weight",
     label: "الوزن",
     format: "number",
-    render: value => (value ? formatNum(value) : "-"),
+    render: value => (value ? fmtNum(value) : "-"),
   },
   {
     key: "meters",
     dataKey: "Meters",
     label: "الأمتار",
     format: "number",
-    render: value => (value ? formatNum(value) : "-"),
+    render: value => (value ? fmtNum(value) : "-"),
   },
   {
     key: "cost_usd",
     dataKey: "CostUSD",
     label: "الكلفة دولار",
     format: "money",
-    render: value => (value ? `$${formatNum(value)}` : "0"),
+    render: value => (value ? `$${fmtUSD(value)}` : "0"),
   },
   {
     key: "amount_usd",
     dataKey: "AmountUSD",
     label: "المبلغ دولار",
     format: "money",
-    render: value => (value ? `$${formatNum(value)}` : "0"),
+    render: value => (value ? `$${fmtUSD(value)}` : "0"),
   },
   {
     key: "cost_iqd",
     dataKey: "CostIQD",
     label: "الكلفة دينار",
     format: "money_iqd",
-    render: value => (value ? formatNum(value) : "0"),
+    render: value => (value ? fmtNum(value) : "0"),
   },
   {
     key: "amount_iqd",
     dataKey: "AmountIQD",
     label: "المبلغ دينار",
     format: "money_iqd",
-    render: value => (value ? formatNum(value) : "0"),
+    render: value => (value ? fmtNum(value) : "0"),
   },
   {
     key: "difference_iqd",
     dataKey: "DifferenceIQD",
     label: "الفرق دينار",
     format: "money_iqd",
-    render: value => (value ? formatNum(value) : "0"),
+    render: value => (value ? fmtNum(value) : "0"),
   },
   {
     key: "batch_name",
@@ -169,7 +168,7 @@ const PARTNER_COLUMNS = [
     dataKey: "AmountUSD",
     label: "المبلغ عليه ($)",
     format: "money",
-    render: value => `$${formatNum(value)}`,
+    render: value => `$${fmtUSD(value)}`,
     isBold: true,
   },
   {
@@ -177,14 +176,14 @@ const PARTNER_COLUMNS = [
     dataKey: "AmountUSD_Partner",
     label: "المبلغ له ($)",
     format: "money",
-    render: value => (value ? `$${formatNum(value)}` : "-"),
+    render: value => (value ? `$${fmtUSD(value)}` : "-"),
   },
   {
     key: "difference_iqd",
     dataKey: "DifferenceIQD",
     label: "الفرق",
     format: "number",
-    render: value => (value ? formatNum(value) : "-"),
+    render: value => (value ? fmtNum(value) : "-"),
   },
   {
     key: "clr",
@@ -200,7 +199,7 @@ const PARTNER_COLUMNS = [
     format: "number",
     render: (_value, row) => {
       const combined = Number(row?.TaxiWater || 0) + Number(row?.TX || 0);
-      return combined ? formatNum(combined) : "-";
+      return combined ? fmtNum(combined) : "-";
     },
   },
   {
@@ -240,32 +239,32 @@ export const SPECIAL_ACCOUNT_DEFS = {
     buildSummaryCards: totals => [
       {
         label: "إجمالي الكلفة ($)",
-        value: `$${formatNum(totals.totalCostUSD)}`,
+        value: `$${fmtUSD(totals.totalCostUSD)}`,
         tone: SPECIAL_CARD_TONES.soft,
       },
       {
         label: "إجمالي المبلغ ($)",
-        value: `$${formatNum(totals.totalAmountUSD)}`,
+        value: `$${fmtUSD(totals.totalAmountUSD)}`,
         tone: SPECIAL_CARD_TONES.usd,
       },
       {
         label: "إجمالي الكلفة (د.ع)",
-        value: formatNum(totals.totalCostIQD),
+        value: fmtNum(totals.totalCostIQD),
         tone: SPECIAL_CARD_TONES.soft,
       },
       {
         label: "إجمالي المبلغ (د.ع)",
-        value: formatNum(totals.totalAmountIQD),
+        value: fmtNum(totals.totalAmountIQD),
         tone: SPECIAL_CARD_TONES.iqd,
       },
       {
         label: "إجمالي الفرق (د.ع)",
-        value: formatNum(totals.totalDifferenceIQD),
+        value: fmtNum(totals.totalDifferenceIQD),
         tone: SPECIAL_CARD_TONES.warning,
       },
       {
         label: "مجموع الطلب الكلي",
-        value: formatNum(totals.totalNetIQD),
+        value: fmtNum(totals.totalNetIQD),
         tone:
           totals.totalNetIQD >= 0
             ? SPECIAL_CARD_TONES.success
@@ -273,22 +272,22 @@ export const SPECIAL_ACCOUNT_DEFS = {
       },
       {
         label: "مجموع الوزن الكلي",
-        value: formatNum(totals.totalWeight),
+        value: fmtNum(totals.totalWeight),
         tone: SPECIAL_CARD_TONES.muted,
       },
     ],
     buildExportSummaryCards: (totals, accountName) => [
       { label: "اسم التاجر", value: accountName },
-      { label: "الاجمالي دينار", value: formatNum(totals.totalAmountIQD) },
+      { label: "الاجمالي دينار", value: fmtNum(totals.totalAmountIQD) },
       {
         label: "المبلغ الكلي دينار",
-        value: formatNum(totals.totalGrandIQD),
+        value: fmtNum(totals.totalGrandIQD),
         color: "#d82534",
       },
-      { label: "اجمالي الفرق", value: formatNum(totals.totalDifferenceIQD) },
+      { label: "اجمالي الفرق", value: fmtNum(totals.totalDifferenceIQD) },
       {
         label: "المبلغ الكلي دولار",
-        value: formatNum(totals.totalAmountUSD),
+        value: fmtNum(totals.totalAmountUSD),
         color: "#d82534",
       },
     ],
@@ -301,13 +300,13 @@ export const SPECIAL_ACCOUNT_DEFS = {
     }),
     getFooterValue: (columnKey, totals) =>
       ({
-        weight: formatNum(totals.totalWeight),
-        meters: formatNum(totals.totalMeters),
-        cost_usd: `$${formatNum(totals.totalCostUSD)}`,
-        amount_usd: `$${formatNum(totals.totalAmountUSD)}`,
-        cost_iqd: formatNum(totals.totalCostIQD),
-        amount_iqd: formatNum(totals.totalAmountIQD),
-        difference_iqd: formatNum(totals.totalDifferenceIQD),
+        weight: fmtNum(totals.totalWeight),
+        meters: fmtNum(totals.totalMeters),
+        cost_usd: `$${fmtUSD(totals.totalCostUSD)}`,
+        amount_usd: `$${fmtUSD(totals.totalAmountUSD)}`,
+        cost_iqd: fmtNum(totals.totalCostIQD),
+        amount_iqd: fmtNum(totals.totalAmountIQD),
+        difference_iqd: fmtNum(totals.totalDifferenceIQD),
       })[columnKey],
   },
   "partnership-yaser": {
@@ -336,17 +335,17 @@ export const SPECIAL_ACCOUNT_DEFS = {
     buildSummaryCards: totals => [
       {
         label: "إجمالي المبلغ عليه ($)",
-        value: `$${formatNum(totals.totalAmountUSD)}`,
+        value: `$${fmtUSD(totals.totalAmountUSD)}`,
         tone: SPECIAL_CARD_TONES.warning,
       },
       {
         label: "إجمالي المبلغ له ($)",
-        value: `$${formatNum(totals.totalPartnerUSD)}`,
+        value: `$${fmtUSD(totals.totalPartnerUSD)}`,
         tone: SPECIAL_CARD_TONES.iqd,
       },
       {
         label: "الصافي (عليه - له) ($)",
-        value: `$${formatNum(totals.totalNetUSD)}`,
+        value: `$${fmtUSD(totals.totalNetUSD)}`,
         tone:
           totals.totalNetUSD >= 0
             ? SPECIAL_CARD_TONES.success
@@ -367,11 +366,11 @@ export const SPECIAL_ACCOUNT_DEFS = {
     }),
     getFooterValue: (columnKey, totals) =>
       ({
-        amount_usd: `$${formatNum(totals.totalAmountUSD)}`,
-        amount_usd_partner: `$${formatNum(totals.totalPartnerBaseUSD)}`,
-        difference_iqd: formatNum(totals.totalDifferenceIQD),
-        clr: formatNum(totals.totalCLR),
-        taxi_and_officer: formatNum(totals.totalTaxiAndOfficer),
+        amount_usd: `$${fmtUSD(totals.totalAmountUSD)}`,
+        amount_usd_partner: `$${fmtUSD(totals.totalPartnerBaseUSD)}`,
+        difference_iqd: fmtNum(totals.totalDifferenceIQD),
+        clr: fmtNum(totals.totalCLR),
+        taxi_and_officer: fmtNum(totals.totalTaxiAndOfficer),
       })[columnKey],
   },
 };

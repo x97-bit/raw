@@ -132,12 +132,58 @@ export function registerReportAccountStatementRoutes(router: Router) {
           AccountName: account?.name || transaction.AccountName,
         }));
 
+        // Calculate global totals
+        const globalConditions: SQL<unknown>[] = [
+          isCarrierStatement
+            ? eq(transactions.carrierId, accountId)
+            : eq(transactions.accountId, accountId),
+        ];
+        if (requestedPortId)
+          globalConditions.push(eq(transactions.portId, requestedPortId));
+        if (requestedAccountType)
+          globalConditions.push(eq(transactions.accountType, requestedAccountType));
+
+        const globalRows = await db
+          .select()
+          .from(transactions)
+          .where(and(...globalConditions));
+
+        const globalExpenseConditions: SQL<unknown>[] = [
+          eq(expenses.accountId, accountId),
+        ];
+        if (requestedPortId)
+          globalExpenseConditions.push(eq(expenses.portId, requestedPortId));
+
+        const globalExpenseRows = isCarrierStatement
+          ? []
+          : await db
+              .select()
+              .from(expenses)
+              .where(and(...globalExpenseConditions));
+
+        const enrichedGlobalRows = await enrichTransactions(db, globalRows);
+        const globalChargedExpenseStatements = globalExpenseRows
+          .filter(
+            expense =>
+              normalizeExpenseChargeTarget(expense.chargeTarget) === "trader"
+          )
+          .map(expense =>
+            mapChargedExpenseToStatementRow(expense, account?.name || "")
+          );
+
+        const globalCombinedRows = [
+          ...enrichedGlobalRows,
+          ...globalChargedExpenseStatements,
+        ];
+        const globalTotals = calculateTransactionTotals(globalCombinedRows);
+
         return res.json({
           account: account ? mapAccount(account) : null,
           transactions: statementRows,
           statement: statementRows,
           shipmentCount: totals.shipmentCount,
           totals,
+          globalTotals,
         });
       } catch (error) {
         return respondRouteError(res, error);

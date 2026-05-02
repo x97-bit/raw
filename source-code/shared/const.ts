@@ -1,5 +1,6 @@
 export const COOKIE_NAME = "app_session_id";
 export const APP_REFRESH_COOKIE_NAME = "app_refresh_token";
+export const MERCHANT_REFRESH_COOKIE_NAME = "merchant_refresh_token";
 export const APP_ACCESS_TOKEN_TTL_SECONDS = 60 * 60;
 export const APP_REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;

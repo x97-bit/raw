@@ -20,8 +20,8 @@ export function buildMySqlConnectionOptions(
     dateStrings: ["DATE"],
     // ── Performance tuning ──────────────────────────────────────────
     connectionLimit: 20, // Max simultaneous DB connections
-    waitForConnections: true, // Queue requests instead of failing
-    queueLimit: 0, // Unlimited queue
+    waitForConnections: true, // Queue requests instead of failing immediately
+    queueLimit: 500, // Fail fast after 500 queued requests (prevents unbounded memory growth)
     connectTimeout: 10_000, // 10s timeout for new connections
     enableKeepAlive: true, // Keep TCP connections alive
     keepAliveInitialDelay: 10_000, // Start keep-alive pings after 10s

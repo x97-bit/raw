@@ -481,6 +481,170 @@ export const paymentMatchingRouter = router({
       return { success: true };
     }),
 
+  getUnmatchedPayments: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database unavailable",
+      });
+    }
+
+    const rows: any[] = await db.execute(sql`
+      SELECT
+        t.id AS payment_id,
+        t.ref_no,
+        t.trans_date,
+        t.account_id,
+        a.name AS AccountName,
+        COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)), 0) AS total_usd,
+        COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)), 0) AS total_iqd,
+        COALESCE(pm_agg.used_usd, 0) AS used_usd,
+        COALESCE(pm_agg.used_iqd, 0) AS used_iqd
+      FROM transactions t
+      LEFT JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN (
+        SELECT paymentId,
+          SUM(CAST(amountUSD AS DECIMAL(15,2))) AS used_usd,
+          SUM(CAST(amountIQD AS DECIMAL(15,0))) AS used_iqd
+        FROM payment_matching
+        GROUP BY paymentId
+      ) pm_agg ON pm_agg.paymentId = t.id
+      WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
+      HAVING (total_usd - COALESCE(used_usd, 0) > 0) OR (total_iqd - COALESCE(used_iqd, 0) > 0)
+      ORDER BY (total_usd - COALESCE(used_usd, 0)) DESC, t.trans_date DESC
+      LIMIT 50
+    `);
+
+    const payments = rows.map((row: any) => {
+      const totalUsd = Number(row.total_usd) || 0;
+      const totalIqd = Number(row.total_iqd) || 0;
+      const usedUsd = Number(row.used_usd) || 0;
+      const usedIqd = Number(row.used_iqd) || 0;
+      return {
+        payment_id: row.payment_id,
+        ref_no: row.ref_no,
+        trans_date: row.trans_date,
+        account_id: row.account_id,
+        AccountName: row.AccountName || "غير معروف",
+        total_usd: totalUsd,
+        total_iqd: totalIqd,
+        used_usd: usedUsd,
+        used_iqd: usedIqd,
+        remaining_usd: Math.max(0, totalUsd - usedUsd),
+        remaining_iqd: Math.max(0, totalIqd - usedIqd),
+      };
+    });
+
+    const totalRemainingUsd = payments.reduce((sum: number, p: any) => sum + p.remaining_usd, 0);
+    const totalRemainingIqd = payments.reduce((sum: number, p: any) => sum + p.remaining_iqd, 0);
+
+    return {
+      payments,
+      total: payments.length,
+      totalRemainingUsd,
+      totalRemainingIqd,
+    };
+  }),
+
+  autoMatchPreview: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database unavailable",
+      });
+    }
+
+    const payments: any[] = await db.execute(sql`
+      SELECT
+        t.id AS payment_id,
+        t.account_id,
+        a.name AS AccountName,
+        COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)), 0) AS total_usd,
+        COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)), 0) AS total_iqd,
+        COALESCE(pm_agg.used_usd, 0) AS used_usd,
+        COALESCE(pm_agg.used_iqd, 0) AS used_iqd
+      FROM transactions t
+      LEFT JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN (
+        SELECT paymentId,
+          SUM(CAST(amountUSD AS DECIMAL(15,2))) AS used_usd,
+          SUM(CAST(amountIQD AS DECIMAL(15,0))) AS used_iqd
+        FROM payment_matching
+        GROUP BY paymentId
+      ) pm_agg ON pm_agg.paymentId = t.id
+      WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
+      HAVING (total_usd - used_usd > 0) OR (total_iqd - used_iqd > 0)
+      ORDER BY t.trans_date ASC
+    `);
+
+    const accountIds = Array.from(
+      new Set(
+        payments
+          .map(payment => Number(payment.account_id))
+          .filter(accountId => Number.isInteger(accountId) && accountId > 0)
+      )
+    );
+
+    const invoices: AutoMatchInvoiceRow[] =
+      accountIds.length > 0
+        ? ((await db.execute(sql`
+          SELECT
+            t.id AS invoice_id,
+            t.account_id,
+            COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)), 0) AS amount_usd,
+            COALESCE(CAST(t.amount_iqd AS DECIMAL(15,0)), 0) AS amount_iqd,
+            COALESCE(pm_agg.paid_usd, 0) AS paid_usd,
+            COALESCE(pm_agg.paid_iqd, 0) AS paid_iqd
+          FROM transactions t
+          LEFT JOIN (SELECT invoiceId,
+              SUM(CAST(amountUSD AS DECIMAL(15,2))) AS paid_usd,
+              SUM(CAST(amountIQD AS DECIMAL(15,0))) AS paid_iqd
+            FROM payment_matching GROUP BY invoiceId
+          ) pm_agg ON pm_agg.invoiceId = t.id
+          WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
+            AND t.account_id IN (${sql.join(
+              accountIds.map(accountId => sql`${accountId}`),
+              sql`, `
+            )})
+          HAVING (amount_usd - COALESCE(paid_usd, 0) > 0) OR (amount_iqd - COALESCE(paid_iqd, 0) > 0)
+          ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
+        `)) as unknown as AutoMatchInvoiceRow[])
+        : [];
+
+    const allocations = buildAutoMatchAllocations(
+      payments as AutoMatchPaymentRow[],
+      invoices
+    );
+
+    // Group by account for summary
+    const accountSummary: Record<number, { name: string; count: number; totalUsd: number; totalIqd: number }> = {};
+    for (const alloc of allocations) {
+      const payment = payments.find((p: any) => p.payment_id === alloc.paymentId);
+      const accountId = payment ? Number(payment.account_id) : 0;
+      const accountName = payment?.AccountName || "غير معروف";
+      if (!accountSummary[accountId]) {
+        accountSummary[accountId] = { name: accountName, count: 0, totalUsd: 0, totalIqd: 0 };
+      }
+      accountSummary[accountId].count += 1;
+      accountSummary[accountId].totalUsd += Number(alloc.amountUSD) || 0;
+      accountSummary[accountId].totalIqd += Number(alloc.amountIQD) || 0;
+    }
+
+    return {
+      totalAllocations: allocations.length,
+      accountsAffected: Object.keys(accountSummary).length,
+      accounts: Object.entries(accountSummary).map(([id, data]) => ({
+        account_id: Number(id),
+        AccountName: data.name,
+        matchCount: data.count,
+        totalUsd: data.totalUsd,
+        totalIqd: data.totalIqd,
+      })),
+    };
+  }),
+
   deleteAllocation: protectedProcedure
     .input(z.object({ allocationId: z.number().int() }))
     .mutation(async ({ input }) => {

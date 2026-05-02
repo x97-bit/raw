@@ -196,6 +196,7 @@ export default function ExportButtons({
   printMetaItems,
   printEmptyMessage,
   printContext,
+  printRenderer,
   selectedTemplateId,
   onTemplateChange,
   sectionKey,
@@ -258,6 +259,7 @@ export default function ExportButtons({
       printMetaItems,
       printEmptyMessage,
       printContext,
+      printRenderer,
       sectionKey,
       summaryStyle,
     }),
@@ -274,6 +276,7 @@ export default function ExportButtons({
       printMetaItems,
       printEmptyMessage,
       printContext,
+      printRenderer,
       sectionKey,
       summaryStyle,
     ]

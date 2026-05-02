@@ -20,7 +20,6 @@ export default function MainPage() {
     const intervalId = setInterval(() => {
       setNow(new Date());
     }, 1000);
-
     return () => clearInterval(intervalId);
   }, []);
 
@@ -29,10 +28,15 @@ export default function MainPage() {
 
   return (
     <div
-      className="page-shell min-h-screen"
-      style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.35s ease" }}
+      className="page-shell"
+      style={{
+        height: "100dvh",
+        opacity: mounted ? 1 : 0,
+        transition: "opacity 0.4s ease",
+      }}
     >
-      <div className="absolute left-3 top-3 z-30 flex items-center gap-2 sm:left-4 sm:top-4">
+      {/* Top Controls */}
+      <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
         <div className="pointer-events-auto">
           <SidebarToggleButton compact />
         </div>
@@ -41,32 +45,33 @@ export default function MainPage() {
         </div>
       </div>
 
-      <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6 py-12 sm:px-10">
+      <main className="relative flex h-[100dvh] w-full items-center justify-center overflow-hidden px-6">
+        {/* Background Glows */}
         <div className="page-shell__center-glow pointer-events-none absolute inset-0 animate-ambient-drift" />
         <div className="page-shell__right-glow pointer-events-none absolute inset-y-0 right-0 w-[28rem]" />
         <div className="page-shell__left-glow pointer-events-none absolute inset-y-0 left-0 w-[24rem]" />
 
-        <section className="relative flex min-h-screen w-full items-center justify-center">
-          <div className="mx-auto flex w-full max-w-[32rem] -translate-y-10 flex-col items-center justify-center text-center sm:-translate-y-14">
-            <div className="mb-4">
-              <div
-                className="text-[3rem] font-black tracking-[0.18em] tabular-nums sm:text-[4rem]"
-                dir="ltr"
-                style={{ color: "var(--hero-title)" }}
-              >
-                {timeStr}
-              </div>
-              <div
-                className="mt-3 text-[15px] font-semibold tracking-[0.18em] sm:text-[17px]"
-                style={{ color: "var(--hero-muted)" }}
-              >
-                {dateStr}
-              </div>
+        <section className="relative flex w-full max-w-[28rem] -translate-y-8 flex-col items-center text-center">
+          {/* Time */}
+          <div className="mb-5">
+            <div
+              className="text-[2.8rem] font-black tracking-[0.14em] tabular-nums sm:text-[3.6rem] leading-none"
+              dir="ltr"
+              style={{ color: "var(--hero-title)" }}
+            >
+              {timeStr}
             </div>
+            <div
+              className="mt-2 text-[12px] font-semibold tracking-[0.14em] sm:text-[14px]"
+              style={{ color: "var(--hero-muted)" }}
+            >
+              {dateStr}
+            </div>
+          </div>
 
-            <div className="mx-auto -mt-6 flex h-52 w-52 items-center justify-center sm:-mt-8 sm:h-64 sm:w-64">
-              <BrandLogo className="h-40 w-40 animate-logo-float drop-shadow-[0_18px_42px_rgba(0,0,0,0.24)] sm:h-52 sm:w-52" />
-            </div>
+          {/* Logo */}
+          <div className="flex h-40 w-40 items-center justify-center sm:h-48 sm:w-48">
+            <BrandLogo className="h-32 w-32 animate-logo-float drop-shadow-[0_14px_36px_rgba(0,0,0,0.2)] sm:h-40 sm:w-40" />
           </div>
         </section>
       </main>

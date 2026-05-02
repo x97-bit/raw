@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 import {
   getSectionColumns,
   isConfiguredTransactionSection,
@@ -88,23 +89,23 @@ const buildSaudiStatementSummaryCards = (printContext = {}) => {
   return [
     {
       label: EXPORT_LABELS.totalInvoicesUsd,
-      value: `$${Number(totals.totalInvoicesUSD || 0).toLocaleString("en-US")}`,
+      value: `$${fmtUSD(totals.totalInvoicesUSD || 0)}`,
     },
     {
       label: EXPORT_LABELS.totalInvoicesIqd,
-      value: Number(totals.totalInvoicesIQD || 0).toLocaleString("en-US"),
+      value: fmtNum(totals.totalInvoicesIQD || 0),
     },
     {
       label: EXPORT_LABELS.filteredUsd,
-      value: `$${Number(totals.balanceUSD || 0).toLocaleString("en-US")}`,
+      value: `$${fmtUSD(totals.balanceUSD || 0)}`,
     },
     {
       label: EXPORT_LABELS.filteredIqd,
-      value: Number(totals.balanceIQD || 0).toLocaleString("en-US"),
+      value: fmtNum(totals.balanceIQD || 0),
     },
     {
       label: EXPORT_LABELS.totalMeters,
-      value: Number(totals.totalMeters || 0).toLocaleString("en-US"),
+      value: fmtNum(totals.totalMeters || 0),
     },
   ];
 };

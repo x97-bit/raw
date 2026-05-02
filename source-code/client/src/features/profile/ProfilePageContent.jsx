@@ -12,7 +12,8 @@ function PasswordField({ id, label, value, visible, onToggle, onChange }) {
     <div>
       <label
         htmlFor={id}
-        className="mb-1.5 block text-[13px] font-semibold text-[#b7c3ce]"
+        className="mb-1 block text-[11.5px] font-semibold"
+        style={{ color: "var(--hero-muted)" }}
       >
         {label}
       </label>
@@ -22,16 +23,20 @@ function PasswordField({ id, label, value, visible, onToggle, onChange }) {
           type={visible ? "text" : "password"}
           value={value}
           onChange={event => onChange(event.target.value)}
-          className="input-field pl-14"
+          className="input-field pl-12"
           dir="ltr"
         />
         <button
           type="button"
           onClick={onToggle}
-          className="absolute inset-y-0 left-2 my-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-[#c9d4de] transition-colors hover:bg-white/[0.1] hover:text-white"
+          className="absolute inset-y-0 left-1.5 my-auto flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+          style={{
+            background: "var(--ghost-button-bg)",
+            color: "var(--ghost-button-text)",
+          }}
           title={visible ? "إخفاء" : "إظهار"}
         >
-          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+          {visible ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
     </div>
@@ -58,8 +63,8 @@ export default function ProfilePageContent({ onBack }) {
   const messageStyles = useMemo(
     () =>
       messageType === "success"
-        ? "border-[#8eb8ad]/20 bg-[#8eb8ad]/[0.08] text-[#dceee8]"
-        : "border-[#b76169]/20 bg-[#b76169]/[0.08] text-[#f0c9ce]",
+        ? { background: "var(--success-soft-bg, rgba(142,184,173,0.08))", color: "var(--success-soft-text, #8eb8ad)", border: "1px solid var(--success-soft-border, rgba(142,184,173,0.2))" }
+        : { background: "var(--error-soft-bg)", color: "var(--error-soft-text)", border: "1px solid var(--error-soft-border, rgba(183,97,105,0.2))" },
     [messageType]
   );
 
@@ -110,56 +115,116 @@ export default function ProfilePageContent({ onBack }) {
         onBack={onBack}
       />
 
-      <div className="mx-auto grid max-w-6xl gap-5 p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section className="surface-card space-y-4 p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-white/[0.06] text-white shadow-[0_12px_22px_rgba(0,0,0,0.18)]">
-              <UserRound size={22} />
+      <div className="mx-auto grid max-w-5xl gap-4 p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        {/* Account Info Card */}
+        <section className="surface-card space-y-3.5 p-4">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              style={{
+                background: "var(--ghost-button-bg)",
+                boxShadow: "var(--ghost-button-shadow)",
+                color: "var(--page-header-title)",
+              }}
+            >
+              <UserRound size={18} />
             </div>
             <div className="min-w-0 text-right">
-              <h2 className="truncate text-lg font-black text-white">
+              <h2
+                className="truncate text-base font-black"
+                style={{ color: "var(--hero-title)" }}
+              >
                 {displayName}
               </h2>
-              <p className="truncate text-sm text-[#91a0ad]">@{username}</p>
+              <p
+                className="truncate text-[11px] font-medium"
+                style={{ color: "var(--hero-muted)" }}
+              >
+                @{username}
+              </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[22px] border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-              <div className="mb-1 text-xs font-semibold tracking-wide text-[#91a0ad]">
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <div
+              className="rounded-xl border p-3"
+              style={{
+                borderColor: "var(--sidebar-separator, rgba(255,255,255,0.06))",
+                background: "var(--ghost-button-bg)",
+              }}
+            >
+              <div
+                className="mb-0.5 text-[10px] font-semibold tracking-wide"
+                style={{ color: "var(--hero-muted)" }}
+              >
                 نوع الحساب
               </div>
-              <div className="text-sm font-bold text-[#edf2f7]">
+              <div
+                className="text-[12px] font-bold"
+                style={{ color: "var(--hero-title)" }}
+              >
                 {roleLabel}
               </div>
             </div>
-            <div className="rounded-[22px] border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-              <div className="mb-1 text-xs font-semibold tracking-wide text-[#91a0ad]">
+            <div
+              className="rounded-xl border p-3"
+              style={{
+                borderColor: "var(--sidebar-separator, rgba(255,255,255,0.06))",
+                background: "var(--ghost-button-bg)",
+              }}
+            >
+              <div
+                className="mb-0.5 text-[10px] font-semibold tracking-wide"
+                style={{ color: "var(--hero-muted)" }}
+              >
                 الأمان
               </div>
-              <div className="flex items-center gap-2 text-sm font-bold text-[#dceee8]">
-                <ShieldCheck size={16} />
-                <span>يمكنك تغيير كلمة المرور من هنا</span>
+              <div
+                className="flex items-center gap-1.5 text-[12px] font-bold"
+                style={{ color: "var(--hero-title)" }}
+              >
+                <ShieldCheck size={13} />
+                <span>يمكنك تغيير كلمة المرور</span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[22px] border border-white/[0.06] bg-white/[0.03] p-4 text-sm leading-7 text-[#b7c3ce] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div
+            className="rounded-xl border p-3 text-[11.5px] leading-6"
+            style={{
+              borderColor: "var(--sidebar-separator, rgba(255,255,255,0.06))",
+              background: "var(--ghost-button-bg)",
+              color: "var(--hero-muted)",
+            }}
+          >
             هذه الصفحة خاصة بحسابك فقط. يمكنك تغيير كلمة المرور الحالية بعد
             إدخالها بشكل صحيح، ولن تظهر كلمة المرور القديمة داخل النظام.
           </div>
         </section>
 
-        <section className="surface-card space-y-4 p-5">
+        {/* Password Change Card */}
+        <section className="surface-card space-y-3.5 p-4">
           <div className="flex items-center gap-2 text-right">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#648ea9]/[0.14] text-[#dce8f2]">
-              <KeyRound size={18} />
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{
+                background: "var(--ghost-button-bg)",
+                color: "var(--page-header-title)",
+              }}
+            >
+              <KeyRound size={16} />
             </div>
             <div>
-              <h3 className="text-base font-black text-white">
+              <h3
+                className="text-[13px] font-black"
+                style={{ color: "var(--hero-title)" }}
+              >
                 تغيير كلمة المرور
               </h3>
-              <p className="text-sm text-[#91a0ad]">
+              <p
+                className="text-[10.5px]"
+                style={{ color: "var(--hero-muted)" }}
+              >
                 أدخل كلمة المرور الحالية ثم اختر كلمة جديدة.
               </p>
             </div>
@@ -167,13 +232,14 @@ export default function ProfilePageContent({ onBack }) {
 
           {message && (
             <div
-              className={`rounded-[20px] border px-4 py-3 text-sm font-medium ${messageStyles}`}
+              className="rounded-xl px-3.5 py-2.5 text-[12px] font-medium"
+              style={messageStyles}
             >
               {message}
             </div>
           )}
 
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             <PasswordField
               id="current-password"
               label="كلمة المرور الحالية"
@@ -200,13 +266,16 @@ export default function ProfilePageContent({ onBack }) {
             />
           </div>
 
-          <div className="flex gap-3 border-t border-white/[0.06] pt-5">
+          <div
+            className="flex gap-2.5 border-t pt-3.5"
+            style={{ borderColor: "var(--sidebar-separator, rgba(255,255,255,0.06))" }}
+          >
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex items-center gap-1.5 text-[12px]"
             >
-              <KeyRound size={16} />
+              <KeyRound size={14} />
               {saving ? "جارٍ الحفظ..." : "حفظ كلمة المرور الجديدة"}
             </button>
             <button
@@ -214,7 +283,7 @@ export default function ProfilePageContent({ onBack }) {
                 setForm(createInitialProfilePasswordForm());
                 setMessage("");
               }}
-              className="btn-outline"
+              className="btn-outline text-[12px]"
             >
               تفريغ الحقول
             </button>

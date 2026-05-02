@@ -20,14 +20,15 @@ export default function PageHeader({
   };
 
   return (
-    <div className="sticky top-0 z-40 px-3 pt-3 sm:px-4 sm:pt-4 no-print">
+    <div className="sticky top-0 z-40 px-3 pt-2.5 sm:px-3.5 sm:pt-3 no-print">
       <div
-        className="relative overflow-hidden rounded-[30px] backdrop-blur-xl"
+        className="relative overflow-hidden rounded-2xl backdrop-blur-xl"
         style={{
           background: "var(--page-header-bg)",
           boxShadow: "var(--page-header-shadow)",
         }}
       >
+        {/* Top accent line */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[1px]"
           style={{
@@ -35,67 +36,69 @@ export default function PageHeader({
           }}
         />
         <div
-          className="pointer-events-none absolute -top-12 left-0 h-32 w-32 rounded-full opacity-[0.28]"
+          className="pointer-events-none absolute -top-10 left-0 h-24 w-24 rounded-full opacity-[0.2]"
           style={{
             background: `radial-gradient(circle, ${accent}18 0%, transparent 72%)`,
           }}
         />
         <div
-          className="pointer-events-none absolute -right-8 top-0 h-28 w-28 rounded-full opacity-[0.18]"
+          className="pointer-events-none absolute -right-6 top-0 h-20 w-20 rounded-full opacity-[0.15]"
           style={{ background: "var(--page-header-glow)" }}
         />
 
-        <div className="relative mx-auto max-w-[1500px] px-4 py-3 sm:px-5">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-            <div className="flex items-center gap-2 justify-self-start">
-              {hasSidebar && <SidebarToggleButton compact />}
-              {children}
-            </div>
-
-            <div className="min-w-0 text-center">
-              <h1
-                className="truncate text-[18px] font-black tracking-tight sm:text-[20px]"
-                style={{ color: "var(--page-header-title)" }}
-              >
-                {title}
-              </h1>
-              {subtitle && (
-                <p
-                  className="mt-1 truncate text-[11px] font-medium tracking-wide sm:text-[11.5px]"
-                  style={{ color: "var(--page-header-subtitle)" }}
-                >
-                  {subtitle}
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 justify-self-end">
-              <ThemeToggleButton compact />
-
-              {onHome && (
-                <button
-                  onClick={onHome}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
-                  style={ghostButtonStyle}
-                  title="الصفحة الرئيسية"
-                >
-                  <Home size={16} className="text-current" />
-                </button>
-              )}
-
+        <div className="relative mx-auto max-w-[1500px] px-3.5 py-2.5 sm:px-4">
+          <div className="flex items-center justify-between gap-3">
+            {/* Right side: Back + Home + Title */}
+            <div className="flex items-center gap-2.5 min-w-0">
               {onBack && (
                 <button
                   onClick={onBack}
-                  className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                  className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 flex-shrink-0"
                   style={ghostButtonStyle}
                 >
                   <ArrowRight
-                    size={16}
+                    size={14}
                     style={{ color: "var(--ghost-button-icon)" }}
                   />
                   <span>رجوع</span>
                 </button>
               )}
+
+              {onHome && (
+                <button
+                  onClick={onHome}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex-shrink-0"
+                  style={ghostButtonStyle}
+                  title="الصفحة الرئيسية"
+                >
+                  <Home size={14} className="text-current" />
+                </button>
+              )}
+
+              {/* Title */}
+              <div className="min-w-0">
+                <h1
+                  className="truncate text-[15px] font-black tracking-tight sm:text-[17px]"
+                  style={{ color: "var(--page-header-title)" }}
+                >
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p
+                    className="mt-0.5 truncate text-[10px] font-medium tracking-wide sm:text-[10.5px]"
+                    style={{ color: "var(--page-header-subtitle)" }}
+                  >
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Left side: Children (export buttons etc.) + Theme + Sidebar */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {children}
+              <ThemeToggleButton compact />
+              {hasSidebar && <SidebarToggleButton compact />}
             </div>
           </div>
         </div>

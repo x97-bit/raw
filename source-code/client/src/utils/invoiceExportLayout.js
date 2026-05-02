@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 import { getCurrencyLabel } from "./currencyLabels";
 import {
   getSectionFormLayout,
@@ -68,12 +69,12 @@ function formatDateValue(value) {
 function formatNumericValue(value) {
   return value === null || value === undefined || value === ""
     ? "-"
-    : Number(value).toLocaleString("en-US");
+    : fmtNum(value);
 }
 
 function formatMoneyValue(value, currency = "USD") {
   if (value === null || value === undefined || value === "") return "-";
-  const numericValue = Number(value).toLocaleString("en-US");
+  const numericValue = fmtNum(value);
   return currency === "IQD" ? `${numericValue} د.ع` : `$${numericValue}`;
 }
 

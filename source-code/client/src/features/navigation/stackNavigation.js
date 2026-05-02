@@ -3,6 +3,7 @@ import { sectionConfig } from "./sectionCatalog";
 export const MAIN_PAGE = "main";
 export const ADMIN_ONLY_PAGES = new Set([
   "users",
+  "merchant-management",
   "field-management",
   "defaults-management",
   "backups",
@@ -14,6 +15,7 @@ const directPageTargets = {
   reports: { page: "reports" },
   special: { page: "accounts" },
   users: { page: "users" },
+  "merchant-management": { page: "merchant-management" },
   backups: { page: "backups" },
   "trial-balance": { page: "trial-balance" },
   "payment-matching": { page: "payment-matching" },

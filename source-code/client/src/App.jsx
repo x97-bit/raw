@@ -21,6 +21,7 @@ const pageComponents = {
   accounts: lazy(() => import("./pages/AccountsPage")),
   profile: lazy(() => import("./pages/ProfilePage")),
   users: lazy(() => import("./pages/UsersPage")),
+  "merchant-management": lazy(() => import("./pages/MerchantsManagementPage")),
   backups: lazy(() => import("./pages/BackupsPage")),
   "trial-balance": lazy(() => import("./pages/TrialBalancePage")),
   "payment-matching": lazy(() => import("./pages/PaymentMatchingPage")),

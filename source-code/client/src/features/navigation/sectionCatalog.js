@@ -263,6 +263,13 @@ const adminSectionGroup = {
       bg: "rgba(96,165,250,0.16)",
     },
     {
+      id: "merchant-management",
+      label: "إدارة التجار",
+      icon: Building2,
+      accent: "#38bdf8",
+      bg: "rgba(56,189,248,0.16)",
+    },
+    {
       id: "field-management",
       label: "إدارة الحقول",
       icon: Settings2,

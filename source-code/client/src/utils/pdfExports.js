@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 import jsPDF from "jspdf";
 import { getCurrencyLabel } from "./currencyLabels";
 import { getTransactionTypeLabel } from "./transactionTypeLabels";
@@ -61,10 +62,10 @@ function formatCellValue(value, format) {
   }
 
   if (format === "currency") return getCurrencyLabel(value);
-  if (format === "number") return Number(value).toLocaleString("en-US");
-  if (format === "money") return `$${Number(value).toLocaleString("en-US")}`;
+  if (format === "number") return fmtNum(value);
+  if (format === "money") return `$${fmtUSD(value)}`;
   if (format === "money_iqd")
-    return `${Number(value).toLocaleString("en-US")} د.ع`;
+    return `${fmtIQD(value)} د.ع`;
   return String(value);
 }
 
@@ -836,10 +837,10 @@ function formatExportCellValue(val, format) {
   if (val === null || val === undefined || val === "") return "-";
   if (format === "date") return String(val).split("T")[0].split(" ")[0];
   if (format === "currency") return getCurrencyLabel(val);
-  if (format === "number") return Number(val).toLocaleString("en-US");
-  if (format === "money") return `$${Number(val).toLocaleString("en-US")}`;
+  if (format === "number") return fmtNum(val);
+  if (format === "money") return `$${fmtUSD(val)}`;
   if (format === "money_iqd")
-    return `${Number(val).toLocaleString("en-US")} \u062f.\u0639`;
+    return `${fmtNum(val)} \u062f.\u0639`;
   return String(val);
 }
 
@@ -1428,7 +1429,7 @@ function drawAdaptiveTable(
         "#f09a54",
         1
       );
-      const text = `المبلغ عليه : ${Number(row.totals?.totalAmountUSD || 0).toLocaleString("en-US")}     |     المبلغ له : ${Number(row.totals?.totalPartnerUSD || 0).toLocaleString("en-US")}`;
+      const text = `المبلغ عليه : ${fmtNum(row.totals?.totalAmountUSD || 0)}     |     المبلغ له : ${fmtNum(row.totals?.totalPartnerUSD || 0)}`;
       drawWrappedTableCellText(ctx, text, {
         x,
         y: rowY,
@@ -2088,40 +2089,49 @@ function buildSaudiStatementPdfSummaryCards(
     { label: "إلى تاريخ", value: printContext?.toDate || "---" },
   ];
 
-  const totalUsd = `$${Number(totals.totalInvoicesUSD || 0).toLocaleString("en-US")}`;
-  const totalIqd = `${Number(totals.totalInvoicesIQD || 0).toLocaleString("en-US")} د.ع`;
-  const balanceUsd = `$${Number(totals.balanceUSD || 0).toLocaleString("en-US")}`;
-  const balanceIqd = `${Number(totals.balanceIQD || 0).toLocaleString("en-US")} د.ع`;
+  const globalTotals = printContext?.globalTotals || totals;
+  const totalUsd = `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}`;
+  const totalIqd = `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع`;
+  const filteredUsd = `$${fmtUSD(totals.totalInvoicesUSD || 0)}`;
+  const filteredIqd = `$${fmtNum(totals.totalInvoicesIQD || 0)} د.ع`;
+  const balanceUsd = `$${fmtUSD(globalTotals.balanceUSD || 0)}`;
+  const balanceIqd = `$${fmtNum(globalTotals.balanceIQD || 0)} د.ع`;
 
   const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
   const hasDateFilter =
     isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
 
   if (templateVariant === "usd") {
-    summaryCards.push({ label: "الطلب الكلي", value: totalUsd });
+    summaryCards.push({ label: "المبلغ الكلي", value: totalUsd });
     if (hasDateFilter)
-      summaryCards.push({ label: "مبلغ المحدد", value: balanceUsd });
+      summaryCards.push({ label: "المبلغ المحدد", value: filteredUsd });
+    summaryCards.push({ label: "الرصيد المتبقي", value: balanceUsd });
   } else if (templateVariant === "iqd") {
-    summaryCards.push({ label: "الطلب الكلي", value: totalIqd });
+    summaryCards.push({ label: "المبلغ الكلي", value: totalIqd });
     if (hasDateFilter)
-      summaryCards.push({ label: "مبلغ المحدد", value: balanceIqd });
+      summaryCards.push({ label: "المبلغ المحدد", value: filteredIqd });
+    summaryCards.push({ label: "الرصيد المتبقي", value: balanceIqd });
   } else {
     summaryCards.push(
-      { label: "الطلب الكلي دولار", value: totalUsd },
-      { label: "الطلب الكلي دينار", value: totalIqd }
+      { label: "المبلغ الكلي دولار", value: totalUsd },
+      { label: "المبلغ الكلي دينار", value: totalIqd }
     );
     if (hasDateFilter) {
       summaryCards.push(
-        { label: "مبلغ المحدد دولار", value: balanceUsd },
-        { label: "مبلغ المحدد دينار", value: balanceIqd }
+        { label: "المبلغ المحدد دولار", value: filteredUsd },
+        { label: "المبلغ المحدد دينار", value: filteredIqd }
       );
     }
+    summaryCards.push(
+      { label: "الرصيد المتبقي دولار", value: balanceUsd },
+      { label: "الرصيد المتبقي دينار", value: balanceIqd }
+    );
   }
 
   if (totals.totalWeight !== undefined && totals.totalWeight !== null) {
     summaryCards.push({
       label: "مجموع الوزن الكلي",
-      value: Number(totals.totalWeight || 0).toLocaleString("en-US"),
+      value: fmtNum(totals.totalWeight || 0),
     });
   }
 
@@ -2133,84 +2143,63 @@ function buildUnifiedSaudiStatementPdfSummaryCards(
   templateVariant = "both"
 ) {
   const totals = printContext?.totals || {};
+  const globalTotals = printContext?.globalTotals || totals;
+
   const summaryCards = [
     {
-      label: "\u0627\u0633\u0645 \u0627\u0644\u062a\u0627\u062c\u0631",
+      label: "اسم التاجر",
       value: printContext?.accountName || "---",
     },
     {
-      label: "\u0645\u0646 \u062a\u0627\u0631\u064a\u062e",
+      label: "من تاريخ",
       value: printContext?.fromDate || "---",
     },
     {
-      label: "\u0625\u0644\u0649 \u062a\u0627\u0631\u064a\u062e",
+      label: "إلى تاريخ",
       value: printContext?.toDate || "---",
     },
   ];
 
-  const totalUsd = `$${Number(totals.totalInvoicesUSD || 0).toLocaleString("en-US")}`;
-  const totalIqd = `${Number(totals.totalInvoicesIQD || 0).toLocaleString("en-US")} \u062f.\u0639`;
-  const balanceUsd = `$${Number(totals.balanceUSD || 0).toLocaleString("en-US")}`;
-  const balanceIqd = `${Number(totals.balanceIQD || 0).toLocaleString("en-US")} \u062f.\u0639`;
+  const totalUsd = `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}`;
+  const totalIqd = `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع`;
+  const filteredUsd = `$${fmtUSD(totals.totalInvoicesUSD || 0)}`;
+  const filteredIqd = `${fmtIQD(totals.totalInvoicesIQD || 0)} د.ع`;
+  const balanceUsd = `$${fmtUSD(globalTotals.balanceUSD || 0)}`;
+  const balanceIqd = `${fmtIQD(globalTotals.balanceIQD || 0)} د.ع`;
 
   const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
-  const hasDateFilter =
-    isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
+  const hasDateFilter = isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
 
   if (templateVariant === "usd") {
-    summaryCards.push({
-      label: "\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0643\u0644\u064a",
-      value: totalUsd,
-    });
-    if (hasDateFilter)
-      summaryCards.push({
-        label: "\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f",
-        value: balanceUsd,
-      });
+    summaryCards.push({ label: "المبلغ الكلي", value: totalUsd });
+    if (hasDateFilter) summaryCards.push({ label: "المبلغ المحدد", value: filteredUsd });
+    summaryCards.push({ label: "الرصيد المتبقي", value: balanceUsd });
   } else if (templateVariant === "iqd") {
-    summaryCards.push({
-      label: "\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0643\u0644\u064a",
-      value: totalIqd,
-    });
-    if (hasDateFilter)
-      summaryCards.push({
-        label: "\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f",
-        value: balanceIqd,
-      });
+    summaryCards.push({ label: "المبلغ الكلي", value: totalIqd });
+    if (hasDateFilter) summaryCards.push({ label: "المبلغ المحدد", value: filteredIqd });
+    summaryCards.push({ label: "الرصيد المتبقي", value: balanceIqd });
   } else {
     summaryCards.push(
-      {
-        label:
-          "\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0643\u0644\u064a \u062f\u0648\u0644\u0627\u0631",
-        value: totalUsd,
-      },
-      {
-        label:
-          "\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0643\u0644\u064a \u062f\u064a\u0646\u0627\u0631",
-        value: totalIqd,
-      }
+      { label: "المبلغ الكلي دولار", value: totalUsd },
+      { label: "المبلغ الكلي دينار", value: totalIqd }
     );
     if (hasDateFilter) {
       summaryCards.push(
-        {
-          label:
-            "\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f \u062f\u0648\u0644\u0627\u0631",
-          value: balanceUsd,
-        },
-        {
-          label:
-            "\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f \u062f\u064a\u0646\u0627\u0631",
-          value: balanceIqd,
-        }
+        { label: "المبلغ المحدد دولار", value: filteredUsd },
+        { label: "المبلغ المحدد دينار", value: filteredIqd }
       );
     }
+    summaryCards.push(
+      { label: "الرصيد المتبقي دولار", value: balanceUsd },
+      { label: "الرصيد المتبقي دينار", value: balanceIqd }
+    );
   }
 
   if (totals.totalWeight !== undefined && totals.totalWeight !== null) {
     summaryCards.push({
       label:
         "\u0645\u062c\u0645\u0648\u0639 \u0627\u0644\u0648\u0632\u0646 \u0627\u0644\u0643\u0644\u064a",
-      value: Number(totals.totalWeight || 0).toLocaleString("en-US"),
+      value: fmtNum(totals.totalWeight || 0),
     });
   }
 
@@ -2763,7 +2752,7 @@ function getInvoiceFields(transaction, transactionTypeLabel) {
     {
       label: "الوزن",
       value: transaction.Weight
-        ? Number(transaction.Weight).toLocaleString("en-US")
+        ? fmtNum(transaction.Weight)
         : "-",
     },
     { label: "العدد", value: transaction.Qty || "-" },
@@ -2771,13 +2760,13 @@ function getInvoiceFields(transaction, transactionTypeLabel) {
     {
       label: "المبلغ دولار",
       value: transaction.AmountUSD
-        ? `$${Number(transaction.AmountUSD).toLocaleString("en-US")}`
+        ? `$${fmtUSD(transaction.AmountUSD)}`
         : "-",
     },
     {
       label: "المبلغ دينار",
       value: transaction.AmountIQD
-        ? `${Number(transaction.AmountIQD).toLocaleString("en-US")} د.ع`
+        ? `${fmtIQD(transaction.AmountIQD)} د.ع`
         : "-",
     },
     { label: "المحافظة", value: transaction.GovName || "-" },
@@ -2960,7 +2949,7 @@ export async function exportToPDF({
 
   if ((sectionKey === "special-partner" || sectionKey === "port-3") && printContext) {
     const totals = printContext.totals || {};
-    const fmt = val => Number(val || 0).toLocaleString("en-US");
+    const fmt = fmtNum;
     
     let summaryGrid;
     if (sectionKey === "special-partner") {
@@ -3015,16 +3004,19 @@ function buildPortStatementSummaryCards(
   sectionKey = null
 ) {
   const totals = printContext?.totals || {};
-  const fmt = val => Number(val || 0).toLocaleString("en-US");
+  const fmt = fmtNum;
   const cards = [];
 
   const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
   const hasDateFilter =
     isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
-  const balanceIqd = fmt(totals.balanceIQD);
-  const balanceUsd = `$${fmt(totals.balanceUSD)}`;
-  const totalIqd = fmt(totals.totalInvoicesIQD);
-  const totalUsd = `$${fmt(totals.totalInvoicesUSD)}`;
+  const globalTotals = printContext?.globalTotals || totals;
+  const globalUsd = `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}`;
+  const globalIqd = `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع`;
+  const filteredUsd = `$${fmtUSD(totals.totalInvoicesUSD || 0)}`;
+  const filteredIqd = `$${fmtNum(totals.totalInvoicesIQD || 0)} د.ع`;
+  const balanceUsd = `$${fmtUSD(globalTotals.balanceUSD || 0)}`;
+  const balanceIqd = `${fmtIQD(globalTotals.balanceIQD || 0)} د.ع`;
 
   if (printContext.accountName) {
     cards.push({ label: "اسم التاجر", value: printContext.accountName });
@@ -3035,18 +3027,23 @@ function buildPortStatementSummaryCards(
   }
 
   if (totals.totalInvoicesIQD !== undefined) {
-    cards.push({ label: "الاجمالي دينار", value: totalIqd });
+    cards.push({ label: "المبلغ الكلي دينار", value: globalIqd });
   }
   if (totals.totalInvoicesUSD !== undefined) {
-    cards.push({ label: "الاجمالي دولار", value: totalUsd });
+    cards.push({ label: "المبلغ الكلي دولار", value: globalUsd });
   }
 
   if (hasDateFilter) {
     cards.push(
-      { label: "المبلغ المحدد دينار", value: balanceIqd, color: "#d82534" },
-      { label: "المبلغ المحدد دولار", value: balanceUsd, color: "#d82534" }
+      { label: "المبلغ المحدد دينار", value: filteredIqd, color: "#d82534" },
+      { label: "المبلغ المحدد دولار", value: filteredUsd, color: "#d82534" }
     );
   }
+
+  cards.push(
+    { label: "الرصيد المتبقي دينار", value: balanceIqd },
+    { label: "الرصيد المتبقي دولار", value: balanceUsd }
+  );
 
   if (sectionKey === "port-1") {
     const totalMeters = rows.reduce(
@@ -3085,26 +3082,38 @@ export async function exportSaudiStatementPDF({
 
   if (useGridHeader) {
     const totals = printContext?.totals || {};
-    const fmt = val => Number(val || 0).toLocaleString("en-US");
+    const globalTotals = printContext?.globalTotals || totals;
+    const fmt = fmtNum;
+    
+    const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
+    const hasDateFilter = isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
+
     const totalValue =
       templateVariant === "usd"
-        ? `$${fmt(totals.totalInvoicesUSD)}`
-        : fmt(totals.totalInvoicesIQD);
-    const selectedValue =
+        ? `$${fmt(globalTotals.totalInvoicesUSD)}`
+        : `${fmt(globalTotals.totalInvoicesIQD)} د.ع`;
+        
+    const filteredValue =
       templateVariant === "usd"
-        ? `$${fmt(totals.balanceUSD)}`
-        : fmt(totals.balanceIQD);
+        ? `$${fmt(totals.totalInvoicesUSD)}`
+        : `${fmt(totals.totalInvoicesIQD)} د.ع`;
+        
+    const balanceValue =
+      templateVariant === "usd"
+        ? `$${fmt(globalTotals.balanceUSD)}`
+        : `${fmt(globalTotals.balanceIQD)} د.ع`;
 
     const summaryGrid = {
       accountName: printContext?.accountName || "---",
       fromDate: printContext?.fromDate || "---",
       toDate: printContext?.toDate || "---",
-      totalLabel:
-        "\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0643\u0644\u064a",
+      totalLabel: "المبلغ الكلي",
       totalValue,
-      selectedLabel:
-        "\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062d\u062f\u062f",
-      selectedValue,
+      hasDateFilter,
+      filteredLabel: "المبلغ المحدد",
+      filteredValue,
+      balanceLabel: "الرصيد المتبقي",
+      balanceValue,
     };
 
     await exportToServerPdf(

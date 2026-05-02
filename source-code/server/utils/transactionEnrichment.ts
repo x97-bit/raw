@@ -51,6 +51,12 @@ type TransactionMapInput = {
   amountIqd?: DecimalLike;
   feeUsd?: DecimalLike;
   syrCus?: DecimalLike;
+  cost_usd?: DecimalLike;
+  amount_usd?: DecimalLike;
+  cost_iqd?: DecimalLike;
+  amount_iqd?: DecimalLike;
+  fee_usd?: DecimalLike;
+  syr_cus?: DecimalLike;
   carQty?: number | null;
   transPrice?: DecimalLike;
   carrierId?: number | null;
@@ -163,12 +169,12 @@ export function mapTransaction(
     GoodType: goodTypeName || transaction._goodTypeName || "",
     Weight: parseNullableAmount(transaction.weight),
     Meters: parseNullableAmount(transaction.meters),
-    CostUSD: parseAmountOrZero(transaction.costUsd),
-    AmountUSD: parseAmountOrZero(transaction.amountUsd),
-    CostIQD: parseAmountOrZero(transaction.costIqd),
-    AmountIQD: parseAmountOrZero(transaction.amountIqd),
-    FeeUSD: parseAmountOrZero(transaction.feeUsd),
-    SyrCus: parseAmountOrZero(transaction.syrCus),
+    CostUSD: parseAmountOrZero(transaction.costUsd ?? transaction.cost_usd),
+    AmountUSD: parseAmountOrZero(transaction.amountUsd ?? transaction.amount_usd),
+    CostIQD: parseAmountOrZero(transaction.costIqd ?? transaction.cost_iqd),
+    AmountIQD: parseAmountOrZero(transaction.amountIqd ?? transaction.amount_iqd),
+    FeeUSD: parseAmountOrZero(transaction.feeUsd ?? transaction.fee_usd),
+    SyrCus: parseAmountOrZero(transaction.syrCus ?? transaction.syr_cus),
     CarQty: transaction.carQty || null,
     TransPrice: parseNullableAmount(transaction.transPrice),
     CarrierID: transaction.carrierId || null,
@@ -193,13 +199,6 @@ export function mapTransaction(
         parseAmountOrZero(transaction.costIqd)
       : 0,
     direction: transaction.direction,
-    amount_usd: parseAmountOrZero(transaction.amountUsd),
-    amount_iqd: parseAmountOrZero(transaction.amountIqd),
-    cost_usd: parseAmountOrZero(transaction.costUsd),
-    cost_iqd: parseAmountOrZero(transaction.costIqd),
-    fee_usd: parseAmountOrZero(transaction.feeUsd),
-    company_id: transaction.companyId || null,
-    company_name: transaction._companyName || transaction.companyName || null,
     CustomFieldValues: customFieldData,
     ...customFieldData,
   };

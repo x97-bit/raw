@@ -23,8 +23,8 @@ function SidebarNavButton({
     <button
       onClick={onClick}
       title={collapsed ? label : undefined}
-      className={`group relative flex w-full items-center overflow-hidden rounded-[22px] px-3 py-3 text-right transition-all duration-200 ${
-        collapsed ? "justify-center" : "gap-3.5"
+      className={`group relative flex w-full items-center overflow-hidden rounded-2xl px-2.5 py-2.5 text-right transition-all duration-200 ${
+        collapsed ? "justify-center" : "gap-3"
       }`}
       style={{
         background: active ? "var(--sidebar-nav-active-bg)" : "transparent",
@@ -42,7 +42,7 @@ function SidebarNavButton({
 
       {active && (
         <span
-          className="pointer-events-none absolute inset-y-2 right-1.5 w-[3px] rounded-full"
+          className="pointer-events-none absolute inset-y-2 right-1 w-[2.5px] rounded-full"
           style={{ background: accentColor }}
         />
       )}
@@ -60,15 +60,15 @@ function SidebarNavButton({
               : "var(--sidebar-nav-icon-inactive)"
           }
           borderColor={active ? `${accentColor}3b` : "rgba(255,255,255,0.08)"}
-          className={`relative z-10 shrink-0 transition-all duration-300 group-hover:scale-[1.08] group-hover:-rotate-3 ${
+          className={`relative z-10 shrink-0 transition-all duration-300 group-hover:scale-[1.05] ${
             collapsed
-              ? "h-9 min-w-[3.85rem] px-1.5 text-[7px]"
-              : "h-10 min-w-[5.1rem] px-2 text-[8px]"
+              ? "h-8 min-w-[3.4rem] px-1.5 text-[6.5px]"
+              : "h-9 min-w-[4.5rem] px-1.5 text-[7.5px]"
           }`}
         />
       ) : (
         <span
-          className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300 group-hover:scale-[1.08] ${active ? "ring-1 ring-inset" : "border border-transparent"}`}
+          className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-[1.05] ${active ? "ring-1 ring-inset" : "border border-transparent"}`}
           style={{
             color: active
               ? "var(--sidebar-nav-icon-active)"
@@ -83,14 +83,14 @@ function SidebarNavButton({
             "--tw-ring-color": active ? `${accentColor}30` : "transparent",
           }}
         >
-          <Icon size={20} strokeWidth={1.6} className="transition-transform duration-300 group-hover:-rotate-3" />
+          <Icon size={17} strokeWidth={1.6} className="transition-transform duration-300 group-hover:-rotate-2" />
         </span>
       )}
 
       {!collapsed && (
         <span className="relative z-10 min-w-0 flex-1 text-right">
           <span
-            className="block truncate text-[13.5px] font-extrabold"
+            className="block truncate text-[12.5px] font-extrabold"
             style={{
               color: active
                 ? "var(--sidebar-nav-label-active)"
@@ -121,7 +121,7 @@ export default function AppSidebar({
   );
 
   const sidebarCollapsedState = isDesktop ? sidebarCollapsed : false;
-  const sidebarWidth = sidebarCollapsedState ? 88 : 288;
+  const sidebarWidth = sidebarCollapsedState ? 76 : 260;
   const displayName = user?.fullName || user?.FullName || "المستخدم";
   const roleLabel =
     user?.role === "admin" || user?.Role === "admin" ? "مدير النظام" : "مستخدم";
@@ -157,42 +157,43 @@ export default function AppSidebar({
           boxShadow: "var(--sidebar-shadow)",
         }}
       >
-        <div className="relative overflow-hidden px-4 py-5">
-          <div className="pointer-events-none absolute -left-10 top-0 h-28 w-28 animate-ambient-drift rounded-full bg-[radial-gradient(circle,rgba(100,142,169,0.14),transparent_72%)]" />
+        {/* Header */}
+        <div className="relative overflow-hidden px-3 py-3.5">
+          <div className="pointer-events-none absolute -left-10 top-0 h-24 w-24 animate-ambient-drift rounded-full bg-[radial-gradient(circle,rgba(100,142,169,0.12),transparent_72%)]" />
           <div
-            className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 animate-glow-pulse rounded-full"
+            className="pointer-events-none absolute bottom-0 right-0 h-20 w-20 animate-glow-pulse rounded-full"
             style={{ background: "var(--sidebar-glow)" }}
           />
 
           <div
-            className={`relative z-10 flex items-center ${sidebarCollapsedState ? "justify-center" : "justify-between"} gap-3`}
+            className={`relative z-10 flex items-center ${sidebarCollapsedState ? "justify-center" : "justify-between"} gap-2`}
           >
             <button
               type="button"
               onClick={onGoHome}
               title="الرئيسية"
-              className={`flex min-w-0 items-center text-right transition-all duration-200 hover:opacity-100 ${sidebarCollapsedState ? "justify-center" : "gap-3"}`}
+              className={`flex min-w-0 items-center text-right transition-all duration-200 hover:opacity-100 ${sidebarCollapsedState ? "justify-center" : "gap-2.5"}`}
             >
               <div
-                className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px]"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
                 style={{
                   background: "var(--sidebar-soft-bg)",
                   boxShadow: "var(--sidebar-soft-shadow)",
                 }}
               >
-                <BrandLogo className="h-11 w-11 animate-logo-float" />
+                <BrandLogo className="h-8 w-8 animate-logo-float" />
               </div>
 
               {!sidebarCollapsedState && (
                 <div className="min-w-0 text-right">
                   <div
-                    className="truncate text-[15px] font-black tracking-tight"
+                    className="truncate text-[13px] font-black tracking-tight"
                     style={{ color: "var(--sidebar-title)" }}
                   >
                     Tay Alrawi
                   </div>
                   <div
-                    className="truncate text-[11px] font-medium"
+                    className="truncate text-[10px] font-medium"
                     style={{ color: "var(--sidebar-muted)" }}
                   >
                     النقل والتخليص الكمركي
@@ -204,21 +205,22 @@ export default function AppSidebar({
             {!isDesktop && (
               <button
                 onClick={closeSidebar}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
                 style={{
                   background: "var(--sidebar-soft-bg)",
                   color: "var(--sidebar-title)",
                 }}
                 title="إغلاق القائمة"
               >
-                <X size={17} />
+                <X size={15} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="space-y-3">
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto px-2.5 py-2 scrollbar-thin">
+          <div className="space-y-2">
             <SidebarNavButton
               active={activeItemId === "main"}
               collapsed={sidebarCollapsedState}
@@ -229,7 +231,7 @@ export default function AppSidebar({
             />
 
             {visibleGroups.map(group => (
-              <div key={group.title} className="space-y-2">
+              <div key={group.title} className="space-y-1">
                 {!sidebarCollapsedState && (
                   <div className="px-2 pt-2">
                     <div className="flex items-center gap-2">
@@ -238,7 +240,7 @@ export default function AppSidebar({
                         style={{ background: "var(--sidebar-separator)" }}
                       />
                       <span
-                        className="text-[10px] font-black tracking-[0.14em]"
+                        className="text-[9px] font-black tracking-[0.12em] uppercase"
                         style={{ color: "var(--sidebar-group-label)" }}
                       >
                         {group.title}
@@ -247,7 +249,7 @@ export default function AppSidebar({
                   </div>
                 )}
 
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {group.items.map(item => (
                     <SidebarNavButton
                       key={item.id}
@@ -266,21 +268,23 @@ export default function AppSidebar({
           </div>
         </div>
 
-        <div className="px-3 py-3">
+        {/* Footer */}
+        <div className="px-2.5 py-2.5 space-y-2">
           <ThemeToggleButton
             compact={sidebarCollapsedState}
             className={
               sidebarCollapsedState
-                ? "mb-3 w-full justify-center"
-                : "mb-3 w-full justify-center sm:justify-between"
+                ? "w-full justify-center"
+                : "w-full justify-center sm:justify-between"
             }
           />
 
+          {/* Profile Button */}
           <button
             type="button"
             onClick={onProfileClick}
             title={sidebarCollapsedState ? profileTitle : undefined}
-            className={`mb-3 flex w-full items-center ${sidebarCollapsedState ? "justify-center" : "gap-3"} rounded-[22px] px-3 py-3 text-right transition-all duration-200`}
+            className={`flex w-full items-center ${sidebarCollapsedState ? "justify-center" : "gap-2.5"} rounded-2xl px-2.5 py-2.5 text-right transition-all duration-200`}
             style={{
               background: profileActive
                 ? "var(--sidebar-profile-active-bg)"
@@ -291,7 +295,7 @@ export default function AppSidebar({
             }}
           >
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[15px] text-sm font-black"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-black"
               style={{
                 background: "var(--sidebar-avatar-bg)",
                 color: "var(--sidebar-avatar-text)",
@@ -302,13 +306,13 @@ export default function AppSidebar({
             {!sidebarCollapsedState && (
               <div className="min-w-0 flex-1 text-right">
                 <div
-                  className="truncate text-[12.5px] font-bold"
+                  className="truncate text-[11.5px] font-bold"
                   style={{ color: "var(--sidebar-title)" }}
                 >
                   {displayName}
                 </div>
                 <div
-                  className="truncate text-[10.5px] font-medium"
+                  className="truncate text-[9.5px] font-medium"
                   style={{ color: "var(--sidebar-muted)" }}
                 >
                   {roleLabel}
@@ -317,11 +321,12 @@ export default function AppSidebar({
             )}
           </button>
 
+          {/* Logout Button */}
           <button
             onClick={logout}
             title={sidebarCollapsedState ? "تسجيل الخروج" : undefined}
-            className={`flex w-full items-center rounded-[18px] px-3 py-2.5 transition-colors ${
-              sidebarCollapsedState ? "justify-center" : "gap-3"
+            className={`flex w-full items-center rounded-xl px-2.5 py-2 transition-colors ${
+              sidebarCollapsedState ? "justify-center" : "gap-2.5"
             }`}
             style={{
               background: "var(--sidebar-profile-bg)",
@@ -329,17 +334,17 @@ export default function AppSidebar({
             }}
           >
             <span
-              className="flex h-10 w-10 items-center justify-center rounded-[15px]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl"
               style={{
                 background: "var(--sidebar-logout-bg)",
                 color: "var(--sidebar-logout-text)",
                 boxShadow: "var(--sidebar-logout-shadow)",
               }}
             >
-              <LogOut size={18} />
+              <LogOut size={15} />
             </span>
             {!sidebarCollapsedState && (
-              <span className="text-[13px] font-extrabold">تسجيل الخروج</span>
+              <span className="text-[11.5px] font-extrabold">تسجيل الخروج</span>
             )}
           </button>
         </div>

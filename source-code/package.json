@@ -32,7 +32,8 @@
     "db:import-real-workbook:dry-run": "node scripts/imports/import-real-workbook.mjs",
     "db:import-real-workbook:apply": "node scripts/imports/import-real-workbook.mjs --apply",
     "db:sync-real-workbook-operational:dry-run": "node scripts/imports/sync-real-workbook-operational.mjs",
-    "db:sync-real-workbook-operational:apply": "node scripts/imports/sync-real-workbook-operational.mjs --apply"
+    "db:sync-real-workbook-operational:apply": "node scripts/imports/sync-real-workbook-operational.mjs --apply",
+    "db:optimize-indexes": "mysql < server/db/migrations/optimize-indexes.sql"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -59,6 +60,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cookie": "^1.0.2",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "express": "^4.21.2",
@@ -70,11 +72,15 @@
     "nanoid": "^5.1.5",
     "puppeteer": "^24.42.0",
     "react": "^19.2.1",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.64.0",
+    "react-router-dom": "^7.6.0",
+    "redis": "^4.7.0",
     "streamdown": "^1.4.0",
     "superjson": "^1.13.3",
     "tailwind-merge": "^3.3.1",
+    "ws": "^8.18.0",
     "xlsx": "^0.18.5",
     "zod": "^4.1.12"
   },
@@ -86,6 +92,7 @@
     "@types/node": "^24.7.0",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^5.0.4",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",

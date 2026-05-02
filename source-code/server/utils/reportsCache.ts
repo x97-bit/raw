@@ -1,10 +1,11 @@
-import { createExpiringReadCache, buildRequestCacheKey } from "../_core/readCache";
+import { financialReportsCache, buildRequestCacheKey } from "../_core/redisCache";
 
-// Cache for financial reports. Default TTL is 30 minutes, 
-// but it is actively invalidated on any successful mutation in index.ts
-export const financialReportsCache = createExpiringReadCache({
-  ttlMs: 30 * 60 * 1000, 
-  maxEntries: 100,
-});
+// ============================================================================
+// Financial Reports Cache (Updated)
+// ============================================================================
+// Now uses the distributed Redis-based cache from redisCache.ts
+// Falls back to in-memory cache when Redis is unavailable.
+// The cache is actively invalidated on any successful mutation.
+// ============================================================================
 
-export { buildRequestCacheKey };
+export { financialReportsCache, buildRequestCacheKey };

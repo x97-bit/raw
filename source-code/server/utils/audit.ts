@@ -1,4 +1,5 @@
 import { auditLogs } from "../../drizzle/schema";
+import type { AppDb } from "../db/schema/dbTypes";
 
 type AuditAction = "create" | "update" | "delete";
 
@@ -87,7 +88,7 @@ export function buildAuditChanges(
   };
 }
 
-export async function writeAuditLog(db: any, payload: AuditPayload) {
+export async function writeAuditLog(db: AppDb | null | undefined, payload: AuditPayload) {
   if (!db) return;
 
   const { beforeData, afterData, changes } = buildAuditChanges(

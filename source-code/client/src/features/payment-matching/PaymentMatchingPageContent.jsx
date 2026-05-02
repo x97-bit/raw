@@ -19,6 +19,15 @@ export default function PaymentMatchingPage({ onBack }) {
   const [accountDetail, setAccountDetail] = useState(null);
   const [shipmentDetail, setShipmentDetail] = useState(null);
 
+  // Unmatched payments state
+  const [unmatchedPayments, setUnmatchedPayments] = useState(null);
+  const [loadingUnmatched, setLoadingUnmatched] = useState(false);
+
+  // Auto-match preview state
+  const [previewData, setPreviewData] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
@@ -31,24 +40,47 @@ export default function PaymentMatchingPage({ onBack }) {
     }
   }, []);
 
+  const loadUnmatchedPayments = useCallback(async () => {
+    setLoadingUnmatched(true);
+    try {
+      const response = await trpc.paymentMatching.getUnmatchedPayments.query();
+      setUnmatchedPayments(response);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingUnmatched(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadDashboard();
-  }, [loadDashboard]);
+    loadUnmatchedPayments();
+  }, [loadDashboard, loadUnmatchedPayments]);
 
-  const runAutoMatch = async () => {
-    if (
-      !window.confirm(
-        "سيتم ربط كل التسديدات غير المربوطة بالشحنات تلقائيًا. هل أنت متأكد؟"
-      )
-    ) {
-      return;
+  const runAutoMatchWithPreview = async () => {
+    // First load preview
+    setLoadingPreview(true);
+    setShowPreview(true);
+    try {
+      const preview = await trpc.paymentMatching.autoMatchPreview.query();
+      setPreviewData(preview);
+    } catch (error) {
+      console.error(error);
+      window.alert("حدث خطأ أثناء تحميل المعاينة");
+      setShowPreview(false);
+    } finally {
+      setLoadingPreview(false);
     }
+  };
 
+  const confirmAutoMatch = async () => {
+    setShowPreview(false);
     setMatching(true);
     try {
       const result = await trpc.paymentMatching.autoMatchAll.mutate();
       window.alert(result.message);
       loadDashboard();
+      loadUnmatchedPayments();
     } catch (error) {
       window.alert(error.message);
     } finally {
@@ -109,11 +141,18 @@ export default function PaymentMatchingPage({ onBack }) {
         onBack={onBack}
         canAutoMatch={can.isAdmin || can.editTransaction}
         matching={matching}
-        onAutoMatch={runAutoMatch}
+        onAutoMatch={runAutoMatchWithPreview}
         loading={loading}
         stats={stats}
         topRemaining={dashboard?.topRemaining}
         onOpenAccount={openAccount}
+        unmatchedPayments={unmatchedPayments}
+        loadingUnmatched={loadingUnmatched}
+        showPreview={showPreview}
+        previewData={previewData}
+        loadingPreview={loadingPreview}
+        onConfirmAutoMatch={confirmAutoMatch}
+        onCancelPreview={() => { setShowPreview(false); setPreviewData(null); }}
       />
     );
   }
@@ -130,6 +169,7 @@ export default function PaymentMatchingPage({ onBack }) {
           setView("dashboard");
           setShipmentDetail(null);
           loadDashboard();
+          loadUnmatchedPayments();
         }}
         onOpenShipment={openShipment}
         onDeleteAllocation={deleteAllocation}

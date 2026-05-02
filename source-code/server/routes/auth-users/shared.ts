@@ -62,6 +62,7 @@ export const createUserSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   fullName: z.string().trim().min(1).max(120).optional(),
   role: userRoleSchema.optional(),
+  accountId: z.number().int().optional(),
   permissions: permissionListSchema.optional(),
 });
 
@@ -72,6 +73,7 @@ export const updateUserSchema = z
     fullName: z.string().trim().min(1).max(120).optional(),
     role: userRoleSchema.optional(),
     Role: userRoleSchema.optional(),
+    accountId: z.number().int().optional(),
     permissions: permissionListSchema.optional(),
     profileImage: z
       .union([z.string().trim().max(350_000), z.null()])

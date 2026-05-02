@@ -197,11 +197,28 @@ export default function PortPage({
   const statementSummaryCards = useMemo(() => {
     const summaryMeta = PORT_SECTION_SUMMARY_META[sectionKey]?.statement || [];
     const totals = statement?.totals || EMPTY_PORT_SUMMARY;
-    return summaryMeta.map(card => ({
-      ...card,
-      value: formatPortSummaryValue(totals?.[card.key] || 0, card.format),
-    }));
-  }, [sectionKey, statement]);
+    const globalTotals = statement?.globalTotals || totals;
+    const hasDateFilter = Boolean(filters.from || filters.to);
+
+    return summaryMeta.map(card => {
+      let val = 0;
+      if (card.key === "filteredInvoicesUSD") {
+        val = hasDateFilter ? (totals?.totalInvoicesUSD || 0) : 0;
+      } else if (card.key === "filteredInvoicesIQD") {
+        val = hasDateFilter ? (totals?.totalInvoicesIQD || 0) : 0;
+      } else if (card.key === "filteredBalanceUSD") {
+        val = hasDateFilter ? (totals?.balanceUSD || 0) : 0;
+      } else if (card.key === "filteredBalanceIQD") {
+        val = hasDateFilter ? (totals?.balanceIQD || 0) : 0;
+      } else {
+        val = globalTotals?.[card.key] || 0;
+      }
+      return {
+        ...card,
+        value: formatPortSummaryValue(val, card.format),
+      };
+    });
+  }, [sectionKey, statement, filters.from, filters.to]);
 
   const statementSummaryGridClass = useMemo(() => {
     const count = statementSummaryCards.length;

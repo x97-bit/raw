@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 /**
  * Escapes HTML to prevent XSS and formatting issues
  */
@@ -65,13 +66,13 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
                   const num = Number(val);
                   formattedVal = num < 0 
                     ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-$${Math.abs(num).toLocaleString("en-US")}</span>`
-                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${num.toLocaleString("en-US")}</span>`;
+                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${fmtNum(num)}</span>`;
                 } else if (col.format === "money_iqd" || col.format === "number" || col.format === "currency") {
                   if (!isNaN(Number(val))) {
                     const num = Number(val);
                     formattedVal = num < 0
                       ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-${Math.abs(num).toLocaleString("en-US")}</span>`
-                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${num.toLocaleString("en-US")}</span>`;
+                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${fmtNum(num)}</span>`;
                   }
                 } else if (col.format === "date") {
                   formattedVal = `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${escapeHtml(String(val).split("T")[0].split(" ")[0])}</span>`;
@@ -108,13 +109,13 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
                   const num = Number(val);
                   formattedVal = num < 0 
                     ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-$${Math.abs(num).toLocaleString("en-US")}</span>`
-                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${num.toLocaleString("en-US")}</span>`;
+                    : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">$${fmtNum(num)}</span>`;
                 } else if (col.format === "money_iqd" || col.format === "number" || col.format === "currency") {
                   if (!isNaN(Number(val))) {
                     const num = Number(val);
                     formattedVal = num < 0
                       ? `<span dir="ltr" style="display:inline-block; white-space:nowrap;">-${Math.abs(num).toLocaleString("en-US")}</span>`
-                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${num.toLocaleString("en-US")}</span>`;
+                      : `<span dir="ltr" style="display:inline-block; white-space:nowrap;">${fmtNum(num)}</span>`;
                   }
                 }
               }
@@ -159,10 +160,18 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
             ${g.toDate !== undefined ? `<span>${escapeHtml(g.toLabel || "الى تاريخ")} : <span dir="ltr">${escapeHtml(g.toDate)}</span></span>` : ''}
           </td>
         </tr>
-        ${g.selectedLabel ? `
+        ${(g.hasDateFilter && g.filteredLabel) ? `
         <tr>
           <td class="summary-cell right red">
-            <span>${escapeHtml(g.selectedLabel)}: ${escapeHtml(g.selectedValue || "---")}</span>
+            <span>${escapeHtml(g.filteredLabel)}: <span dir="ltr">${escapeHtml(g.filteredValue || "---")}</span></span>
+          </td>
+          <td class="summary-cell left"></td>
+        </tr>
+        ` : ''}
+        ${g.balanceLabel ? `
+        <tr>
+          <td class="summary-cell right red">
+            <span>${escapeHtml(g.balanceLabel)}: <span dir="ltr">${escapeHtml(g.balanceValue || "---")}</span></span>
           </td>
           <td class="summary-cell left"></td>
         </tr>
@@ -282,7 +291,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @page { 
           size: A4 ${options.orientation === 'landscape' ? 'landscape' : 'portrait'};
-          margin: ${options.headerBase64 ? (options.orientation === 'landscape' ? '37mm' : '27mm') : '10mm'} 0 ${options.footerBase64 ? '32mm' : '10mm'} 0; 
+          margin: ${options.headerBase64 ? (options.orientation === 'landscape' ? '30mm' : '22mm') : '10mm'} 0 ${options.footerBase64 ? '22mm' : '10mm'} 0; 
         }
         body {
           font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
@@ -394,20 +403,29 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   `;
 
   // ─── Header Template: exact brand header image (base64) ───
+  // Puppeteer renders headerTemplate inside the margin area.
+  // We must force the container to fill the ENTIRE margin height and use object-fit:cover
+  // to eliminate any white gap above/below the image.
+  const headerMargin = options.orientation === "landscape" ? "30mm" : "22mm";
   const headerTemplate = options.headerBase64
-    ? `<div style="width: 100%; margin: -4mm 0 0 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact; border-bottom: 1px solid #1C2B59;">
-         <img src="${options.headerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
+    ? `<style>#header, #footer { padding: 0 !important; margin: 0 !important; }</style>
+       <div style="width: 100%; height: ${headerMargin}; margin: 0; padding: 0; overflow: hidden; -webkit-print-color-adjust: exact; display: flex; flex-direction: column;">
+         <img src="${options.headerBase64}" style="width: 100%; flex: 1; display: block; margin: 0; padding: 0; object-fit: fill;" />
+         <div style="width: 100%; height: 1px; background-color: #1c2b59; flex-shrink: 0; margin-top: 5px;"></div>
        </div>`
     : null;
 
   // ─── Footer Template: exact brand footer image (base64) ───
+  // Same approach: force container to fill entire bottom margin with the footer image
+  const footerMargin = "22mm";
   const footerTemplate = options.footerBase64
-    ? `<div style="width: 100%; margin: 0; padding: 0 4.2mm; -webkit-print-color-adjust: exact; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
-         <img src="${options.footerBase64}" style="width: calc(100% + 8.4mm); max-width: none; display: block; margin: 0 -4.2mm; padding: 0;" />
-         <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #555; padding-top: 4px; direction: rtl;">
+    ? `<style>#header, #footer { padding: 0 !important; margin: 0 !important; }</style>
+       <div style="width: 100%; height: ${footerMargin}; margin: 0; padding: 0; overflow: hidden; -webkit-print-color-adjust: exact; font-family: 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif; display: flex; flex-direction: column;">
+         <div style="width: 100%; display: flex; justify-content: space-between; font-size: 8pt; color: #555; padding: 1px 5mm; direction: rtl; flex-shrink: 0;">
            <div>تاريخ الطباعة: <span class="date" style="direction: ltr; display: inline-block;"></span></div>
            <div>الصفحة <span class="pageNumber"></span> من <span class="totalPages"></span></div>
          </div>
+         <img src="${options.footerBase64}" style="width: 100%; flex: 1; display: block; margin: 0; padding: 0; object-fit: fill;" />
        </div>`
     : `<div style="width: 100%; font-size: 9pt; font-family: Arial, sans-serif; display: flex; justify-content: space-between; padding: 0 10mm 2mm;">
          <div style="color: #666;"><span class="date"></span></div>
@@ -416,16 +434,18 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
        </div>`;
 
   // ─── Margin Calculation ───
-  // Header image: 7017×843 → on A4 210mm width → height ≈ 25.2mm
-  // Footer image: 7017×745 → on A4 210mm width → height ≈ 22.3mm
+  // Header image (cropped): 7017×650 → on A4 210mm width → height ≈ 19.5mm → use 20mm margin
+  // Footer image (cropped): 7017×613 → on A4 210mm width → height ≈ 18.3mm → use 20mm margin
+  // The headerTemplate/footerTemplate containers are set to fill 100% of the margin height
+  // using object-fit:fill, so the image stretches to perfectly fill the margin area.
   const hasHeader = !!options.headerBase64;
   const hasFooter = !!options.footerBase64;
   const isLandscape = options.orientation === "landscape";
-  const marginTop = hasHeader ? (isLandscape ? "37mm" : "27mm") : "10mm";
-  const marginBottom = hasFooter ? "34mm" : "10mm";
+  const marginTop = hasHeader ? (isLandscape ? "30mm" : "22mm") : "10mm";
+  const marginBottom = hasFooter ? "22mm" : "10mm";
 
   try {
-    const token = window.sessionStorage.getItem("token") || window.localStorage.getItem("token") || "";
+    const token = window.sessionStorage.getItem("merchant_token") || window.sessionStorage.getItem("token") || "";
 
     const response = await fetch("/api/export/pdf", {
       method: "POST",

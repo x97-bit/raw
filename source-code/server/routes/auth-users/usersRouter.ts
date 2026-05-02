@@ -39,6 +39,8 @@ export const usersRouter = router({
     return allUsers.map(toLegacyUserShape);
   }),
 
+
+
   create: adminProcedure.input(createUserSchema).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db)
@@ -96,13 +98,20 @@ export const usersRouter = router({
 
   delete: adminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db)
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Database unavailable",
         });
+
+      if (input.id === ctx.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكنك حذف حسابك الخاص",
+        });
+      }
 
       await db.delete(appUsers).where(eq(appUsers.id, input.id));
       return { message: "تم حذف المستخدم" };

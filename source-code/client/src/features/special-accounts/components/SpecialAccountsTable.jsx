@@ -1,3 +1,4 @@
+import { fmtNum } from "../../../utils/formatNumber";
 import { Pencil, Trash2, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isSpecialHaiderSettlementRow } from "../../../utils/specialHaiderMath";

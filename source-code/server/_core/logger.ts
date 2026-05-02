@@ -3,6 +3,7 @@ import path from "node:path";
 
 const LOGS_DIR = path.resolve(process.cwd(), "database", "logs");
 const ERROR_LOG_PATH = path.join(LOGS_DIR, "server-errors.log");
+const MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 async function ensureLogsDirectory() {
   try {
@@ -12,8 +13,21 @@ async function ensureLogsDirectory() {
   }
 }
 
+async function rotateLogIfNeeded() {
+  try {
+    const stat = await fs.stat(ERROR_LOG_PATH);
+    if (stat.size >= MAX_LOG_SIZE_BYTES) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const archivePath = path.join(LOGS_DIR, `server-errors.${timestamp}.log`);
+      await fs.rename(ERROR_LOG_PATH, archivePath);
+    }
+  } catch {
+    // File doesn't exist yet or rotation failed — both are non-fatal.
+  }
+}
+
 /**
- * Logs an error to a persistent file.
+ * Logs an error to a persistent file with automatic rotation at 10 MB.
  */
 export async function logSystemError(
   context: string,
@@ -22,6 +36,7 @@ export async function logSystemError(
 ) {
   try {
     await ensureLogsDirectory();
+    await rotateLogIfNeeded();
 
     const timestamp = new Date().toISOString();
     let errorMessage = "Unknown error";
@@ -43,7 +58,7 @@ export async function logSystemError(
     }--------------------------------------------------\n`;
 
     await fs.appendFile(ERROR_LOG_PATH, formattedLog, "utf8");
-    
+
     // Also log to console in development or if needed
     console.error(`[Error Tracking] ${context}:`, errorMessage);
   } catch (fsError) {

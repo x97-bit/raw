@@ -41,9 +41,6 @@ export const protectedProcedure = t.procedure.use(requireUser);
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
-    console.log("adminProcedure ctx.user:", ctx.user);
-    console.log("Is !ctx.user:", !ctx.user);
-    console.log("Is ctx.user.role !== 'admin':", ctx.user ? ctx.user.role !== "admin" : true);
 
     if (!ctx.user || ctx.user.role !== "admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });

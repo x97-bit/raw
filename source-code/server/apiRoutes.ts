@@ -10,6 +10,8 @@ import { registerSpecialAccountRoutes } from "./routes/special-accounts";
 import { registerTransactionRoutes } from "./routes/transactions";
 import { registerPdfExportRoutes } from "./routes/pdf-export";
 
+import { registerMerchantAuthRoutes } from "./routes/merchant/merchantAuth";
+
 const router = Router();
 
 registerAuthUserRoutes(router);
@@ -22,5 +24,6 @@ registerReportRoutes(router);
 registerSpecialAccountRoutes(router);
 registerTransactionRoutes(router);
 registerPdfExportRoutes(router);
+registerMerchantAuthRoutes(router);
 
 export default router;

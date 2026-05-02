@@ -1,3 +1,4 @@
+import { fmtNum, fmtUSD, fmtIQD, fmtUSDLabel, fmtIQDLabel } from "./formatNumber";
 import { getCurrencyLabel } from "./currencyLabels";
 import {
   formatEnglishLongDate,
@@ -28,10 +29,10 @@ function formatCellValue(value, format) {
   if (value === null || value === undefined || value === "") return "-";
   if (format === "date") return String(value).split("T")[0].split(" ")[0];
   if (format === "currency") return getCurrencyLabel(value);
-  if (format === "number") return Number(value).toLocaleString("en-US");
-  if (format === "money") return `$${Number(value).toLocaleString("en-US")}`;
+  if (format === "number") return fmtNum(value);
+  if (format === "money") return `$${fmtUSD(value)}`;
   if (format === "money_iqd")
-    return `${Number(value).toLocaleString("en-US")} د.ع`;
+    return `${fmtIQD(value)} د.ع`;
   return String(value);
 }
 
@@ -61,8 +62,9 @@ function openPrintWindow(title, body, extraCss = "") {
     <title>${escapeHtml(title || "طباعة")}</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Cairo:wght@400;600;700&amp;display=swap" rel="stylesheet">
     <style>
+      @page { margin: 0 !important; }
       * { box-sizing: border-box; font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif !important; }
-      html, body { margin: 0; padding: 0; background: #eef2f7; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #eef2f7; }
       body {
         font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
         direction: rtl;
@@ -109,8 +111,9 @@ function openPrintWindow(title, body, extraCss = "") {
       }
       .close-btn:hover { background: #eef4f3; }
       @media print {
+        @page { margin: 0 !important; }
         .print-controls { display: none !important; }
-        html, body { background: #fff; }
+        html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
       }
       ${extraCss}
     </style>
@@ -388,8 +391,8 @@ function getShellCss({
   const isPortrait = orientation === "portrait";
   const pageSize = isPortrait ? "A4 portrait" : "A4 landscape";
   const pageMinHeight = isPortrait
-    ? "calc(297mm - 12mm)"
-    : "calc(210mm - 12mm)";
+    ? "297mm"
+    : "210mm";
   const headerHeight = branded
     ? isPortrait
       ? "35mm"
@@ -420,9 +423,9 @@ function getShellCss({
       : "16mm";
 
   return `
-    @page { size: ${pageSize}; margin: 6mm; }
-    html, body { background: #fff; }
-    .tay-print-shell { padding: 0; }
+    @page { size: ${pageSize}; margin: 0; }
+    html, body { background: #fff; margin: 0; padding: 0; }
+    .tay-print-shell { padding: 0; margin: 0; }
     .tay-print-page {
       position: relative;
       width: 100%;
@@ -438,7 +441,7 @@ function getShellCss({
       width: 100%;
       height: ${headerHeight};
     }
-    .tay-header-image { object-fit: cover; object-position: center top; }
+    .tay-header-image { object-fit: cover; object-position: center top; display: block; }
     .tay-plain-header { background: ${TAY_ALRAWI_BRAND_COLORS.headerNavy}; }
     .tay-watermark {
       pointer-events: none;
@@ -457,7 +460,7 @@ function getShellCss({
     }
     .tay-content {
       position: relative;
-      padding: ${contentPaddingTop} 6mm ${contentPaddingBottom};
+      padding: ${contentPaddingTop} 8mm ${contentPaddingBottom};
     }
     .tay-report-header {
       position: relative;
@@ -689,9 +692,11 @@ function getShellCss({
     }
     @media print {
       @page {
-        size: A4 ${pageOrientation};
-        margin: 5mm;
+        size: ${pageSize};
+        margin: 0;
       }
+      html, body { margin: 0; padding: 0; }
+      .tay-print-shell { padding: 0; margin: 0; }
       .tay-print-page { min-height: auto; }
       .tay-table-wrap { break-inside: avoid; }
     }
@@ -755,37 +760,46 @@ export function printSaudiStatementTemplate({
   fromDate,
   toDate,
   templateVariant,
-  totals,
-  sectionKey,
+  globalTotals,
+  totals
 }) {
-  const branded = shouldUseTayAlRawiBranding({ sectionKey });
-
-  const totalUsd = `$${Number(totals?.totalInvoicesUSD || 0).toLocaleString("en-US")}`;
-  const totalIqd = `${Number(totals?.totalInvoicesIQD || 0).toLocaleString("en-US")} د.ع`;
-  const balanceUsd = `$${Number(totals?.balanceUSD || 0).toLocaleString("en-US")}`;
-  const balanceIqd = `${Number(totals?.balanceIQD || 0).toLocaleString("en-US")} د.ع`;
+  const activeGlobalTotals = globalTotals || totals || {};
+  const totalUsd = `$${fmtUSD(activeGlobalTotals?.totalInvoicesUSD || 0)}`;
+  const totalIqd = `${fmtIQD(activeGlobalTotals?.totalInvoicesIQD || 0)} د.ع`;
+  const filteredUsd = `$${fmtUSD(totals?.totalInvoicesUSD || 0)}`;
+  const filteredIqd = `$${fmtNum(totals?.totalInvoicesIQD || 0)} د.ع`;
+  const balanceUsd = `$${fmtUSD(activeGlobalTotals?.balanceUSD || 0)}`;
+  const balanceIqd = `$${fmtNum(activeGlobalTotals?.balanceIQD || 0)} د.ع`;
 
   const totalsLines = [];
   if (templateVariant === "usd") {
-    totalsLines.push({ label: "الطلب الكلي", value: totalUsd });
-    totalsLines.push({ label: "مبلغ المحدد", value: balanceUsd });
+    totalsLines.push({ label: "المبلغ الكلي", value: totalUsd });
+    totalsLines.push({ label: "المبلغ المحدد", value: filteredUsd });
+    totalsLines.push({ label: "الرصيد المتبقي", value: balanceUsd });
   } else if (templateVariant === "iqd") {
-    totalsLines.push({ label: "الطلب الكلي", value: totalIqd });
-    totalsLines.push({ label: "مبلغ المحدد", value: balanceIqd });
+    totalsLines.push({ label: "المبلغ الكلي", value: totalIqd });
+    totalsLines.push({ label: "المبلغ المحدد", value: filteredIqd });
+    totalsLines.push({ label: "الرصيد المتبقي", value: balanceIqd });
   } else {
-    totalsLines.push({ label: "الطلب الكلي دولار", value: totalUsd });
-    totalsLines.push({ label: "الطلب الكلي دينار", value: totalIqd });
-    totalsLines.push({ label: "مبلغ المحدد دولار", value: balanceUsd });
-    totalsLines.push({ label: "مبلغ المحدد دينار", value: balanceIqd });
+    totalsLines.push({ label: "المبلغ الكلي دولار", value: totalUsd });
+    totalsLines.push({ label: "المبلغ الكلي دينار", value: totalIqd });
+    totalsLines.push({ label: "المبلغ المحدد دولار", value: filteredUsd });
+    totalsLines.push({ label: "المبلغ المحدد دينار", value: filteredIqd });
+    totalsLines.push({ label: "الرصيد المتبقي دولار", value: balanceUsd });
+    totalsLines.push({ label: "الرصيد المتبقي دينار", value: balanceIqd });
   }
 
   const rightLines = totalsLines.filter(
     line => !line.label.includes("محدد") && !line.label.includes("متبقي")
   );
-  const hasDateFilter = Boolean(fromDate || toDate);
+  const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
+  const hasDateFilter = isValidDate(fromDate) || isValidDate(toDate);
   const centerLines = hasDateFilter ? totalsLines.filter(
-    line => line.label.includes("محدد") || line.label.includes("متبقي")
+    line => line.label.includes("محدد")
   ) : [];
+  const leftLines = totalsLines.filter(
+    line => line.label.includes("متبقي")
+  );
 
   const metaHtml = `
     <hr style="border: none; border-top: 1px solid #1C2B59; margin: 0 0 15px 0;" />
@@ -822,7 +836,7 @@ export function printSaudiStatementTemplate({
           .join("")}
       </div>
 
-      <!-- Left Side: Dates -->
+      <!-- Left Side: Dates & Balance -->
       <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: flex-end; text-align: left; min-width: 0;">
         <div class="tay-meta-inline" style="justify-content: flex-end;">
           <span class="tay-meta-label">من تاريخ:</span>
@@ -832,6 +846,16 @@ export function printSaudiStatementTemplate({
           <span class="tay-meta-label">إلى تاريخ:</span>
           <span>${escapeHtml(toDate || "---")}</span>
         </div>
+        ${leftLines
+          .map(
+            line => `
+          <div class="tay-meta-inline" style="justify-content: flex-end;">
+            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
+            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
+          </div>
+        `
+          )
+          .join("")}
       </div>
     </div>
   `;

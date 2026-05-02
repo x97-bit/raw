@@ -42,6 +42,18 @@ export const appUsers = mysqlTable("app_users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+// ==================== MERCHANT USERS (Isolated login for merchants) ====================
+export const merchantUsers = mysqlTable("merchant_users", {
+  id: int("id").autoincrement().primaryKey(),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  accountId: int("account_id").notNull(),
+  active: int("active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
 // ==================== ACCOUNTS (traders/customers/carriers/FX) ====================
 export const accounts = mysqlTable("accounts", {
   id: int("id").autoincrement().primaryKey(),
@@ -416,6 +428,26 @@ export const specialAccounts = mysqlTable("special_accounts", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+// ==================== MERCHANT NOTIFICATIONS ====================
+export const merchantNotifications = mysqlTable(
+  "merchant_notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    merchantUserId: int("merchant_user_id").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    type: varchar("type", { length: 50 }).default("info").notNull(), // info, warning, success, payment, invoice
+    isRead: int("is_read").default(0).notNull(),
+    metadata: json("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    merchantUserIdIndex: index("idx_notif_merchant_user_id").on(table.merchantUserId),
+    isReadIndex: index("idx_notif_is_read").on(table.isRead),
+    createdAtIndex: index("idx_notif_created_at").on(table.createdAt),
+  })
+);
+
 export const auditLogs = mysqlTable(
   "audit_logs",
   {
@@ -438,5 +470,23 @@ export const auditLogs = mysqlTable(
     actionIndex: index("idx_action").on(table.action),
     createdAtIndex: index("idx_created_at").on(table.createdAt),
     userIdIndex: index("idx_user_id").on(table.userId),
+  })
+);
+
+// ==================== MERCHANT LOGIN LOG ====================
+export const merchantLoginLog = mysqlTable(
+  "merchant_login_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    merchantUserId: int("merchant_user_id").notNull(),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: varchar("user_agent", { length: 500 }),
+    status: mysqlEnum("status", ["success", "failed"]).notNull().default("success"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    merchantUserIdIndex: index("idx_mll_merchant_user_id").on(table.merchantUserId),
+    createdAtIndex: index("idx_mll_created_at").on(table.createdAt),
+    statusIndex: index("idx_mll_status").on(table.status),
   })
 );

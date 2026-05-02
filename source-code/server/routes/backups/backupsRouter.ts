@@ -28,7 +28,7 @@ export const backupsRouter = router({
 
   create: adminProcedure.mutation(async ({ ctx }) => {
     try {
-      const actorLabel = ctx.user.name || ctx.user.email || "admin";
+      const actorLabel = ctx.user.name || ctx.user.username || "admin";
       const payload = await buildBackupPayload({
         templateOnly: false,
         generatedBy: actorLabel,
@@ -51,7 +51,7 @@ export const backupsRouter = router({
 
   export: adminProcedure.mutation(async ({ ctx }) => {
     try {
-      const actorLabel = ctx.user.name || ctx.user.email || "admin";
+      const actorLabel = ctx.user.name || ctx.user.username || "admin";
       const payload = await buildBackupPayload({
         templateOnly: false,
         generatedBy: actorLabel,
@@ -73,7 +73,7 @@ export const backupsRouter = router({
 
   template: adminProcedure.mutation(async ({ ctx }) => {
     try {
-      const actorLabel = ctx.user.name || ctx.user.email || "admin";
+      const actorLabel = ctx.user.name || ctx.user.username || "admin";
       const payload = await buildBackupPayload({
         templateOnly: true,
         generatedBy: actorLabel,
@@ -111,7 +111,7 @@ export const backupsRouter = router({
           });
         }
 
-        const actorLabel = ctx.user.name || ctx.user.email || "admin";
+        const actorLabel = ctx.user.name || ctx.user.username || "admin";
         const result = await importBackupPayload({
           backup: payload.backup,
           includeUsers: payload.includeUsers,

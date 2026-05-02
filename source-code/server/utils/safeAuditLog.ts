@@ -1,7 +1,8 @@
 import { writeAuditLog } from "./audit";
+import type { AppDb } from "../db/schema/dbTypes";
 
 export async function safeWriteAuditLog(
-  db: any,
+  db: AppDb | null | undefined,
   payload: Parameters<typeof writeAuditLog>[1]
 ) {
   try {

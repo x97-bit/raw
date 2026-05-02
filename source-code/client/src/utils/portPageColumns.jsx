@@ -4,9 +4,7 @@ import {
   isTransportSectionKey,
 } from "./transactionTypeLabels";
 import { evaluateCustomFormula } from "./customFields";
-
-const formatNum = value =>
-  value ? Number(value).toLocaleString("en-US") : "0";
+import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
 
 function mapColumnTypeToExportFormat(type) {
   if (type === "currency") return "currency";
@@ -80,7 +78,7 @@ export function renderPortCell(column, row, options = {}) {
       <span
         className={`font-bold ${result < 0 ? "text-red-600" : "text-green-700"}`}
       >
-        {formatNum(Math.round(result * 100) / 100)}
+        {fmtNum(Math.round(result * 100) / 100)}
       </span>
     );
   }
@@ -124,19 +122,19 @@ export function renderPortCell(column, row, options = {}) {
     case "currency":
       return getCurrencyLabel(value);
     case "number":
-      return value ? formatNum(value) : "-";
+      return value ? fmtNum(value) : "-";
     case "money_usd":
-      return value ? `$${formatNum(value)}` : "-";
+      return value ? `$${fmtUSD(value)}` : "-";
     case "money_generic":
-      return value ? formatNum(value) : "-";
+      return value ? fmtNum(value) : "-";
     case "money_usd_bold":
       return (
         <span className={`font-bold ${transportAmountTone}`}>
-          {value ? `$${formatNum(value)}` : "-"}
+          {value ? `$${fmtUSD(value)}` : "-"}
         </span>
       );
     case "money_iqd":
-      return value ? formatNum(value) : "-";
+      return value ? fmtIQD(value) : "-";
     case "money_iqd_bold":
       return (
         <span
@@ -146,7 +144,7 @@ export function renderPortCell(column, row, options = {}) {
               : `${(value || 0) < 0 ? "text-red-600" : "text-gray-700"}`
           }
         >
-          {value ? formatNum(value) : "-"}
+          {value ? fmtIQD(value) : "-"}
         </span>
       );
     case "notes":
