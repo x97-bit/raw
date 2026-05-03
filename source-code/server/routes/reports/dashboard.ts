@@ -244,6 +244,7 @@ export function registerReportDashboardRoutes(router: Router) {
           };
         });
 
+        res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
         return res.json(result.value);
       } catch (error) {
         return respondRouteError(res, error);

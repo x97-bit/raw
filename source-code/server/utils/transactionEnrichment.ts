@@ -11,6 +11,57 @@ import {
   vehicles,
 } from "../../drizzle/schema";
 import { isInvoiceDirection } from "./direction";
+import { lookupDataCache } from "../_core/redisCache";
+
+// ============================================================================
+// In-process lookup maps cache (refreshed every 2 minutes)
+// Avoids hitting DB for every enrichment call for quasi-static data
+// ============================================================================
+type LookupMaps = {
+  accountMap: Map<number, string>;
+  driverMap: Map<number, string>;
+  vehicleMap: Map<number, string>;
+  goodMap: Map<number, string>;
+  governorateMap: Map<number, string>;
+  companyMap: Map<number, string>;
+};
+
+let _cachedLookupMaps: LookupMaps | null = null;
+let _lookupMapsExpiry = 0;
+const LOOKUP_MAPS_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+async function getOrLoadLookupMaps(db: AppDb): Promise<LookupMaps> {
+  if (_cachedLookupMaps && Date.now() < _lookupMapsExpiry) {
+    return _cachedLookupMaps;
+  }
+
+  const [allAccounts, allDrivers, allVehicles, allGoods, allGovernorates, allCompanies] =
+    await Promise.all([
+      db.select().from(accounts),
+      db.select().from(drivers),
+      db.select().from(vehicles),
+      db.select().from(goodsTypes),
+      db.select().from(governorates),
+      db.select().from(companies),
+    ]);
+
+  _cachedLookupMaps = {
+    accountMap: new Map(allAccounts.map((a: AccountRow) => [a.id, a.name])),
+    driverMap: new Map(allDrivers.map((d: DriverRow) => [d.id, d.name])),
+    vehicleMap: new Map(allVehicles.map((v: VehicleRow) => [v.id, v.plateNumber])),
+    goodMap: new Map(allGoods.map((g: GoodTypeRow) => [g.id, g.name])),
+    governorateMap: new Map(allGovernorates.map((g: GovernorateRow) => [g.id, g.name])),
+    companyMap: new Map(allCompanies.map((c: CompanyRow) => [c.id, c.name])),
+  };
+  _lookupMapsExpiry = Date.now() + LOOKUP_MAPS_TTL_MS;
+  return _cachedLookupMaps;
+}
+
+/** Call this when lookup data is mutated (e.g. account/driver/vehicle added/updated) */
+export function invalidateEnrichmentLookupCache() {
+  _cachedLookupMaps = null;
+  _lookupMapsExpiry = 0;
+}
 
 type CustomFieldRow = typeof customFields.$inferSelect;
 type CustomFieldValueRow = typeof customFieldValues.$inferSelect;
@@ -210,51 +261,15 @@ export async function enrichTransactions(
 ): Promise<EnrichedTransactionRecord[]> {
   if (transactionsRows.length === 0) return [];
 
+  // Use cached lookup maps instead of per-request DB queries
+  // This reduces 6 DB queries to 0 on cache hit (refreshed every 2 min)
+  const lookupMaps = await getOrLoadLookupMaps(db);
+  const { accountMap, driverMap, vehicleMap, goodMap, governorateMap, companyMap } = lookupMaps;
+
+  // Custom field values are per-transaction so they must be fetched each time
   const transactionIds = transactionsRows
     .map(transaction => transaction.id)
     .filter(Boolean);
-  const accountIds = Array.from(
-    new Set(
-      transactionsRows
-        .flatMap(transaction => [transaction.accountId, transaction.carrierId])
-        .filter((value): value is number => Boolean(value))
-    )
-  );
-  const driverIds = Array.from(
-    new Set(
-      transactionsRows
-        .map(transaction => transaction.driverId)
-        .filter((value): value is number => Boolean(value))
-    )
-  );
-  const vehicleIds = Array.from(
-    new Set(
-      transactionsRows
-        .map(transaction => transaction.vehicleId)
-        .filter((value): value is number => Boolean(value))
-    )
-  );
-  const goodTypeIds = Array.from(
-    new Set(
-      transactionsRows
-        .map(transaction => transaction.goodTypeId)
-        .filter((value): value is number => Boolean(value))
-    )
-  );
-  const governorateIds = Array.from(
-    new Set(
-      transactionsRows
-        .map(transaction => transaction.govId)
-        .filter((value): value is number => Boolean(value))
-    )
-  );
-  const companyIds = Array.from(
-    new Set(
-      transactionsRows
-        .map(transaction => transaction.companyId)
-        .filter((value): value is number => Boolean(value))
-    )
-  );
 
   const customValues =
     transactionIds.length > 0
@@ -276,68 +291,13 @@ export async function enrichTransactions(
     )
   );
 
-  const [
-    filteredAccounts,
-    filteredDrivers,
-    filteredVehicles,
-    filteredGoods,
-    filteredGovernorates,
-    filteredCompanies,
-    filteredCustomFields,
-  ] = await Promise.all([
-    accountIds.length > 0
-      ? db.select().from(accounts).where(inArray(accounts.id, accountIds))
-      : Promise.resolve([]),
-    driverIds.length > 0
-      ? db.select().from(drivers).where(inArray(drivers.id, driverIds))
-      : Promise.resolve([]),
-    vehicleIds.length > 0
-      ? db.select().from(vehicles).where(inArray(vehicles.id, vehicleIds))
-      : Promise.resolve([]),
-    goodTypeIds.length > 0
-      ? db.select().from(goodsTypes).where(inArray(goodsTypes.id, goodTypeIds))
-      : Promise.resolve([]),
-    governorateIds.length > 0
-      ? db
-          .select()
-          .from(governorates)
-          .where(inArray(governorates.id, governorateIds))
-      : Promise.resolve([]),
-    companyIds.length > 0
-      ? db.select().from(companies).where(inArray(companies.id, companyIds))
-      : Promise.resolve([]),
-    customFieldIds.length > 0
-      ? db
-          .select()
-          .from(customFields)
-          .where(inArray(customFields.id, customFieldIds))
-      : Promise.resolve([]),
-  ]);
+  const filteredCustomFields = customFieldIds.length > 0
+    ? await db
+        .select()
+        .from(customFields)
+        .where(inArray(customFields.id, customFieldIds))
+    : [];
 
-  const accountMap = new Map<number, string>(
-    filteredAccounts.map((account: AccountRow) => [account.id, account.name])
-  );
-  const driverMap = new Map<number, string>(
-    filteredDrivers.map((driver: DriverRow) => [driver.id, driver.name])
-  );
-  const vehicleMap = new Map<number, string>(
-    filteredVehicles.map((vehicle: VehicleRow) => [
-      vehicle.id,
-      vehicle.plateNumber,
-    ])
-  );
-  const goodMap = new Map<number, string>(
-    filteredGoods.map((good: GoodTypeRow) => [good.id, good.name])
-  );
-  const governorateMap = new Map<number, string>(
-    filteredGovernorates.map((governorate: GovernorateRow) => [
-      governorate.id,
-      governorate.name,
-    ])
-  );
-  const companyMap = new Map<number, string>(
-    filteredCompanies.map((company: CompanyRow) => [company.id, company.name])
-  );
   const customFieldMap = new Map<number, CustomFieldRow>(
     filteredCustomFields.map((field: CustomFieldRow) => [field.id, field])
   );

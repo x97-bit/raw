@@ -28,7 +28,6 @@ export default function MerchantStatementPage() {
         const result = await merchantTrpc.merchant.getStatement.query({
           fromDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
           toDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
-          _bust: Date.now(),
         });
         if (isMounted) setData(result);
       } catch (err) {
@@ -46,7 +45,6 @@ export default function MerchantStatementPage() {
   }, [startDate, endDate]);
 
   const { accountName, transactions = [], totals, globalTotals } = data || {};
-  console.log('MERCHANT PORTAL RENDER:', { activeGlobalTotals: globalTotals || totals || {} });
   const activeGlobalTotals = globalTotals || totals || {};
 
   // Filter Logic

@@ -17,6 +17,7 @@ import {
   addRunningBalances,
   calculateTransactionTotals,
 } from "../../utils/transactionSummaries";
+import { financialReportsCache, buildRequestCacheKey } from "../../_core/redisCache";
 
 type AccountStatementRow = EnrichedTransactionRecord & {
   runningUSD: number;
@@ -56,135 +57,195 @@ export function registerReportAccountStatementRoutes(router: Router) {
         const requestedEndDate = readQueryString(endDate);
         const statementBy = readQueryString(by);
         const isCarrierStatement = statementBy === "carrier";
-        const conditions: SQL<unknown>[] = [
-          isCarrierStatement
-            ? eq(transactions.carrierId, accountId)
-            : eq(transactions.accountId, accountId),
-        ];
-        if (requestedPortId)
-          conditions.push(eq(transactions.portId, requestedPortId));
-        if (requestedAccountType)
-          conditions.push(eq(transactions.accountType, requestedAccountType));
-        if (requestedStartDate)
-          conditions.push(
-            sql`${transactions.transDate} >= ${requestedStartDate}`
-          );
-        if (requestedEndDate)
-          conditions.push(
-            sql`${transactions.transDate} <= ${requestedEndDate}`
-          );
 
-        const rows = await db
-          .select()
-          .from(transactions)
-          .where(and(...conditions))
-          .orderBy(asc(transactions.transDate), asc(transactions.id));
-        const [account] = await db
-          .select()
-          .from(accounts)
-          .where(eq(accounts.id, accountId))
-          .limit(1);
-        const chargedExpenseRows = isCarrierStatement
-          ? []
-          : await (async () => {
-              const expenseConditions: SQL<unknown>[] = [
-                eq(expenses.accountId, accountId),
-              ];
-              if (requestedPortId)
-                expenseConditions.push(eq(expenses.portId, requestedPortId));
-              if (requestedStartDate)
-                expenseConditions.push(
-                  sql`${expenses.expenseDate} >= ${requestedStartDate}`
-                );
-              if (requestedEndDate)
-                expenseConditions.push(
-                  sql`${expenses.expenseDate} <= ${requestedEndDate}`
-                );
-              return db
+        // ── Build cache key from all parameters ──
+        const cacheKey = buildRequestCacheKey(
+          `/reports/account-statement/${accountId}`,
+          req.query as Record<string, unknown>
+        );
+
+        const { hit, value } = await financialReportsCache.getOrLoad(
+          cacheKey,
+          async () => {
+            // ── Filtered conditions (date-bounded) ──
+            const conditions: SQL<unknown>[] = [
+              isCarrierStatement
+                ? eq(transactions.carrierId, accountId)
+                : eq(transactions.accountId, accountId),
+            ];
+            if (requestedPortId)
+              conditions.push(eq(transactions.portId, requestedPortId));
+            if (requestedAccountType)
+              conditions.push(eq(transactions.accountType, requestedAccountType));
+            if (requestedStartDate)
+              conditions.push(
+                sql`${transactions.transDate} >= ${requestedStartDate}`
+              );
+            if (requestedEndDate)
+              conditions.push(
+                sql`${transactions.transDate} <= ${requestedEndDate}`
+              );
+
+            // ── Global conditions (no date filter) ──
+            const globalConditions: SQL<unknown>[] = [
+              isCarrierStatement
+                ? eq(transactions.carrierId, accountId)
+                : eq(transactions.accountId, accountId),
+            ];
+            if (requestedPortId)
+              globalConditions.push(eq(transactions.portId, requestedPortId));
+            if (requestedAccountType)
+              globalConditions.push(eq(transactions.accountType, requestedAccountType));
+
+            // ── Expense conditions ──
+            const expenseConditions: SQL<unknown>[] = [
+              eq(expenses.accountId, accountId),
+            ];
+            if (requestedPortId)
+              expenseConditions.push(eq(expenses.portId, requestedPortId));
+            if (requestedStartDate)
+              expenseConditions.push(
+                sql`${expenses.expenseDate} >= ${requestedStartDate}`
+              );
+            if (requestedEndDate)
+              expenseConditions.push(
+                sql`${expenses.expenseDate} <= ${requestedEndDate}`
+              );
+
+            const globalExpenseConditions: SQL<unknown>[] = [
+              eq(expenses.accountId, accountId),
+            ];
+            if (requestedPortId)
+              globalExpenseConditions.push(eq(expenses.portId, requestedPortId));
+
+            const hasDateFilter = !!(requestedStartDate || requestedEndDate);
+
+            // ── Execute ALL queries in parallel ──
+            const [
+              account,
+              rows,
+              chargedExpenseRows,
+              globalRows,
+              globalExpenseRows,
+            ] = await Promise.all([
+              // 1. Account info
+              db
                 .select()
-                .from(expenses)
-                .where(and(...expenseConditions))
-                .orderBy(asc(expenses.expenseDate), asc(expenses.id));
-            })();
-        const enrichedRows = await enrichTransactions(db, rows);
-        const chargedExpenseStatements = chargedExpenseRows
-          .filter(
-            expense =>
-              normalizeExpenseChargeTarget(expense.chargeTarget) === "trader"
-          )
-          .map(expense =>
-            mapChargedExpenseToStatementRow(expense, account?.name || "")
-          );
-        const combinedRows = [
-          ...enrichedRows,
-          ...chargedExpenseStatements,
-        ].sort((left, right) => {
-          const leftDate = String(left.TransDate || "");
-          const rightDate = String(right.TransDate || "");
-          if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
-          return Number(left.TransID || 0) - Number(right.TransID || 0);
-        });
-        const totals = calculateTransactionTotals(combinedRows);
-        const statementRows: AccountStatementRow[] = addRunningBalances(
-          combinedRows
-        ).map(transaction => ({
-          ...transaction,
-          AccountName: account?.name || transaction.AccountName,
-        }));
+                .from(accounts)
+                .where(eq(accounts.id, accountId))
+                .limit(1)
+                .then(r => r[0] || null),
 
-        // Calculate global totals
-        const globalConditions: SQL<unknown>[] = [
-          isCarrierStatement
-            ? eq(transactions.carrierId, accountId)
-            : eq(transactions.accountId, accountId),
-        ];
-        if (requestedPortId)
-          globalConditions.push(eq(transactions.portId, requestedPortId));
-        if (requestedAccountType)
-          globalConditions.push(eq(transactions.accountType, requestedAccountType));
+              // 2. Filtered transactions
+              db
+                .select()
+                .from(transactions)
+                .where(and(...conditions))
+                .orderBy(asc(transactions.transDate), asc(transactions.id)),
 
-        const globalRows = await db
-          .select()
-          .from(transactions)
-          .where(and(...globalConditions));
+              // 3. Filtered expenses (skip for carrier)
+              isCarrierStatement
+                ? Promise.resolve([])
+                : db
+                    .select()
+                    .from(expenses)
+                    .where(and(...expenseConditions))
+                    .orderBy(asc(expenses.expenseDate), asc(expenses.id)),
 
-        const globalExpenseConditions: SQL<unknown>[] = [
-          eq(expenses.accountId, accountId),
-        ];
-        if (requestedPortId)
-          globalExpenseConditions.push(eq(expenses.portId, requestedPortId));
+              // 4. Global transactions (only if date filter exists, otherwise reuse filtered)
+              hasDateFilter
+                ? db
+                    .select()
+                    .from(transactions)
+                    .where(and(...globalConditions))
+                : Promise.resolve(null), // null = reuse filtered rows
 
-        const globalExpenseRows = isCarrierStatement
-          ? []
-          : await db
-              .select()
-              .from(expenses)
-              .where(and(...globalExpenseConditions));
+              // 5. Global expenses (only if date filter exists)
+              isCarrierStatement
+                ? Promise.resolve([])
+                : hasDateFilter
+                  ? db
+                      .select()
+                      .from(expenses)
+                      .where(and(...globalExpenseConditions))
+                  : Promise.resolve(null), // null = reuse filtered expenses
+            ]);
 
-        const enrichedGlobalRows = await enrichTransactions(db, globalRows);
-        const globalChargedExpenseStatements = globalExpenseRows
-          .filter(
-            expense =>
-              normalizeExpenseChargeTarget(expense.chargeTarget) === "trader"
-          )
-          .map(expense =>
-            mapChargedExpenseToStatementRow(expense, account?.name || "")
-          );
+            // ── Enrich transactions in parallel ──
+            const actualGlobalRows = globalRows ?? rows;
+            const actualGlobalExpenseRows = globalExpenseRows ?? chargedExpenseRows;
 
-        const globalCombinedRows = [
-          ...enrichedGlobalRows,
-          ...globalChargedExpenseStatements,
-        ];
-        const globalTotals = calculateTransactionTotals(globalCombinedRows);
+            // If no date filter, globalRows === rows, so enrich once
+            const needsSeparateGlobalEnrichment = hasDateFilter && globalRows !== null;
 
-        return res.json({
-          account: account ? mapAccount(account) : null,
-          transactions: statementRows,
-          statement: statementRows,
-          shipmentCount: totals.shipmentCount,
-          totals,
-          globalTotals,
-        });
+            const [enrichedRows, enrichedGlobalRows] = await Promise.all([
+              enrichTransactions(db, rows),
+              needsSeparateGlobalEnrichment
+                ? enrichTransactions(db, actualGlobalRows)
+                : Promise.resolve(null), // will reuse enrichedRows
+            ]);
+
+            const finalEnrichedGlobalRows = enrichedGlobalRows ?? enrichedRows;
+
+            // ── Process filtered results ──
+            const chargedExpenseStatements = chargedExpenseRows
+              .filter(
+                expense =>
+                  normalizeExpenseChargeTarget(expense.chargeTarget) === "trader"
+              )
+              .map(expense =>
+                mapChargedExpenseToStatementRow(expense, account?.name || "")
+              );
+
+            const combinedRows = [
+              ...enrichedRows,
+              ...chargedExpenseStatements,
+            ].sort((left, right) => {
+              const leftDate = String(left.TransDate || "");
+              const rightDate = String(right.TransDate || "");
+              if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+              return Number(left.TransID || 0) - Number(right.TransID || 0);
+            });
+
+            const totals = calculateTransactionTotals(combinedRows);
+            const statementRows: AccountStatementRow[] = addRunningBalances(
+              combinedRows
+            ).map(transaction => ({
+              ...transaction,
+              AccountName: account?.name || transaction.AccountName,
+            }));
+
+            // ── Process global results ──
+            const globalChargedExpenseStatements = actualGlobalExpenseRows
+              .filter(
+                expense =>
+                  normalizeExpenseChargeTarget(expense.chargeTarget) === "trader"
+              )
+              .map(expense =>
+                mapChargedExpenseToStatementRow(expense, account?.name || "")
+              );
+
+            const globalCombinedRows = [
+              ...finalEnrichedGlobalRows,
+              ...globalChargedExpenseStatements,
+            ];
+            const globalTotals = calculateTransactionTotals(globalCombinedRows);
+
+            return {
+              account: account ? mapAccount(account) : null,
+              transactions: statementRows,
+              statement: statementRows,
+              shipmentCount: totals.shipmentCount,
+              totals,
+              globalTotals,
+            };
+          }
+        );
+
+        // Set cache headers
+        res.setHeader("X-Cache", hit ? "HIT" : "MISS");
+        res.setHeader("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
+        return res.json(value);
       } catch (error) {
         return respondRouteError(res, error);
       }

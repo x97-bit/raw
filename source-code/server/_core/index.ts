@@ -1,6 +1,9 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import { financialReportsCache } from "../utils/reportsCache";
+import { invalidateLookupReadCache } from "../routes/account-lookups/shared";
+import { invalidateEnrichmentLookupCache } from "../utils/transactionEnrichment";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -14,6 +17,7 @@ import {
 } from "./apiSecurity";
 import { securityHeadersMiddleware } from "./securityHeaders";
 import { closeDb } from "../db/db";
+import { initCacheLayer, shutdownCacheLayer } from "./cacheInit";
 import { parseTrustProxySetting } from "./trustProxy";
 import { logSystemError } from "./logger";
 
@@ -60,6 +64,17 @@ async function startServer() {
 
   app.set("trust proxy", parseTrustProxySetting(process.env.TRUST_PROXY));
   app.disable("x-powered-by");
+
+  // ── Performance: gzip/brotli compression for all responses ──
+  app.use(compression({
+    level: 6,
+    threshold: 1024, // Only compress responses > 1KB
+    filter: (req, res) => {
+      if (req.headers["x-no-compression"]) return false;
+      return compression.filter(req, res);
+    },
+  }));
+
   app.use(securityHeadersMiddleware);
   // Keep payloads bounded while allowing administrative backup imports.
   app.use(express.json({ limit: API_BODY_LIMIT }));
@@ -80,7 +95,7 @@ async function startServer() {
     });
   });
 
-  // Cache Invalidation Middleware
+  // Cache Invalidation Middleware — clears both reports and lookup caches
   app.use((req, res, next) => {
     res.on("finish", () => {
       if (
@@ -88,8 +103,22 @@ async function startServer() {
         res.statusCode >= 200 &&
         res.statusCode < 400
       ) {
-        // If a modifying request succeeds, wipe the reports cache to ensure data is fresh
+        // If a modifying request succeeds, wipe caches to ensure data is fresh
         financialReportsCache.clear();
+        // Also invalidate lookup cache if the mutation touches lookup data
+        const url = req.originalUrl || req.url;
+        if (
+          url.includes("/accounts") ||
+          url.includes("/drivers") ||
+          url.includes("/vehicles") ||
+          url.includes("/companies") ||
+          url.includes("/goods-types") ||
+          url.includes("/governorates") ||
+          url.includes("/ports")
+        ) {
+          invalidateLookupReadCache();
+          invalidateEnrichmentLookupCache();
+        }
       }
     });
     next();
@@ -125,6 +154,9 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // Initialize cache layer (Redis or in-memory fallback)
+  await initCacheLayer();
+
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
@@ -153,6 +185,7 @@ async function startServer() {
       clearTimeout(forceExitTimer);
 
       try {
+        await shutdownCacheLayer();
         await closeDb();
       } catch (closeError) {
         console.error("[Server] Failed to close database pool", closeError);

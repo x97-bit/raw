@@ -364,6 +364,8 @@ export function registerTransactionQueryRoutes(router: Router) {
         const summary = normalizeSummaryRow(summaryRows[0]);
         const enrichedRows = await enrichTransactions(db, rows);
 
+        // Allow browser to cache for 30 seconds to avoid refetch on navigation
+        res.setHeader("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
         return res.json({
           transactions: enrichedRows,
           total: summary.count,
