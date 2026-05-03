@@ -21,6 +21,22 @@ import {
   formatEnglishLongDate,
   TAY_ALRAWI_BRAND_COLORS,
 } from "./exportBranding";
+import { sectionConfig } from "../features/navigation/sectionCatalog";
+
+/** Resolve the human-readable port/section name from sectionKey */
+function resolvePortDisplayName(sectionKey, transaction) {
+  // 1. Try sectionConfig title (e.g. "منفذ السعودية")
+  if (sectionKey) {
+    const cfg = sectionConfig[sectionKey];
+    if (cfg?.title) return cfg.title;
+  }
+  // 2. Fallback to transaction.PortName if enriched by server
+  if (transaction.PortName && transaction.PortName !== transaction.PortID) {
+    return transaction.PortName;
+  }
+  // 3. Last resort: return PortID
+  return transaction.PortID || "-";
+}
 
 function escapeHtml(unsafe) {
   if (unsafe == null) return "";
@@ -83,7 +99,7 @@ function buildInvoiceSections(transaction = {}, sectionKey) {
       { label: "اسم التاجر", labelEn: "Trader Name", value: transaction.AccountName || transaction.TraderName || "-" },
       { label: "نوع الحركة", labelEn: "Transaction Type", value: transTypeLabel },
       { label: "العملة", labelEn: "Currency", value: getCurrencyLabel(transaction.CurrencyName || transaction.Currency) },
-      { label: "المنفذ", labelEn: "Port", value: transaction.PortName || transaction.PortID || "-" },
+      { label: "المنفذ", labelEn: "Port", value: resolvePortDisplayName(sectionKey, transaction) },
     ].filter(f => f.value && f.value !== "-"),
   });
 
