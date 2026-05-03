@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { buildPortAccountPayload } from "../features/port/portTransactionFormHelpers";
 import useTransactionFormLayout from "../features/transactions/useTransactionFormLayout";
 import TransactionModalEditItem from "../features/transactions/components/TransactionModalEditItem";
-import { runExportInvoicePDF } from "../utils/exportActions";
+import { runExportInvoicePDF, runExportInvoiceServerPDF } from "../utils/exportActions";
 import ModalPortal from "./ModalPortal";
 import TransactionEditSections from "./TransactionEditSections";
 import TransactionPreviewPanel from "./TransactionPreviewPanel";
@@ -51,7 +51,7 @@ export default function TransactionModal({
   accountType = null,
   portId = null,
 }) {
-  const { api } = useAuth();
+  const { api, authFetch } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -523,6 +523,20 @@ export default function TransactionModal({
     });
   };
 
+  const handleExportServerPDF = async () => {
+    try {
+      await runExportInvoiceServerPDF({
+        transaction,
+        sectionKey,
+        portId,
+        authFetch,
+      });
+    } catch (err) {
+      console.error("Server PDF failed, falling back to client:", err);
+      await handleExportPDF();
+    }
+  };
+
   const renderOrderedEditItem = useCallback(
     item => (
       <TransactionModalEditItem
@@ -569,7 +583,7 @@ export default function TransactionModal({
         onMouseDown={e => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="my-auto w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_24px_80px_rgba(15,23,42,0.22)] animate-modal-in"
+          className="my-auto w-full max-w-[1600px] overflow-hidden rounded-[28px] bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_24px_80px_rgba(15,23,42,0.22)] animate-modal-in"
           onMouseDown={e => e.stopPropagation()}
         >
           <div className="max-h-[92vh] overflow-y-auto">
@@ -611,10 +625,11 @@ export default function TransactionModal({
                     {!editMode && (
                       <>
                         <button
-                          onClick={handleExportPDF}
+                          onClick={handleExportServerPDF}
                           className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-50"
+                          title="طباعة فاتورة تفصيلية"
                         >
-                          <FileDown size={14} /> PDF
+                          <FileDown size={14} /> فاتورة PDF
                         </button>
                         {!readOnly && onUpdate && (
                           <button

@@ -24,6 +24,19 @@ export async function runExportInvoicePDF(payload) {
   return exportInvoicePDF(payload);
 }
 
+/**
+ * New: Export invoice via server-side Puppeteer for perfect Arabic rendering.
+ * Falls back to client-side Canvas PDF if server is unavailable.
+ */
+export async function runExportInvoiceServerPDF(payload) {
+  const { exportInvoiceViaServer } = await import("./invoiceHtmlTemplate");
+  return exportInvoiceViaServer(payload.transaction, {
+    sectionKey: payload.sectionKey,
+    portId: payload.portId,
+    authFetch: payload.authFetch,
+  });
+}
+
 export async function runSaudiStatementPrint(payload) {
   const { printSaudiStatementTemplate } = await import("./printExports");
   return printSaudiStatementTemplate(payload);
