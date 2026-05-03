@@ -48,7 +48,7 @@ export function registerPdfExportRoutes(router: Router) {
         const page = await browser.newPage();
 
         // Set HTML content
-        await page.setContent(html, { waitUntil: "networkidle2", timeout: 20000 });
+        await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 15000 });
 
         const useHeaderFooter = !!(headerTemplate || footerTemplate);
 

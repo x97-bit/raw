@@ -312,8 +312,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
 <head>
 <meta charset="UTF-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  /* System fonts only — no external requests to avoid Puppeteer timeout */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -323,7 +322,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   }
 
   body {
-    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    font-family: 'Noto Sans Arabic', 'Noto Sans', 'DejaVu Sans', 'Segoe UI', Tahoma, Arial, sans-serif;
     direction: rtl;
     color: #1f2937;
     background: #ffffff;
