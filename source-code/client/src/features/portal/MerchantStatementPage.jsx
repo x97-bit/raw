@@ -1,12 +1,13 @@
 import { fmtNum, fmtUSD, fmtIQD } from "../../utils/formatNumber";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { merchantTrpc } from "./merchantContext";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { Calendar, FileText, Printer, FileDown, Search, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Calendar, FileText, Printer, FileDown, Search, ArrowDownLeft, ArrowUpRight, Loader2 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
 import ExportButtons from "../../components/ExportButtons";
+import { merchantExportInvoicePDF } from "./merchantPdfExport";
 
 
 export default function MerchantStatementPage() {
@@ -17,6 +18,21 @@ export default function MerchantStatementPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("all"); // 'all' or 'receipts'
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportingId, setExportingId] = useState(null);
+
+  const handleExportPDF = useCallback(async (transaction) => {
+    const id = transaction.TransID || transaction.RefNo;
+    setExportingId(id);
+    try {
+      await merchantExportInvoicePDF(transaction, {
+        sectionKey: transaction.sectionKey || transaction.PortID,
+      });
+    } catch (err) {
+      console.error("[Merchant Statement PDF Error]:", err);
+    } finally {
+      setExportingId(null);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -369,6 +385,7 @@ export default function MerchantStatementPage() {
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gray-50/80 border-y border-gray-100 text-gray-500">
+                <th className="px-3 py-4 font-bold text-sm whitespace-nowrap w-10">PDF</th>
                 {tableColumns.map(col => (
                   <th key={col.key} className="px-4 py-4 font-bold text-sm whitespace-nowrap">
                     {col.label}
@@ -379,7 +396,7 @@ export default function MerchantStatementPage() {
             <tbody className="divide-y divide-gray-100">
               {filteredTransactions?.length === 0 ? (
                 <tr>
-                  <td colSpan={tableColumns.length} className="px-6 py-20 text-center">
+                  <td colSpan={tableColumns.length + 1} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center gap-4">
                       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
                         <FileText size={32} className="text-gray-300" />
@@ -394,6 +411,20 @@ export default function MerchantStatementPage() {
               ) : (
                 filteredTransactions?.map((t, idx) => (
                   <tr key={t.TransID || idx} className="hover:bg-blue-50/30 transition-colors group">
+                    <td className="px-3 py-4 text-center">
+                      <button
+                        onClick={() => handleExportPDF(t)}
+                        disabled={exportingId === (t.TransID || t.RefNo)}
+                        title="تحميل فاتورة PDF"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 active:scale-90 transition-all disabled:opacity-50 disabled:cursor-wait"
+                      >
+                        {exportingId === (t.TransID || t.RefNo) ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <FileDown size={14} />
+                        )}
+                      </button>
+                    </td>
                     {tableColumns.map(col => {
                       const val = col.getValue(t);
                       const isMoneyFormat = col.format?.startsWith("money_usd") || col.format?.startsWith("money_iqd");
@@ -430,7 +461,7 @@ export default function MerchantStatementPage() {
             {filteredTransactions?.length > 0 && (
               <tfoot>
                 <tr className="bg-gray-50/80 border-t border-gray-200">
-                  <td colSpan={tableColumns.length} className="px-6 py-6 text-sm font-bold text-gray-700 text-center">
+                  <td colSpan={tableColumns.length + 1} className="px-6 py-6 text-sm font-bold text-gray-700 text-center">
                     الرصيد المعروض: 
                     <span className="mx-2 text-lg text-[#1c2b59] bg-blue-50 px-3 py-1 rounded" dir="ltr">${fmtNum(currentTotals.usd)}</span> 
                     | 

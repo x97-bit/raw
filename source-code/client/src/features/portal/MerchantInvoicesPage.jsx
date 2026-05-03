@@ -1,12 +1,13 @@
 import { fmtNum, fmtUSD, fmtIQD } from "../../utils/formatNumber";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { merchantTrpc } from "./merchantContext";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { Receipt, Search, Calendar, FileText, Eye, Download, ArrowUpRight } from "lucide-react";
+import { Receipt, Search, Calendar, FileText, FileDown, Loader2 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
 import ExportButtons from "../../components/ExportButtons";
+import { merchantExportInvoicePDF } from "./merchantPdfExport";
 
 
 export default function MerchantInvoicesPage() {
@@ -16,6 +17,7 @@ export default function MerchantInvoicesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportingId, setExportingId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -27,7 +29,6 @@ export default function MerchantInvoicesPage() {
         const result = await merchantTrpc.merchant.getStatement.query({
           fromDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
           toDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
-          _bust: Date.now(),
         });
         if (isMounted) setData(result);
       } catch (err) {
@@ -63,6 +64,20 @@ export default function MerchantInvoicesPage() {
 
   const totalInvoicesUSD = useMemo(() => invoices.reduce((sum, t) => sum + Math.abs(Number(t.AmountUSD || 0)), 0), [invoices]);
   const totalInvoicesIQD = useMemo(() => invoices.reduce((sum, t) => sum + Math.abs(Number(t.AmountIQD || 0)), 0), [invoices]);
+
+  const handleExportPDF = useCallback(async (invoice) => {
+    const id = invoice.TransID || invoice.RefNo;
+    setExportingId(id);
+    try {
+      await merchantExportInvoicePDF(invoice, {
+        sectionKey: invoice.sectionKey || invoice.PortID,
+      });
+    } catch (err) {
+      console.error("[Merchant Invoice PDF Error]:", err);
+    } finally {
+      setExportingId(null);
+    }
+  }, []);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (error) {
@@ -144,54 +159,74 @@ export default function MerchantInvoicesPage() {
             <p className="text-sm text-muted-foreground/70 mt-1">لم يتم العثور على فواتير تطابق معايير البحث</p>
           </div>
         ) : (
-          invoices.map((invoice, idx) => (
-            <div
-              key={invoice.TransID || idx}
-              className="bg-card rounded-2xl border border-border hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-            >
-              <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {/* Invoice Icon */}
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                  <Receipt size={22} className="text-blue-600 dark:text-blue-400" />
-                </div>
+          invoices.map((invoice, idx) => {
+            const invoiceId = invoice.TransID || idx;
+            const isExporting = exportingId === invoiceId;
 
-                {/* Invoice Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-foreground">
-                      {invoice.RefNo ? `وصل #${invoice.RefNo}` : "فاتورة"}
-                    </span>
-                    <span className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
-                      {invoice.TransTypeName || "فاتورة"}
-                    </span>
+            return (
+              <div
+                key={invoiceId}
+                className="bg-card rounded-2xl border border-border hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  {/* Invoice Icon */}
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                    <Receipt size={22} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>{invoice.TransDate?.split("T")[0]}</span>
-                    {invoice.CompanyName && <span>{invoice.CompanyName}</span>}
-                    {invoice.DriverName && <span>{invoice.DriverName}</span>}
-                    {invoice.GoodTypeName && <span>{invoice.GoodTypeName}</span>}
-                  </div>
-                  {invoice.Notes && (
-                    <p className="text-xs text-muted-foreground/70 mt-1 truncate">{invoice.Notes}</p>
-                  )}
-                </div>
 
-                {/* Amount */}
-                <div className="text-left flex-shrink-0" dir="ltr">
-                  {Number(invoice.AmountUSD) > 0 && (
-                    <p className="text-lg font-bold text-foreground">
-                      ${fmtNum(Math.abs(invoice.AmountUSD))}
-                    </p>
-                  )}
-                  {Number(invoice.AmountIQD) > 0 && (
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      {fmtNum(Math.abs(invoice.AmountIQD))} د.ع
-                    </p>
-                  )}
+                  {/* Invoice Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-bold text-foreground">
+                        {invoice.RefNo ? `وصل #${invoice.RefNo}` : "فاتورة"}
+                      </span>
+                      <span className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                        {invoice.TransTypeName || "فاتورة"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>{invoice.TransDate?.split("T")[0]}</span>
+                      {invoice.CompanyName && <span>{invoice.CompanyName}</span>}
+                      {invoice.DriverName && <span>{invoice.DriverName}</span>}
+                      {invoice.GoodTypeName && <span>{invoice.GoodTypeName}</span>}
+                    </div>
+                    {invoice.Notes && (
+                      <p className="text-xs text-muted-foreground/70 mt-1 truncate">{invoice.Notes}</p>
+                    )}
+                  </div>
+
+                  {/* Amount */}
+                  <div className="text-left flex-shrink-0" dir="ltr">
+                    {Number(invoice.AmountUSD) > 0 && (
+                      <p className="text-lg font-bold text-foreground">
+                        ${fmtNum(Math.abs(invoice.AmountUSD))}
+                      </p>
+                    )}
+                    {Number(invoice.AmountIQD) > 0 && (
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        {fmtNum(Math.abs(invoice.AmountIQD))} د.ع
+                      </p>
+                    )}
+                  </div>
+
+                  {/* PDF Export Button */}
+                  <button
+                    onClick={() => handleExportPDF(invoice)}
+                    disabled={isExporting}
+                    title="تحميل الفاتورة PDF"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-wait flex-shrink-0"
+                  >
+                    {isExporting ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <FileDown size={16} />
+                    )}
+                    <span className="hidden sm:inline">فاتورة PDF</span>
+                  </button>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
