@@ -159,24 +159,7 @@ function buildInvoiceSections(transaction = {}, sectionKey) {
     }
   }
 
-  // Section 5: Profit (admin only, for invoices)
-  if (typeId === 1 && (transaction.ProfitUSD || transaction.ProfitIQD)) {
-    const profitFields = [
-      { label: "الربح بالدولار", labelEn: "Profit (USD)", value: formatMoney(transaction.ProfitUSD, "USD"), highlight: true },
-      { label: "الربح بالدينار", labelEn: "Profit (IQD)", value: formatMoney(transaction.ProfitIQD, "IQD"), highlight: true },
-    ].filter(f => f.value && f.value !== "-");
-
-    if (profitFields.length > 0) {
-      sections.push({
-        title: "الأرباح",
-        titleEn: "Profit",
-        icon: "profit",
-        fields: profitFields,
-      });
-    }
-  }
-
-  // Section 6: Notes
+  // Section 5: Notes (Profit section intentionally excluded from printed invoices)
   const noteFields = [
     { label: "ملاحظة التاجر", labelEn: "Trader Note", value: transaction.TraderNote || "" },
     { label: "ملاحظات عامة", labelEn: "General Notes", value: transaction.Notes || "" },
@@ -428,8 +411,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   .section-money .section-title { color: ${red}; }
   .section-fees .section-header { border-bottom-color: #f59e0b22; background: #fffbeb; }
   .section-fees .section-title { color: #b45309; }
-  .section-profit .section-header { border-bottom-color: #10b98122; background: #f0fdf4; }
-  .section-profit .section-title { color: #047857; }
+  /* Profit section removed from printed invoices */
   .section-notes .section-header { border-bottom-color: #6366f122; background: #f5f3ff; }
   .section-notes .section-title { color: #4338ca; }
 
