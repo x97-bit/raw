@@ -202,7 +202,7 @@ export async function rebuildPaymentMatchesForAccounts(
     sql`, `
   );
 
-  const payments = (await db.execute(sql`
+  const [payments] = (await db.execute(sql`
     SELECT
       t.id AS payment_id,
       t.account_id,
@@ -214,9 +214,9 @@ export async function rebuildPaymentMatchesForAccounts(
     WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
       AND t.account_id IN (${accountIdTokens})
     ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-  `)) as unknown as AutoMatchPaymentRow[];
+  `)) as unknown as [AutoMatchPaymentRow[], unknown];
 
-  const invoices = (await db.execute(sql`
+  const [invoices] = (await db.execute(sql`
     SELECT
       t.id AS invoice_id,
       t.account_id,
@@ -228,17 +228,17 @@ export async function rebuildPaymentMatchesForAccounts(
     WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
       AND t.account_id IN (${accountIdTokens})
     ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-  `)) as unknown as AutoMatchInvoiceRow[];
+  `)) as unknown as [AutoMatchInvoiceRow[], unknown];
 
   const allocations = buildAutoMatchAllocations(payments, invoices);
-  const relatedMatches = (await db.execute(sql`
+  const [relatedMatches] = (await db.execute(sql`
     SELECT pm.id
     FROM payment_matching pm
     LEFT JOIN transactions invoice ON invoice.id = pm.invoiceId
     LEFT JOIN transactions payment ON payment.id = pm.paymentId
     WHERE invoice.account_id IN (${accountIdTokens})
        OR payment.account_id IN (${accountIdTokens})
-  `)) as unknown as Array<{ id: number }>;
+  `)) as unknown as [Array<{ id: number }>, unknown];
 
   const relatedMatchIds = relatedMatches
     .map(row => Number(row.id))

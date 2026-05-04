@@ -30,7 +30,7 @@ export const paymentMatchingRouter = router({
       });
     }
 
-    const shipmentRows: any[] = await db.execute(sql`
+    const [shipmentRows]: [any[], unknown] = await db.execute(sql`
         SELECT
           t.id AS shipment_id,
           t.ref_no,
@@ -51,7 +51,7 @@ export const paymentMatchingRouter = router({
           GROUP BY invoiceId
         ) pm_agg ON pm_agg.invoiceId = t.id
         WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
-      `);
+      `) as any;
 
     let paidCount = 0;
     let paidTotalUsd = 0;
@@ -105,19 +105,19 @@ export const paymentMatchingRouter = router({
       }
     }
 
-    const paymentRows: any[] = await db.execute(sql`
+    const [paymentRows]: [any[], unknown] = await db.execute(sql`
         SELECT
           COALESCE(SUM(CAST(t.amount_usd AS DECIMAL(15,2))), 0) AS total_payment_usd,
           COALESCE(SUM(CAST(t.amount_iqd AS DECIMAL(15,0))), 0) AS total_payment_iqd
         FROM transactions t
         WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
-      `);
-    const allocatedRows: any[] = await db.execute(sql`
+      `) as any;
+    const [allocatedRows]: [any[], unknown] = await db.execute(sql`
         SELECT
           COALESCE(SUM(CAST(amountUSD AS DECIMAL(15,2))), 0) AS allocated_usd,
           COALESCE(SUM(CAST(amountIQD AS DECIMAL(15,0))), 0) AS allocated_iqd
         FROM payment_matching
-      `);
+      `) as any;
 
     const totalPayUsd = Number(paymentRows[0]?.total_payment_usd) || 0;
     const totalPayIqd = Number(paymentRows[0]?.total_payment_iqd) || 0;
@@ -175,7 +175,7 @@ export const paymentMatchingRouter = router({
         });
       }
 
-      const rows: any[] = await db.execute(sql`
+      const [rows]: [any[], unknown] = await db.execute(sql`
         SELECT
           t.id,
           COALESCE(CAST(t.amount_usd AS DECIMAL(15,2)), 0) AS amount_usd,
@@ -191,7 +191,7 @@ export const paymentMatchingRouter = router({
           GROUP BY invoiceId
         ) pm_agg ON pm_agg.invoiceId = t.id
         WHERE t.direction IN ('IN', 'in', 'DR', 'dr') AND t.account_id = ${input.accountId}
-      `);
+      `) as any;
 
       const paid = { count: 0, remaining_usd: 0, remaining_iqd: 0 };
       const partial = { count: 0, remaining_usd: 0, remaining_iqd: 0 };
@@ -240,7 +240,7 @@ export const paymentMatchingRouter = router({
       let rows: any[];
 
       if (input.account) {
-        rows = await db.execute(sql`
+        [rows] = await db.execute(sql`
           SELECT
             t.id AS shipment_id,
             t.ref_no,
@@ -263,9 +263,9 @@ export const paymentMatchingRouter = router({
           WHERE t.direction IN ('IN', 'in', 'DR', 'dr') AND t.account_id = ${input.account}
           ORDER BY t.trans_date DESC
           LIMIT ${limit}
-        `);
+        `) as any;
       } else {
-        rows = await db.execute(sql`
+        [rows] = await db.execute(sql`
           SELECT
             t.id AS shipment_id,
             t.ref_no,
@@ -288,7 +288,7 @@ export const paymentMatchingRouter = router({
           WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
           ORDER BY t.trans_date DESC
           LIMIT ${limit}
-        `);
+        `) as any;
       }
 
       const results = rows.map(mapShipmentPaymentStatus);
@@ -310,7 +310,7 @@ export const paymentMatchingRouter = router({
       }
 
       const shipmentId = input.shipmentId;
-      const shipmentRows: any[] = await db.execute(sql`
+      const [shipmentRows]: [any[], unknown] = await db.execute(sql`
         SELECT
           t.id AS shipment_id,
           t.ref_no,
@@ -331,7 +331,7 @@ export const paymentMatchingRouter = router({
           GROUP BY invoiceId
         ) pm_agg ON pm_agg.invoiceId = t.id
         WHERE t.id = ${shipmentId} AND t.direction IN ('IN', 'in', 'DR', 'dr')
-      `);
+      `) as any;
 
       if (!shipmentRows || shipmentRows.length === 0) {
         throw new TRPCError({
@@ -342,7 +342,7 @@ export const paymentMatchingRouter = router({
 
       const shipment = mapShipmentPaymentStatus(shipmentRows[0]);
 
-      const allocations: any[] = await db.execute(sql`
+      const [allocations]: [any[], unknown] = await db.execute(sql`
         SELECT
           pm.id AS allocation_id,
           pm.paymentId AS payment_id,
@@ -358,7 +358,7 @@ export const paymentMatchingRouter = router({
         INNER JOIN transactions t ON t.id = pm.paymentId
         WHERE pm.invoiceId = ${shipmentId}
         ORDER BY pm.createdAt DESC
-      `);
+      `) as any;
 
       return {
         shipment,
@@ -375,7 +375,7 @@ export const paymentMatchingRouter = router({
       });
     }
 
-    const payments: any[] = await db.execute(sql`
+    const [payments]: [any[], unknown] = await db.execute(sql`
         SELECT
           t.id AS payment_id,
           t.account_id,
@@ -394,13 +394,13 @@ export const paymentMatchingRouter = router({
         WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
         HAVING (total_usd - used_usd > 0) OR (total_iqd - used_iqd > 0)
         ORDER BY t.trans_date ASC
-      `);
+      `) as any;
 
     const accountIds = Array.from(
       new Set(
         payments
-          .map(payment => Number(payment.account_id))
-          .filter(accountId => Number.isInteger(accountId) && accountId > 0)
+          .map((payment: any) => Number(payment.account_id))
+          .filter((accountId: number) => Number.isInteger(accountId) && accountId > 0)
       )
     );
 
@@ -424,12 +424,12 @@ export const paymentMatchingRouter = router({
           ) pm_agg ON pm_agg.invoiceId = t.id
           WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
             AND t.account_id IN (${sql.join(
-              accountIds.map(accountId => sql`${accountId}`),
+              accountIds.map((accountId: number) => sql`${accountId}`),
               sql`, `
             )})
           HAVING (amount_usd - COALESCE(paid_usd, 0) > 0) OR (amount_iqd - COALESCE(paid_iqd, 0) > 0)
           ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-        `)) as unknown as AutoMatchInvoiceRow[])
+        `)) as unknown as [AutoMatchInvoiceRow[], unknown])[0]
         : [];
 
     const allocations = buildAutoMatchAllocations(
@@ -490,7 +490,7 @@ export const paymentMatchingRouter = router({
       });
     }
 
-    const rows: any[] = await db.execute(sql`
+    const [rows]: [any[], unknown] = await db.execute(sql`
       SELECT
         t.id AS payment_id,
         t.ref_no,
@@ -514,7 +514,7 @@ export const paymentMatchingRouter = router({
       HAVING (total_usd - COALESCE(used_usd, 0) > 0) OR (total_iqd - COALESCE(used_iqd, 0) > 0)
       ORDER BY (total_usd - COALESCE(used_usd, 0)) DESC, t.trans_date DESC
       LIMIT 50
-    `);
+    `) as any;
 
     const payments = rows.map((row: any) => {
       const totalUsd = Number(row.total_usd) || 0;
@@ -556,7 +556,7 @@ export const paymentMatchingRouter = router({
       });
     }
 
-    const payments: any[] = await db.execute(sql`
+    const [payments]: [any[], unknown] = await db.execute(sql`
       SELECT
         t.id AS payment_id,
         t.account_id,
@@ -577,13 +577,13 @@ export const paymentMatchingRouter = router({
       WHERE t.direction IN ('OUT', 'out', 'CR', 'cr')
       HAVING (total_usd - used_usd > 0) OR (total_iqd - used_iqd > 0)
       ORDER BY t.trans_date ASC
-    `);
+    `) as any;
 
     const accountIds = Array.from(
       new Set(
         payments
-          .map(payment => Number(payment.account_id))
-          .filter(accountId => Number.isInteger(accountId) && accountId > 0)
+          .map((payment: any) => Number(payment.account_id))
+          .filter((accountId: number) => Number.isInteger(accountId) && accountId > 0)
       )
     );
 
@@ -605,12 +605,12 @@ export const paymentMatchingRouter = router({
           ) pm_agg ON pm_agg.invoiceId = t.id
           WHERE t.direction IN ('IN', 'in', 'DR', 'dr')
             AND t.account_id IN (${sql.join(
-              accountIds.map(accountId => sql`${accountId}`),
+              accountIds.map((accountId: number) => sql`${accountId}`),
               sql`, `
             )})
           HAVING (amount_usd - COALESCE(paid_usd, 0) > 0) OR (amount_iqd - COALESCE(paid_iqd, 0) > 0)
           ORDER BY t.account_id ASC, t.trans_date ASC, t.id ASC
-        `)) as unknown as AutoMatchInvoiceRow[])
+        `)) as unknown as [AutoMatchInvoiceRow[], unknown])[0]
         : [];
 
     const allocations = buildAutoMatchAllocations(

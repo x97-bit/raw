@@ -110,9 +110,9 @@ export function registerReportProfitRoutes(router: Router) {
           `),
           ]);
 
-          // Parse totals
-          const totalsRow =
-            (totalsResult as unknown as Array<Record<string, unknown>>)[0] ?? {};
+          // Parse totals (db.execute returns [rows, fields])
+          const [totalsResultRows] = totalsResult as unknown as [Array<Record<string, unknown>>, unknown];
+          const totalsRow = totalsResultRows[0] ?? {};
           const totals = {
             totalCostUSD: parseNum(totalsRow.totalCostUSD),
             totalCostIQD: parseNum(totalsRow.totalCostIQD),
@@ -123,10 +123,9 @@ export function registerReportProfitRoutes(router: Router) {
             shipmentCount: parseNum(totalsRow.shipmentCount),
           };
 
-          // Parse per-trader rows
-          const traderProfits: TraderProfitRow[] = (
-            traderRows as unknown as Array<Record<string, unknown>>
-          ).map(row => ({
+          // Parse per-trader rows (db.execute returns [rows, fields])
+          const [traderResultRows] = traderRows as unknown as [Array<Record<string, unknown>>, unknown];
+          const traderProfits: TraderProfitRow[] = traderResultRows.map(row => ({
             AccountName: String(row.AccountName ?? "غير معروف"),
             shipmentCount: parseNum(row.shipmentCount),
             totalCostUSD: parseNum(row.totalCostUSD),

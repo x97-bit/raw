@@ -357,8 +357,9 @@ export function registerTransactionQueryRoutes(router: Router) {
           `),
         ]);
 
-        const summaryRows = summaryResult as unknown as TransactionSummaryRow[];
-        const dataRows = dataResult as unknown as TransactionDataRow[];
+        // db.execute() returns [rows, fields] in mysql2/drizzle
+        const [summaryRows] = summaryResult as unknown as [TransactionSummaryRow[], unknown];
+        const [dataRows] = dataResult as unknown as [TransactionDataRow[], unknown];
 
         const rows = normalizeTransactionRows(dataRows);
         const summary = normalizeSummaryRow(summaryRows[0]);

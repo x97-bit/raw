@@ -134,14 +134,12 @@ export function registerReportDashboardRoutes(router: Router) {
             db.select().from(ports),
           ]);
 
-          // Parse count results
-          const countsRow =
-            (
-              countResults as unknown as Array<{
-                totalAccounts: unknown;
-                totalTransactions: unknown;
-              }>
-            )[0] ?? {};
+          // Parse count results (db.execute returns [rows, fields])
+          const [countRows] = countResults as unknown as [Array<{
+            totalAccounts: unknown;
+            totalTransactions: unknown;
+          }>, unknown];
+          const countsRow = countRows[0] ?? {};
           const totalAccounts = Number(countsRow.totalAccounts ?? 0);
           const totalTransactions = Number(countsRow.totalTransactions ?? 0);
 
@@ -156,9 +154,8 @@ export function registerReportDashboardRoutes(router: Router) {
               paymentsIQD: number;
             }
           >();
-          for (const row of portAggregations as unknown as Array<
-            Record<string, unknown>
-          >) {
+          const [portAggRows] = portAggregations as unknown as [Array<Record<string, unknown>>, unknown];
+          for (const row of portAggRows) {
             portAggMap.set(String(row.portId ?? ""), {
               transCount: Number(row.transCount ?? 0),
               invoicesUSD: parseStoredAmount(row.invoicesUSD),
@@ -184,9 +181,8 @@ export function registerReportDashboardRoutes(router: Router) {
             string,
             { invoicesUSD: number; paymentsUSD: number }
           >();
-          for (const row of monthlyAggregations as unknown as Array<
-            Record<string, unknown>
-          >) {
+          const [monthlyAggRows] = monthlyAggregations as unknown as [Array<Record<string, unknown>>, unknown];
+          for (const row of monthlyAggRows) {
             monthlyMap.set(String(row.month ?? ""), {
               invoicesUSD: parseStoredAmount(row.invoicesUSD),
               paymentsUSD: parseStoredAmount(row.paymentsUSD),
@@ -204,14 +200,12 @@ export function registerReportDashboardRoutes(router: Router) {
             monthlyTrend.push({ month, ...agg });
           }
 
-          // Debt totals
-          const debtRow =
-            (
-              debtAggregations as unknown as Array<{
-                totalUSD: unknown;
-                totalIQD: unknown;
-              }>
-            )[0] ?? {};
+          // Debt totals (db.execute returns [rows, fields])
+          const [debtRows] = debtAggregations as unknown as [Array<{
+            totalUSD: unknown;
+            totalIQD: unknown;
+          }>, unknown];
+          const debtRow = debtRows[0] ?? {};
           const totalDebts = {
             totalUSD: parseStoredAmount(debtRow.totalUSD),
             totalIQD: parseStoredAmount(debtRow.totalIQD),
@@ -223,10 +217,9 @@ export function registerReportDashboardRoutes(router: Router) {
             recentTransactions as TransactionRow[]
           );
 
-          // Top traders
-          const topTraders: TopTraderRow[] = (
-            topTraderAggregations as unknown as Array<Record<string, unknown>>
-          ).map(row => ({
+          // Top traders (db.execute returns [rows, fields])
+          const [topTraderRows] = topTraderAggregations as unknown as [Array<Record<string, unknown>>, unknown];
+          const topTraders: TopTraderRow[] = topTraderRows.map(row => ({
             AccountID: Number(row.AccountID ?? 0),
             AccountName: String(row.AccountName ?? ""),
             transCount: Number(row.transCount ?? 0),
