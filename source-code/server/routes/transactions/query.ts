@@ -59,6 +59,8 @@ type TransactionDataRow = {
   govId?: DecimalLike;
   notes?: string | null;
   traderNote?: string | null;
+  invoiceNotes?: string | null;
+  invoiceDetails?: string | null;
   recordType?: string | null;
   portId?: string | null;
   accountType?: string | null;
@@ -141,6 +143,8 @@ export function normalizeTransactionRows(rawRows: TransactionDataRow[]) {
       govId: toNullableInteger(row.govId),
       notes: row.notes ?? null,
       traderNote: row.traderNote ?? null,
+      invoiceNotes: row.invoiceNotes ?? null,
+      invoiceDetails: row.invoiceDetails ?? null,
       recordType: row.recordType ?? null,
       portId: row.portId ?? null,
       accountType: row.accountType ?? null,
@@ -346,6 +350,8 @@ export function registerTransactionQueryRoutes(router: Router) {
               gov_id AS govId,
               notes,
               trader_note AS traderNote,
+              invoice_notes AS invoiceNotes,
+              invoice_details AS invoiceDetails,
               record_type AS recordType,
               port_id AS portId,
               account_type AS accountType,

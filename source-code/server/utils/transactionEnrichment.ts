@@ -117,6 +117,8 @@ type TransactionMapInput = {
   govId?: number | null;
   notes?: string | null;
   traderNote?: string | null;
+  invoiceNotes?: string | null;
+  invoiceDetails?: string | null;
   recordType?: string | null;
   portId?: string | null;
   accountType?: string | null;
@@ -237,6 +239,8 @@ export function mapTransaction(
     Governorate: governorateName || transaction._govName || "",
     Notes: transaction.notes,
     TraderNote: transaction.traderNote,
+    InvoiceNotes: transaction.invoiceNotes || "",
+    InvoiceDetails: transaction.invoiceDetails || "",
     RecordType: transaction.recordType,
     PortID: transaction.portId,
     AccountType: transaction.accountType,
