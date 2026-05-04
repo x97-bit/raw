@@ -130,6 +130,11 @@ export const translations = {
           flag: "\u{1f1f8}\u{1f1e6}",
           description: "\u062e\u062f\u0645\u0627\u062a \u0646\u0642\u0644 \u0628\u0631\u064a \u0645\u0628\u0627\u0634\u0631\u0629 \u0648\u0645\u0646\u0638\u0645\u0629 \u0645\u0646 \u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629 \u0625\u0644\u0649 \u0627\u0644\u0639\u0631\u0627\u0642\u060c \u0645\u0639 \u062f\u0639\u0645 \u0644\u0648\u062c\u0633\u062a\u064a \u0645\u062a\u0643\u0627\u0645\u0644 \u0644\u0644\u062a\u062c\u0627\u0631 \u0648\u0627\u0644\u0634\u0631\u0643\u0627\u062a.",
         },
+        {
+          title: "من الصين",
+          flag: "\u{1f1e8}\u{1f1f3}",
+          description: "خدمات نقل بري دولية من الصين إلى العراق عبر طريق الحرير، مع إدارة متكاملة للشحن والتخليص الجمركي وضمان وصول البضائع بأمان وفي الوقت المحدد.",
+        },
       ],
     },
     seaport: {
@@ -166,7 +171,7 @@ export const translations = {
       addressLabel: "\u0627\u0644\u0639\u0646\u0648\u0627\u0646",
     },
     footer: {
-      copyright: "\u00a9 2025 \u0637\u064a \u0627\u0644\u0631\u0627\u0648\u064a \u0644\u0644\u0646\u0642\u0644 \u0648\u0627\u0644\u062a\u062e\u0644\u064a\u0635 \u0627\u0644\u0643\u0645\u0631\u0643\u064a. \u062c\u0645\u064a\u0639 \u0627\u0644\u062d\u0642\u0648\u0642 \u0645\u062d\u0641\u0648\u0638\u0629.",
+      copyright: "\u00a9 2026 \u0637\u064a \u0627\u0644\u0631\u0627\u0648\u064a \u0644\u0644\u0646\u0642\u0644 \u0648\u0627\u0644\u062a\u062e\u0644\u064a\u0635 \u0627\u0644\u0643\u0645\u0631\u0643\u064a. \u062c\u0645\u064a\u0639 \u0627\u0644\u062d\u0642\u0648\u0642 \u0645\u062d\u0641\u0648\u0638\u0629.",
       poweredBy: "\u0645\u062f\u0639\u0648\u0645 \u0628\u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u0627\u0648\u064a",
     },
   },
@@ -297,6 +302,11 @@ export const translations = {
           flag: "\u{1f1f8}\u{1f1e6}",
           description: "Direct and organized land transport services from Saudi Arabia to Iraq, with integrated logistics support for merchants and companies.",
         },
+        {
+          title: "From China",
+          flag: "\u{1f1e8}\u{1f1f3}",
+          description: "International land transport services from China to Iraq via the Silk Road, with comprehensive shipping and customs clearance management ensuring safe and timely delivery of goods.",
+        },
       ],
     },
     seaport: {
@@ -333,7 +343,7 @@ export const translations = {
       addressLabel: "Address",
     },
     footer: {
-      copyright: "\u00a9 2025 Tay Alrawi Transport & Customs Clearance. All rights reserved.",
+      copyright: "\u00a9 2026 Tay Alrawi Transport & Customs Clearance. All rights reserved.",
       poweredBy: "Powered by Alrawi System",
     },
   },

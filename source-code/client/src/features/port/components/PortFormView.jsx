@@ -50,7 +50,7 @@ export default function PortFormView({
         onHome={onHome}
       />
 
-      <div className="mx-auto max-w-5xl p-5 md:p-6">
+      <div className="mx-auto w-full max-w-[1600px] p-5 md:p-6 lg:px-8">
         {message && (
           <div className="mb-4 rounded-[1.15rem] bg-utility-danger-bg px-4 py-3 text-utility-danger-text shadow-sm ring-1 ring-utility-danger-border">
             {message}
@@ -89,7 +89,9 @@ export default function PortFormView({
                   ? "grid-cols-1 md:grid-cols-2"
                   : section.items.length === 3
                     ? "grid-cols-1 md:grid-cols-3"
-                    : "grid-cols-1 md:grid-cols-2 xl:grid-cols-4";
+                    : section.items.length <= 6
+                      ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
 
               return (
                 <PortFormSection

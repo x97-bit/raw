@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { asc } from "drizzle-orm";
+import { asc, eq, isNull, or } from "drizzle-orm";
 import {
   accountTypes,
   companies,
@@ -126,12 +126,28 @@ export function registerReferenceLookupReadRoutes(router: Router) {
         const db = await getLookupDb(res);
         if (!db) return;
 
+        const portFilter = (req.query.port as string) || "";
+
         return respondWithCachedLookup(
           req,
           res,
           "/lookups/goods-types",
           async () => {
-            const result = await db.select().from(goodsTypes);
+            // If a port is specified, return only goods for that port
+            // (plus any "global" goods that have no port assigned for backward compat)
+            const query = portFilter
+              ? db
+                  .select()
+                  .from(goodsTypes)
+                  .where(
+                    or(
+                      eq(goodsTypes.portId, portFilter),
+                      isNull(goodsTypes.portId)
+                    )
+                  )
+              : db.select().from(goodsTypes);
+
+            const result = await query;
             return result.map((goodType: GoodTypeRow) => ({
               ...goodType,
               GoodTypeID: goodType.id,

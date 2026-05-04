@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { fieldConfig } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { getDb } from "../../db/db";
@@ -61,49 +61,64 @@ export function registerFieldConfigRoutes(router: Router) {
         if (!Array.isArray(fields))
           return res.status(400).json({ error: FIELDS_ARRAY_REQUIRED_MESSAGE });
 
+        if (fields.length === 0)
+          return res.json({ message: FIELD_SETTINGS_UPDATED_MESSAGE });
 
-
-        for (const field of fields) {
+        // ── Bulk Upsert: single query instead of N+1 ────────────────────
+        // Build a single INSERT ... ON DUPLICATE KEY UPDATE statement
+        // to handle all fields in one round-trip to the database.
+        const valueTuples = fields.map((field: any) => {
           const displayLabel =
             typeof field.displayLabel === "string" && field.displayLabel.trim()
               ? field.displayLabel.trim()
               : null;
-          const existing = await db
-            .select()
-            .from(fieldConfig)
-            .where(
-              and(
-                eq(fieldConfig.sectionKey, sectionKey),
-                eq(fieldConfig.fieldKey, field.fieldKey)
-              )
-            );
+          const visible = field.visible ? 1 : 0;
+          const sortOrder = field.sortOrder || 0;
+          const fieldKey = String(field.fieldKey || "").trim();
 
-          if (existing.length > 0) {
-            await db
-              .update(fieldConfig)
-              .set({
-                visible: field.visible ? 1 : 0,
-                sortOrder: field.sortOrder || 0,
-                displayLabel,
-              })
-              .where(
-                and(
-                  eq(fieldConfig.sectionKey, sectionKey),
-                  eq(fieldConfig.fieldKey, field.fieldKey)
-                )
-              );
-          } else {
-            await db.insert(fieldConfig).values({
-              sectionKey,
-              fieldKey: field.fieldKey,
-              visible: field.visible ? 1 : 0,
-              sortOrder: field.sortOrder || 0,
-              displayLabel,
-            });
-          }
+          return { sectionKey, fieldKey, visible, sortOrder, displayLabel };
+        });
+
+        // Filter out entries with empty fieldKey
+        const validTuples = valueTuples.filter(
+          (t: any) => t.fieldKey.length > 0
+        );
+
+        if (validTuples.length === 0)
+          return res.json({ message: FIELD_SETTINGS_UPDATED_MESSAGE });
+
+        // Use raw SQL for efficient bulk upsert with ON DUPLICATE KEY UPDATE.
+        // This requires a unique index on (section_key, field_key).
+        // First, ensure the unique index exists (idempotent).
+        try {
+          await db.execute(
+            sql`ALTER TABLE field_config ADD UNIQUE INDEX uk_section_field (section_key, field_key)`
+          );
+        } catch {
+          // Index already exists — safe to ignore
         }
 
+        // Build parameterized bulk insert
+        const sqlChunks: any[] = [];
+        sqlChunks.push(
+          sql`INSERT INTO field_config (section_key, field_key, visible, sort_order, display_label) VALUES `
+        );
 
+        for (let i = 0; i < validTuples.length; i++) {
+          const t = validTuples[i];
+          if (i > 0) sqlChunks.push(sql`, `);
+          sqlChunks.push(
+            sql`(${t.sectionKey}, ${t.fieldKey}, ${t.visible}, ${t.sortOrder}, ${t.displayLabel})`
+          );
+        }
+
+        sqlChunks.push(
+          sql` ON DUPLICATE KEY UPDATE visible = VALUES(visible), sort_order = VALUES(sort_order), display_label = VALUES(display_label)`
+        );
+
+        // Combine all chunks into a single SQL statement
+        const finalSql = sql.join(sqlChunks, sql.raw(""));
+        await db.execute(finalSql);
 
         return res.json({ message: FIELD_SETTINGS_UPDATED_MESSAGE });
       } catch (error: any) {

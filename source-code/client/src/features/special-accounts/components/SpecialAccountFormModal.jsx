@@ -31,6 +31,13 @@ export default function SpecialAccountFormModal({
         })
     : formFields;
 
+  const gridClass =
+    displayFields.length <= 2
+      ? "grid-cols-1 md:grid-cols-2"
+      : displayFields.length <= 4
+        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
+
   return (
     <ModalPortal>
       <div
@@ -38,7 +45,7 @@ export default function SpecialAccountFormModal({
         onMouseDown={event => event.target === event.currentTarget && onClose()}
       >
         <div
-          className="relative my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-border bg-card shadow-2xl sm:max-h-[calc(100vh-2rem)]"
+          className="relative my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-[1600px] overflow-y-auto rounded-[30px] border border-border bg-card shadow-2xl sm:max-h-[calc(100vh-2rem)]"
           onMouseDown={event => event.stopPropagation()}
         >
           <div
@@ -50,7 +57,7 @@ export default function SpecialAccountFormModal({
             style={{ background: account.accent }}
           />
 
-          <div className="relative flex items-center justify-between border-b border-border px-6 py-5">
+          <div className="relative flex items-center justify-between border-b border-border px-6 py-5 lg:px-8">
             <button
               onClick={onClose}
               className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary/50 text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary hover:text-foreground"
@@ -74,8 +81,8 @@ export default function SpecialAccountFormModal({
             </div>
           </div>
 
-          <div className="space-y-5 p-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-5 p-6 lg:px-8">
+            <div className={`grid gap-4 ${gridClass}`}>
               {displayFields.map(field => (
                 <SpecialAccountFormField
                   key={field.key}
@@ -86,8 +93,10 @@ export default function SpecialAccountFormModal({
                 />
               ))}
             </div>
+          </div>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky bottom-0 z-10 border-t border-border bg-card/95 px-6 py-4 backdrop-blur-sm lg:px-8">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 onClick={onClose}
                 className="btn-outline w-full px-5 py-3 sm:w-auto"
@@ -97,7 +106,7 @@ export default function SpecialAccountFormModal({
               <button
                 onClick={onSave}
                 disabled={saving}
-                className="btn-primary flex w-full items-center justify-center gap-2 px-6 py-3 sm:w-auto"
+                className="btn-primary flex w-full items-center justify-center gap-2 px-8 py-3 sm:w-auto"
                 style={{
                   background: account.accent,
                   color: "#ffffff",

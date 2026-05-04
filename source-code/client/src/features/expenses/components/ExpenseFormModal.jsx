@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Save, X } from "lucide-react";
 import AutocompleteInput from "../../../components/AutocompleteInput";
 import ModalPortal from "../../../components/ModalPortal";
 import { EXPENSE_TARGET_OPTIONS, PORT_OPTIONS } from "../expensesConfig";
@@ -7,6 +7,7 @@ export default function ExpenseFormModal({
   accounts,
   form,
   editId,
+  saving,
   onClose,
   onSave,
   onChange,
@@ -18,10 +19,10 @@ export default function ExpenseFormModal({
         onMouseDown={event => event.target === event.currentTarget && onClose()}
       >
         <div
-          className="animate-modal-in my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.15)] sm:max-h-[calc(100vh-2rem)]"
+          className="animate-modal-in my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-[1200px] overflow-y-auto rounded-2xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.15)] sm:max-h-[calc(100vh-2rem)]"
           onMouseDown={event => event.stopPropagation()}
         >
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 lg:px-8">
             <button
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
@@ -33,8 +34,8 @@ export default function ExpenseFormModal({
             </h2>
           </div>
 
-          <div className="space-y-4 p-6">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4 p-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   التاريخ
@@ -65,9 +66,7 @@ export default function ExpenseFormModal({
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   نوع التحميل
@@ -109,9 +108,7 @@ export default function ExpenseFormModal({
                   disabled={(form.chargeTarget || "port") !== "trader"}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   المبلغ ($)
@@ -149,17 +146,28 @@ export default function ExpenseFormModal({
                 value={form.description || ""}
                 onChange={event => onChange("description", event.target.value)}
                 className="input-field"
-                rows="3"
+                rows="2"
                 placeholder="وصف المصروف..."
               />
             </div>
+          </div>
 
-            <div className="flex gap-3 border-t border-gray-100 pt-4">
-              <button onClick={onSave} className="btn-primary flex-1">
-                {editId ? "تحديث" : "حفظ"}
-              </button>
-              <button onClick={onClose} className="btn-outline">
+          <div className="sticky bottom-0 z-10 border-t border-gray-100 bg-white/95 px-6 py-4 backdrop-blur-sm lg:px-8">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button onClick={onClose} className="btn-outline w-full sm:w-auto">
                 إلغاء
+              </button>
+              <button
+                onClick={onSave}
+                disabled={saving}
+                className="btn-primary flex w-full items-center justify-center gap-2 px-8 sm:w-auto"
+              >
+                <Save size={16} />
+                {saving
+                  ? "جارٍ الحفظ..."
+                  : editId
+                    ? "حفظ التعديلات"
+                    : "حفظ المصروف"}
               </button>
             </div>
           </div>

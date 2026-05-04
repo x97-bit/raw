@@ -113,6 +113,8 @@ export const transactions = mysqlTable(
     govId: int("gov_id"),
     notes: text("notes"),
     traderNote: text("trader_note"),
+    invoiceNotes: text("invoice_notes"), // ملاحظات الفاتورة
+    invoiceDetails: text("invoice_details"), // تفاصيل الفاتورة
     recordType: varchar("record_type", { length: 20 }).default("shipment"),
     portId: varchar("port_id", { length: 50 }).notNull(),
     accountType: varchar("account_type", { length: 50 }).notNull(),
@@ -203,6 +205,7 @@ export const cashState = mysqlTable("cash_state", {
 export const goodsTypes = mysqlTable("goods_types", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  portId: varchar("port_id", { length: 50 }),
 });
 
 export const governorates = mysqlTable("governorates", {

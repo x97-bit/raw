@@ -74,6 +74,14 @@ export async function buildTransactionUpdateInput(
     updates.traderNote =
       pickBodyField(body, "traderNote", "TraderNote", "trader_note") ?? null;
   }
+  if (hasBodyKey(body, "invoiceNotes", "InvoiceNotes", "invoice_notes")) {
+    updates.invoiceNotes =
+      pickBodyField(body, "invoiceNotes", "InvoiceNotes", "invoice_notes") ?? null;
+  }
+  if (hasBodyKey(body, "invoiceDetails", "InvoiceDetails", "invoice_details")) {
+    updates.invoiceDetails =
+      pickBodyField(body, "invoiceDetails", "InvoiceDetails", "invoice_details") ?? null;
+  }
   if (hasBodyKey(body, "driverId", "DriverID", "driver_id")) {
     updates.driverId =
       parseOptionalInt(

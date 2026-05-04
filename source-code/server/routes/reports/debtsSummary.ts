@@ -4,6 +4,7 @@ import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
 import { getDb } from "../../db/db";
 import { mapDebtRow } from "../../utils/debts";
+import { financialReportsCache } from "../../_core/redisCache";
 
 type DebtRow = typeof debts.$inferSelect;
 
@@ -31,59 +32,67 @@ export function registerReportDebtSummaryRoutes(router: Router) {
         const db = await getDb();
         if (!db) return res.status(500).json({ error: "Database unavailable" });
 
-        const allDebts = await db.select().from(debts);
-        const totalUSD = allDebts.reduce(
-          (sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountUSD),
-          0
-        );
-        const totalIQD = allDebts.reduce(
-          (sum, debt: DebtRow) => sum + parseStoredAmount(debt.amountIQD),
-          0
-        );
-        const paidUSD = allDebts.reduce(
-          (sum, debt: DebtRow) => sum + parseStoredAmount(debt.paidAmountUSD),
-          0
-        );
-        const paidIQD = allDebts.reduce(
-          (sum, debt: DebtRow) => sum + parseStoredAmount(debt.paidAmountIQD),
-          0
-        );
+        const { hit, value } = await financialReportsCache.getOrLoad(
+          "debts-summary",
+          async () => {
+            const allDebts = await db.select().from(debts);
 
-        const debtorMap = new Map<string, DebtSummaryRow>();
-        for (const debt of allDebts) {
-          const key = debt.debtorName;
-          let summary = debtorMap.get(key);
-          if (!summary) {
-            summary = {
-              AccountID: key,
-              AccountName: key,
-              totalUSD: 0,
-              totalIQD: 0,
-              paidUSD: 0,
-              paidIQD: 0,
-              count: 0,
+            // Single-pass computation for totals AND per-debtor summary
+            let totalUSD = 0;
+            let totalIQD = 0;
+            let paidUSD = 0;
+            let paidIQD = 0;
+            const debtorMap = new Map<string, DebtSummaryRow>();
+
+            for (const debt of allDebts) {
+              const amtUSD = parseStoredAmount(debt.amountUSD);
+              const amtIQD = parseStoredAmount(debt.amountIQD);
+              const pdUSD = parseStoredAmount(debt.paidAmountUSD);
+              const pdIQD = parseStoredAmount(debt.paidAmountIQD);
+
+              totalUSD += amtUSD;
+              totalIQD += amtIQD;
+              paidUSD += pdUSD;
+              paidIQD += pdIQD;
+
+              const key = debt.debtorName;
+              let summary = debtorMap.get(key);
+              if (!summary) {
+                summary = {
+                  AccountID: key,
+                  AccountName: key,
+                  totalUSD: 0,
+                  totalIQD: 0,
+                  paidUSD: 0,
+                  paidIQD: 0,
+                  count: 0,
+                };
+                debtorMap.set(key, summary);
+              }
+              summary.totalUSD += amtUSD;
+              summary.totalIQD += amtIQD;
+              summary.paidUSD += pdUSD;
+              summary.paidIQD += pdIQD;
+              summary.count += 1;
+            }
+
+            return {
+              debts: allDebts.map(mapDebtRow),
+              summary: Array.from(debtorMap.values()),
+              totals: {
+                totalUSD,
+                totalIQD,
+                paidUSD,
+                paidIQD,
+                remainingUSD: totalUSD - paidUSD,
+                remainingIQD: totalIQD - paidIQD,
+              },
             };
-            debtorMap.set(key, summary);
           }
-          summary.totalUSD += parseStoredAmount(debt.amountUSD);
-          summary.totalIQD += parseStoredAmount(debt.amountIQD);
-          summary.paidUSD += parseStoredAmount(debt.paidAmountUSD);
-          summary.paidIQD += parseStoredAmount(debt.paidAmountIQD);
-          summary.count += 1;
-        }
+        );
 
-        return res.json({
-          debts: allDebts.map(mapDebtRow),
-          summary: Array.from(debtorMap.values()),
-          totals: {
-            totalUSD,
-            totalIQD,
-            paidUSD,
-            paidIQD,
-            remainingUSD: totalUSD - paidUSD,
-            remainingIQD: totalIQD - paidIQD,
-          },
-        });
+        res.setHeader("X-Cache", hit ? "HIT" : "MISS");
+        return res.json(value);
       } catch (error) {
         return respondRouteError(res, error);
       }

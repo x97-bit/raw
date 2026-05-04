@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { applyTheme, readInitialTheme, ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
@@ -15,7 +16,7 @@ applyTheme(readInitialTheme());
 // |--------------------|-------------------------|
 // | Marketing Website  | /                       |
 // | Merchant Portal    | /merchants              |
-// | Admin Panel        | /admin                  |
+// | Admin Panel        | /admin/*                |
 // ──────────────────────────────────────────────────────────────────────────────
 
 const path = window.location.pathname;
@@ -24,19 +25,12 @@ const isAdminRoute = path.startsWith("/admin");
 const isLandingRoute = path === "/" || path === "";
 
 // ─── Security: Clear admin session when navigating away from /admin ───────────
-// When the user leaves the admin panel (navigates to landing page, merchant
-// portal, or any non-admin route), we must invalidate the admin session so that
-// returning to /admin later requires a fresh login.
 if (!isAdminRoute) {
   try {
-    // Clear admin access token from sessionStorage
     const adminToken = window.sessionStorage.getItem("token");
     window.sessionStorage.removeItem("token");
-    // Also clear any legacy localStorage token
     window.localStorage.removeItem("token");
 
-    // Call server-side logout to clear the httpOnly refresh cookie.
-    // Use sendBeacon for reliability during navigation, with fetch as fallback.
     if (adminToken) {
       const logoutUrl = "/api/auth/logout";
       const beaconSent =
@@ -76,8 +70,12 @@ if (isMerchantRoute) {
     </Suspense>
   );
 } else {
-  // Admin Panel (all other routes including /admin/*)
-  appElement = <App />;
+  // Admin Panel — wrapped in BrowserRouter for react-router-dom
+  appElement = (
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

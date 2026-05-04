@@ -1,13 +1,13 @@
 /**
- * Invoice HTML Template Generator
+ * Invoice HTML Template Generator (v2)
  * 
  * Generates a professional A4 HTML invoice for server-side PDF rendering via Puppeteer.
- * Features:
- * - RTL Arabic layout with correct text rendering
- * - English dates and numbers
- * - Professional navy/red brand colors (no bright/informal colors)
- * - Sections: header, trader info, shipment details, financial, transport, notes, signature
- * - Works for both trader and admin copies
+ * Design based on user specifications:
+ * - Section 1: Invoice No | Driver Name | Vehicle Plate | Goods Type
+ * - Section 2 (Table): Invoice Notes | Invoice Details | Currency (smart) | Amount
+ * - Weight/Meters shown only if available
+ * - Export timestamp at the bottom
+ * - RTL Arabic layout, English dates, professional navy/red colors
  */
 
 import { fmtNum, fmtUSD, fmtIQD } from "./formatNumber";
@@ -25,16 +25,13 @@ import { sectionConfig } from "../features/navigation/sectionCatalog";
 
 /** Resolve the human-readable port/section name from sectionKey */
 function resolvePortDisplayName(sectionKey, transaction) {
-  // 1. Try sectionConfig title (e.g. "منفذ السعودية")
   if (sectionKey) {
     const cfg = sectionConfig[sectionKey];
     if (cfg?.title) return cfg.title;
   }
-  // 2. Fallback to transaction.PortName if enriched by server
   if (transaction.PortName && transaction.PortName !== transaction.PortID) {
     return transaction.PortName;
   }
-  // 3. Last resort: return PortID
   return transaction.PortID || "-";
 }
 
@@ -64,155 +61,57 @@ function formatDateEnglish(value) {
   }
 }
 
+function formatFullTimestamp() {
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const time = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(now);
+  return `${date} ${time}`;
+}
+
 function formatMoney(value, currency = "USD") {
-  if (value === null || value === undefined || value === "" || Number(value) === 0) return "-";
+  if (value === null || value === undefined || value === "" || Number(value) === 0) return "";
   const num = Number(value);
-  if (isNaN(num)) return "-";
-  if (currency === "IQD") return `${fmtIQD(num)} د.ع`;
-  return `$${fmtUSD(num)}`;
+  if (isNaN(num)) return "";
+  if (currency === "IQD") return fmtIQD(num);
+  return fmtUSD(num);
 }
 
 function formatNumber(value) {
-  if (value === null || value === undefined || value === "" || Number(value) === 0) return "-";
+  if (value === null || value === undefined || value === "" || Number(value) === 0) return "";
   return fmtNum(value);
 }
 
 /**
- * Build all invoice field sections from a transaction object
+ * Determine the smart currency label based on the transaction's primary currency
  */
-function buildInvoiceSections(transaction = {}, sectionKey) {
-  const typeId = Number(transaction.TransTypeID || 1);
-  const transTypeLabel = getTransactionTypeLabel(
-    transaction.TransTypeName,
-    transaction.TransTypeID,
-    { sectionKey, recordType: transaction.RecordType }
-  );
+function getSmartCurrencyLabel(transaction) {
+  const curr = (transaction.CurrencyName || transaction.Currency || "").toUpperCase();
+  if (curr.includes("IQD") || curr.includes("دينار")) return "دينار";
+  if (curr.includes("USD") || curr.includes("دولار")) return "دولار";
+  // Fallback: check which amount is filled
+  if (Number(transaction.AmountIQD) > 0 && !Number(transaction.AmountUSD)) return "دينار";
+  if (Number(transaction.AmountUSD) > 0 && !Number(transaction.AmountIQD)) return "دولار";
+  return "دولار";
+}
 
-  const sections = [];
-
-  // Section 1: Basic Info
-  sections.push({
-    title: "المعلومات الأساسية",
-    titleEn: "Basic Information",
-    icon: "info",
-    fields: [
-      { label: "اسم التاجر", labelEn: "Trader Name", value: transaction.AccountName || transaction.TraderName || "-" },
-      { label: "نوع الحركة", labelEn: "Transaction Type", value: transTypeLabel },
-      { label: "العملة", labelEn: "Currency", value: getCurrencyLabel(transaction.CurrencyName || transaction.Currency) },
-      { label: "المنفذ", labelEn: "Port", value: resolvePortDisplayName(sectionKey, transaction) },
-    ].filter(f => f.value && f.value !== "-"),
-  });
-
-  // Section 2: Shipment Details (only for invoices, not payments)
-  if (typeId === 1) {
-    const shipmentFields = [
-      { label: "نوع البضاعة", labelEn: "Goods Type", value: transaction.GoodTypeName || transaction.GoodType || "" },
-      { label: "الوزن", labelEn: "Weight", value: formatNumber(transaction.Weight), suffix: "طن" },
-      { label: "الأمتار", labelEn: "Meters", value: formatNumber(transaction.Meters), suffix: "م" },
-      { label: "الكمية", labelEn: "Quantity", value: formatNumber(transaction.Qty) },
-      { label: "اسم السائق", labelEn: "Driver", value: transaction.DriverName || "" },
-      { label: "رقم المركبة", labelEn: "Vehicle", value: transaction.PlateNumber || transaction.VehiclePlate || "" },
-      { label: "المحافظة", labelEn: "Governorate", value: transaction.GovName || transaction.Governorate || "" },
-      { label: "الشركة", labelEn: "Company", value: transaction.CompanyName || "" },
-    ].filter(f => f.value && f.value !== "-" && f.value !== "");
-
-    if (shipmentFields.length > 0) {
-      sections.push({
-        title: "تفاصيل الشحنة",
-        titleEn: "Shipment Details",
-        icon: "truck",
-        fields: shipmentFields,
-      });
-    }
+/**
+ * Get the primary amount based on smart currency detection
+ */
+function getSmartAmount(transaction) {
+  const curr = getSmartCurrencyLabel(transaction);
+  if (curr === "دينار") {
+    return formatMoney(transaction.AmountIQD, "IQD") || formatMoney(transaction.CostIQD, "IQD") || "-";
   }
-
-  // Section 3: Financial Details
-  const financialFields = [];
-  
-  if (typeId === 1) {
-    // Invoice: show cost and amount
-    financialFields.push(
-      { label: "التكلفة بالدولار", labelEn: "Cost (USD)", value: formatMoney(transaction.CostUSD, "USD"), highlight: false },
-      { label: "المبلغ بالدولار", labelEn: "Amount (USD)", value: formatMoney(transaction.AmountUSD, "USD"), highlight: true },
-      { label: "التكلفة بالدينار", labelEn: "Cost (IQD)", value: formatMoney(transaction.CostIQD, "IQD"), highlight: false },
-      { label: "المبلغ بالدينار", labelEn: "Amount (IQD)", value: formatMoney(transaction.AmountIQD, "IQD"), highlight: true },
-    );
-  } else {
-    // Payment/Debit: show amounts only
-    financialFields.push(
-      { label: "المبلغ بالدولار", labelEn: "Amount (USD)", value: formatMoney(transaction.AmountUSD, "USD"), highlight: true },
-      { label: "المبلغ بالدينار", labelEn: "Amount (IQD)", value: formatMoney(transaction.AmountIQD, "IQD"), highlight: true },
-    );
-  }
-
-  const activeFinancialFields = financialFields.filter(f => f.value && f.value !== "-");
-  if (activeFinancialFields.length > 0) {
-    sections.push({
-      title: "التفاصيل المالية",
-      titleEn: "Financial Details",
-      icon: "money",
-      fields: activeFinancialFields,
-    });
-  }
-
-  // Section 4: Additional Charges (fees, customs, transport)
-  if (typeId === 1) {
-    const chargeFields = [
-      { label: "الرسوم بالدولار", labelEn: "Fee (USD)", value: formatMoney(transaction.FeeUSD, "USD") },
-      { label: "الجمارك السورية", labelEn: "Syrian Customs", value: formatMoney(transaction.SyrCus, "IQD") },
-      { label: "عدد السيارات", labelEn: "Car Qty", value: formatNumber(transaction.CarQty) },
-      { label: "سعر النقل", labelEn: "Transport Price", value: formatMoney(transaction.TransPrice, "IQD") },
-      { label: "الناقل", labelEn: "Carrier", value: transaction.CarrierName || "" },
-    ].filter(f => f.value && f.value !== "-" && f.value !== "");
-
-    if (chargeFields.length > 0) {
-      sections.push({
-        title: "الرسوم والنقل",
-        titleEn: "Fees & Transport",
-        icon: "fees",
-        fields: chargeFields,
-      });
-    }
-  }
-
-  // Section 5: Notes (Profit section intentionally excluded from printed invoices)
-  const noteFields = [
-    { label: "ملاحظة التاجر", labelEn: "Trader Note", value: transaction.TraderNote || "" },
-    { label: "ملاحظات عامة", labelEn: "General Notes", value: transaction.Notes || "" },
-  ].filter(f => f.value && f.value !== "-" && f.value !== "");
-
-  if (noteFields.length > 0) {
-    sections.push({
-      title: "الملاحظات",
-      titleEn: "Notes",
-      icon: "notes",
-      fields: noteFields,
-      isNotes: true,
-    });
-  }
-
-  // Section 7: Custom Fields
-  const customFieldEntries = Object.entries(transaction.CustomFieldValues || {});
-  if (customFieldEntries.length > 0) {
-    const customFields = customFieldEntries
-      .filter(([, v]) => v !== null && v !== undefined && v !== "")
-      .map(([key, value]) => ({
-        label: key,
-        labelEn: key,
-        value: typeof value === "number" ? fmtNum(value) : String(value),
-      }));
-
-    if (customFields.length > 0) {
-      sections.push({
-        title: "حقول إضافية",
-        titleEn: "Custom Fields",
-        icon: "custom",
-        fields: customFields,
-      });
-    }
-  }
-
-  return sections;
+  return formatMoney(transaction.AmountUSD, "USD") || formatMoney(transaction.CostUSD, "USD") || "-";
 }
 
 /**
@@ -241,7 +140,7 @@ async function imageToBase64(url) {
 }
 
 /**
- * Generate the full invoice HTML string
+ * Generate the full invoice HTML string (v2 - new design)
  */
 export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId } = {}) {
   const brand = resolveBrandAssets({ sectionKey });
@@ -263,57 +162,81 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   );
   const refNo = transaction.RefNo || `REF-${transaction.TransID}`;
   const transDate = formatDateEnglish(transaction.TransDate);
-  const printDate = formatEnglishLongDate(new Date());
-  const sections = buildInvoiceSections(transaction, sectionKey);
+  const exportTimestamp = formatFullTimestamp();
+  const portName = resolvePortDisplayName(sectionKey, transaction);
+  const smartCurrency = getSmartCurrencyLabel(transaction);
+  const smartAmount = getSmartAmount(transaction);
 
   const navy = TAY_ALRAWI_BRAND_COLORS.headerNavy;
   const red = TAY_ALRAWI_BRAND_COLORS.accentRed;
 
-  const renderFieldCell = (field) => {
-    const val = escapeHtml(field.value);
-    const suffix = field.suffix ? ` <span class="suffix">${escapeHtml(field.suffix)}</span>` : "";
-    const highlightClass = field.highlight ? ' class="highlight"' : '';
-    return `
-      <div class="field-cell">
-        <div class="field-label">${escapeHtml(field.label)}</div>
-        <div class="field-value"${highlightClass}><span dir="ltr">${val}</span>${suffix}</div>
-      </div>
-    `;
-  };
+  // Section 1 fields
+  const driverName = transaction.DriverName || "-";
+  const vehiclePlate = transaction.PlateNumber || transaction.VehiclePlate || "-";
+  const goodType = transaction.GoodTypeName || transaction.GoodType || "-";
+  const accountName = transaction.AccountName || transaction.TraderName || "-";
 
-  const renderNoteField = (field) => `
-    <div class="note-block">
-      <div class="note-label">${escapeHtml(field.label)}</div>
-      <div class="note-value">${escapeHtml(field.value)}</div>
-    </div>
-  `;
+  // Weight/Meters (show only if available)
+  const weight = formatNumber(transaction.Weight);
+  const meters = formatNumber(transaction.Meters);
+  const qty = formatNumber(transaction.Qty);
 
-  const renderSection = (section) => {
-    const iconClass = section.icon || "info";
-    const fieldsHtml = section.isNotes
-      ? section.fields.map(renderNoteField).join("")
-      : `<div class="fields-grid">${section.fields.map(renderFieldCell).join("")}</div>`;
+  // Invoice-specific fields (new)
+  const invoiceNotes = transaction.InvoiceNotes || "";
+  const invoiceDetails = transaction.InvoiceDetails || "";
 
-    return `
-      <div class="invoice-section section-${iconClass}">
-        <div class="section-header">
-          <span class="section-title">${escapeHtml(section.title)}</span>
-          <span class="section-title-en">${escapeHtml(section.titleEn)}</span>
-        </div>
-        <div class="section-body">
-          ${fieldsHtml}
-        </div>
-      </div>
-    `;
-  };
+  // Financial details for table rows
+  const tableRows = [];
+  
+  // Main amount row
+  tableRows.push({
+    notes: invoiceNotes,
+    details: invoiceDetails,
+    currency: smartCurrency,
+    amount: smartAmount,
+  });
+
+  // Additional financial rows (if both currencies have values)
+  const hasUSD = Number(transaction.AmountUSD) > 0 || Number(transaction.CostUSD) > 0;
+  const hasIQD = Number(transaction.AmountIQD) > 0 || Number(transaction.CostIQD) > 0;
+  
+  if (hasUSD && hasIQD) {
+    // Show both currencies
+    tableRows.length = 0; // Clear and rebuild
+    tableRows.push({
+      notes: invoiceNotes,
+      details: invoiceDetails,
+      currency: "دولار",
+      amount: formatMoney(transaction.AmountUSD || transaction.CostUSD, "USD"),
+    });
+    tableRows.push({
+      notes: "",
+      details: "",
+      currency: "دينار",
+      amount: formatMoney(transaction.AmountIQD || transaction.CostIQD, "IQD"),
+    });
+  }
+
+  // Additional charges rows
+  const syrCus = formatMoney(transaction.SyrCus, "IQD");
+  const transPrice = formatMoney(transaction.TransPrice, "IQD");
+  const feeUsd = formatMoney(transaction.FeeUSD, "USD");
+
+  if (syrCus) {
+    tableRows.push({ notes: "الكمرك السوري", details: "", currency: "دينار", amount: syrCus });
+  }
+  if (transPrice) {
+    tableRows.push({ notes: "سعر النقل", details: "", currency: "دينار", amount: transPrice });
+  }
+  if (feeUsd) {
+    tableRows.push({ notes: "الرسوم", details: "", currency: "دولار", amount: feeUsd });
+  }
 
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <style>
-  /* System fonts only — no external requests to avoid Puppeteer timeout */
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
   @page {
@@ -326,7 +249,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
     direction: rtl;
     color: #1f2937;
     background: #ffffff;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.5;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -367,7 +290,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   }
   .title-bar .doc-meta {
     display: flex;
-    gap: 24px;
+    gap: 20px;
     font-size: 11px;
     font-weight: 600;
     direction: ltr;
@@ -380,119 +303,148 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   }
   .title-bar .meta-label {
     color: rgba(255,255,255,0.7);
-    font-family: 'Cairo', sans-serif;
     direction: rtl;
   }
 
   /* ─── Content ─── */
   .content {
     flex: 1;
-    padding: 12px 20px;
+    padding: 16px 24px;
   }
 
-  /* ─── Section ─── */
-  .invoice-section {
-    margin-bottom: 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
+  /* ─── Section 1: Info Cards ─── */
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
   }
-  .section-header {
+  .info-card {
     background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 7px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .info-card .card-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .info-card .card-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: ${navy};
+  }
+
+  /* ─── Account Name ─── */
+  .account-bar {
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 18px;
+    margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .section-title {
-    font-size: 12px;
-    font-weight: 800;
-    color: ${navy};
-  }
-  .section-title-en {
-    font-size: 9px;
-    font-weight: 600;
-    color: #94a3b8;
-    font-family: 'Inter', sans-serif;
-    direction: ltr;
-  }
-  .section-body {
-    padding: 10px 14px;
-  }
-
-  /* Section color accents */
-  .section-money .section-header { border-bottom-color: ${red}22; background: #fef7f7; }
-  .section-money .section-title { color: ${red}; }
-  .section-fees .section-header { border-bottom-color: #f59e0b22; background: #fffbeb; }
-  .section-fees .section-title { color: #b45309; }
-  /* Profit section removed from printed invoices */
-  .section-notes .section-header { border-bottom-color: #6366f122; background: #f5f3ff; }
-  .section-notes .section-title { color: #4338ca; }
-
-  /* ─── Fields Grid ─── */
-  .fields-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .field-cell {
-    background: #f8fafc;
-    border: 1px solid #e8ecf1;
-    border-radius: 6px;
-    padding: 7px 12px;
-    min-height: 44px;
-  }
-  .field-label {
-    font-size: 9px;
+  .account-bar .account-label {
+    font-size: 10px;
     font-weight: 700;
     color: #64748b;
-    margin-bottom: 2px;
   }
-  .field-value {
-    font-size: 13px;
-    font-weight: 700;
-    color: ${navy};
-    direction: ltr;
-    text-align: right;
-  }
-  .field-value.highlight {
-    color: ${red};
-    font-size: 14px;
+  .account-bar .account-value {
+    font-size: 15px;
     font-weight: 800;
+    color: ${navy};
   }
-  .field-value .suffix {
-    font-size: 9px;
-    color: #94a3b8;
-    font-weight: 600;
+  .account-bar .port-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: ${red};
   }
 
-  /* ─── Notes ─── */
-  .note-block {
-    background: #f8fafc;
-    border: 1px solid #e8ecf1;
+  /* ─── Weight/Meters Bar ─── */
+  .measures-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .measure-chip {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
     border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 6px;
-  }
-  .note-block:last-child { margin-bottom: 0; }
-  .note-label {
-    font-size: 9px;
-    font-weight: 700;
-    color: #4338ca;
-    margin-bottom: 3px;
-  }
-  .note-value {
+    padding: 6px 14px;
     font-size: 11px;
+    font-weight: 700;
+    color: #1e40af;
+  }
+  .measure-chip .measure-label {
+    color: #64748b;
     font-weight: 600;
-    color: #374151;
-    line-height: 1.6;
-    direction: rtl;
+    margin-left: 6px;
+  }
+
+  /* ─── Section 2: Main Table ─── */
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    border: 1.5px solid ${navy}33;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .invoice-table thead {
+    background: ${navy};
+    color: #ffffff;
+  }
+  .invoice-table th {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+    border-left: 1px solid rgba(255,255,255,0.15);
+  }
+  .invoice-table th:last-child {
+    border-left: none;
+  }
+  .invoice-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .invoice-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .invoice-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .invoice-table td {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    border-left: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  .invoice-table td:last-child {
+    border-left: none;
+  }
+  .invoice-table td.amount-cell {
+    font-weight: 800;
+    color: ${navy};
+    font-size: 13px;
+    direction: ltr;
+    text-align: center;
+  }
+  .invoice-table td.currency-cell {
+    text-align: center;
+    font-weight: 700;
+    color: ${red};
   }
 
   /* ─── Signature Area ─── */
   .signature-area {
-    margin-top: 16px;
+    margin-top: 24px;
     padding: 12px 20px;
     display: flex;
     justify-content: space-between;
@@ -529,11 +481,14 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
   }
   .print-meta {
     text-align: center;
-    padding: 4px 0;
-    font-size: 8px;
-    color: #94a3b8;
-    font-family: 'Inter', sans-serif;
+    padding: 6px 0;
+    font-size: 9px;
+    color: #64748b;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     direction: ltr;
+    font-weight: 600;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
   }
 
   /* ─── Watermark ─── */
@@ -577,7 +532,66 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
 
   <!-- Content -->
   <div class="content">
-    ${sections.map(renderSection).join("")}
+    
+    <!-- Account & Port -->
+    <div class="account-bar">
+      <div>
+        <span class="account-label">اسم الحساب: </span>
+        <span class="account-value">${escapeHtml(accountName)}</span>
+      </div>
+      <div class="port-value">${escapeHtml(portName)}</div>
+    </div>
+
+    <!-- Section 1: Info Cards -->
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="card-label">رقم الفاتورة</div>
+        <div class="card-value">${escapeHtml(refNo)}</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">اسم السائق</div>
+        <div class="card-value">${escapeHtml(driverName)}</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">رقم السيارة</div>
+        <div class="card-value">${escapeHtml(vehiclePlate)}</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">نوع البضاعة</div>
+        <div class="card-value">${escapeHtml(goodType)}</div>
+      </div>
+    </div>
+
+    <!-- Weight/Meters (only if available) -->
+    ${(weight || meters || qty) ? `
+    <div class="measures-bar">
+      ${weight ? `<div class="measure-chip"><span class="measure-label">الوزن:</span> ${escapeHtml(weight)} طن</div>` : ""}
+      ${meters ? `<div class="measure-chip"><span class="measure-label">الأمتار:</span> ${escapeHtml(meters)} م</div>` : ""}
+      ${qty ? `<div class="measure-chip"><span class="measure-label">العدد:</span> ${escapeHtml(qty)}</div>` : ""}
+    </div>
+    ` : ""}
+
+    <!-- Section 2: Main Invoice Table -->
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th style="width:30%">الملاحظات</th>
+          <th style="width:30%">التفاصيل</th>
+          <th style="width:15%">العملة</th>
+          <th style="width:25%">المبلغ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows.map(row => `
+        <tr>
+          <td>${escapeHtml(row.notes)}</td>
+          <td>${escapeHtml(row.details)}</td>
+          <td class="currency-cell">${escapeHtml(row.currency)}</td>
+          <td class="amount-cell">${escapeHtml(row.amount)}</td>
+        </tr>
+        `).join("")}
+      </tbody>
+    </table>
 
     <!-- Signature Area -->
     <div class="signature-area">
@@ -601,7 +615,7 @@ export async function generateInvoiceHtml(transaction = {}, { sectionKey, portId
       </div>
     `}
   </div>
-  <div class="print-meta">Printed on ${escapeHtml(printDate)} | Invoice #${escapeHtml(refNo)}</div>
+  <div class="print-meta">Exported: ${escapeHtml(exportTimestamp)} | Invoice #${escapeHtml(refNo)} | ${escapeHtml(portName)}</div>
 </div>
 </body>
 </html>`;

@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useMemo } from "react";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import AppSidebar from "./components/AppSidebar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -7,7 +8,6 @@ import { AppShellProvider, useAppShell } from "./contexts/AppShellContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import {
   ADMIN_ONLY_PAGES,
-  createMainPageEntry,
   resolveMainPageNavigation,
   resolveSectionActionNavigation,
 } from "./features/navigation/stackNavigation";
@@ -15,6 +15,7 @@ import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";
 import SectionPage from "./pages/SectionPage";
 
+// ─── Lazy-loaded page components ─────────────────────────────────────────────
 const pageComponents = {
   debts: lazy(() => import("./pages/DebtsPage")),
   reports: lazy(() => import("./pages/ReportsPage")),
@@ -32,6 +33,7 @@ const pageComponents = {
   "port-work": lazy(() => import("./pages/PortPage")),
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function renderLazyPage(pageKey, node) {
   return (
     <ErrorBoundary key={pageKey}>
@@ -40,31 +42,142 @@ function renderLazyPage(pageKey, node) {
   );
 }
 
-function resolveActiveSidebarItem(current) {
-  if (!current) return "main";
-  if (current.page === "main") return "main";
-  if (current.page === "profile") return "profile";
-  if (current.sectionId) return current.sectionId;
-  return current.page;
+/** Build a port URL with search params */
+function buildPortUrl(target) {
+  const params = new URLSearchParams();
+  if (target.portName) params.set("portName", target.portName);
+  if (target.accountType) params.set("accountType", String(target.accountType));
+  if (target.view) params.set("view", target.view);
+  if (target.formType) params.set("formType", String(target.formType));
+  const qs = params.toString();
+  return `/admin/port/${target.portId}${qs ? `?${qs}` : ""}`;
 }
 
-function AppShellFrame({
-  activeItemId,
-  onSelectItem,
-  onGoHome,
-  onProfileClick,
-  children,
-}) {
+/** Navigate to a resolved target */
+function navigateToTarget(nav, target) {
+  if (!target) return;
+  if (target.page === "section") {
+    nav(`/admin/section/${target.sectionId || ""}`);
+  } else if (target.page === "port-work") {
+    nav(buildPortUrl(target));
+  } else {
+    nav(`/admin/${target.page}`);
+  }
+}
+
+/** Derive the active sidebar item from the current URL path */
+function resolveActiveSidebarItem(pathname) {
+  if (pathname === "/admin" || pathname === "/admin/") return "main";
+
+  const sectionMatch = pathname.match(/^\/admin\/section\/([^/]+)/);
+  if (sectionMatch) return sectionMatch[1];
+
+  const portMatch = pathname.match(/^\/admin\/port\/([^/]+)/);
+  if (portMatch) return portMatch[1];
+
+  if (pathname.startsWith("/admin/profile")) return "profile";
+
+  const pageKey = pathname.replace(/^\/admin\//, "").split("/")[0];
+  return pageKey || "main";
+}
+
+// ─── Guarded lazy page wrapper ───────────────────────────────────────────────
+function LazyPage({ pageKey }) {
+  const { can } = useAuth();
+  const navigate = useNavigate();
+
+  const PageComponent = pageComponents[pageKey];
+  if (!PageComponent) return <Navigate to="/admin" replace />;
+  if (ADMIN_ONLY_PAGES.has(pageKey) && !can.manageUsers) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return renderLazyPage(
+    pageKey,
+    <PageComponent onBack={() => navigate(-1)} />
+  );
+}
+
+// ─── Port page wrapper (extracts params from URL) ────────────────────────────
+function PortPageRoute() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+
+  const portId = location.pathname.split("/")[3] || "";
+  const portName = searchParams.get("portName") || "";
+  const accountType = Number(searchParams.get("accountType")) || undefined;
+  const initialView = searchParams.get("view") || "list";
+  const initialFormType = Number(searchParams.get("formType")) || undefined;
+
+  const PortPage = pageComponents["port-work"];
+
+  return renderLazyPage(
+    `port-work:${portId}:${initialView}:${initialFormType || ""}`,
+    <PortPage
+      portId={portId}
+      portName={portName}
+      accountType={accountType}
+      initialView={initialView}
+      initialFormType={initialFormType}
+      onBack={() => navigate(-1)}
+      onHome={() => navigate("/admin")}
+    />
+  );
+}
+
+// ─── Section page wrapper (extracts sectionId from URL) ──────────────────────
+function SectionPageRoute() {
+  const navigate = useNavigate();
+  const sectionId = useLocation().pathname.split("/")[3] || "";
+
+  return (
+    <SectionPage
+      sectionId={sectionId}
+      onBack={() => navigate(-1)}
+      onAction={(secId, action) => {
+        const target = resolveSectionActionNavigation(secId, action);
+        navigateToTarget(navigate, target);
+      }}
+    />
+  );
+}
+
+// ─── App Shell Frame (sidebar + content area) ────────────────────────────────
+function AppShellFrame({ children }) {
   const { isDesktop, sidebarCollapsed } = useAppShell();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { can } = useAuth();
+
+  const activeItemId = useMemo(
+    () => resolveActiveSidebarItem(location.pathname),
+    [location.pathname]
+  );
+
   const contentMarginRight = isDesktop ? (sidebarCollapsed ? 88 : 288) : 0;
+
+  const handleSidebarSelect = (sectionId) => {
+    const target = resolveMainPageNavigation(sectionId);
+    navigateToTarget(navigate, target);
+  };
+
+  const handleGoHome = () => navigate("/admin");
+
+  const handleProfileClick = () => {
+    navigate(can.manageUsers ? "/admin/users" : "/admin/profile");
+  };
 
   return (
     <>
       <AppSidebar
         activeItemId={activeItemId}
-        onSelectItem={onSelectItem}
-        onGoHome={onGoHome}
-        onProfileClick={onProfileClick}
+        onSelectItem={handleSidebarSelect}
+        onGoHome={handleGoHome}
+        onProfileClick={handleProfileClick}
       />
       <div
         className="min-w-0 transition-[margin] duration-300 ease-out"
@@ -76,57 +189,21 @@ function AppShellFrame({
   );
 }
 
+// ─── Main Page wrapper ───────────────────────────────────────────────────────
+function MainPageRoute() {
+  const navigate = useNavigate();
+
+  const handleNavigate = (sectionId) => {
+    const target = resolveMainPageNavigation(sectionId);
+    navigateToTarget(navigate, target);
+  };
+
+  return <MainPage onNavigate={handleNavigate} />;
+}
+
+// ─── Main App Content ────────────────────────────────────────────────────────
 function AppContent() {
-  const { user, loading, can } = useAuth();
-  const [navStack, setNavStack] = useState([createMainPageEntry()]);
-
-  const navigate = (page, data = {}) => {
-    setNavStack(currentStack => [...currentStack, { page, ...data }]);
-  };
-
-  const goBack = () => {
-    setNavStack(currentStack =>
-      currentStack.length > 1 ? currentStack.slice(0, -1) : currentStack
-    );
-  };
-
-  const goHome = () => {
-    setNavStack([createMainPageEntry()]);
-  };
-
-  const handleMainPageNavigate = sectionId => {
-    const target = resolveMainPageNavigation(sectionId);
-    if (target) {
-      navigate(target.page, target);
-    }
-  };
-
-  const handleSectionAction = (sectionId, action) => {
-    const target = resolveSectionActionNavigation(sectionId, action);
-    if (target) {
-      navigate(target.page, target);
-    }
-  };
-
-  const handleSidebarSelect = sectionId => {
-    const target = resolveMainPageNavigation(sectionId);
-    if (!target) {
-      return;
-    }
-
-    setNavStack([createMainPageEntry(), { ...target }]);
-  };
-
-  const handleProfileClick = () => {
-    if (can.manageUsers) {
-      setNavStack([createMainPageEntry(), { page: "users" }]);
-      return;
-    }
-
-    setNavStack([createMainPageEntry(), { page: "profile" }]);
-  };
-
-  const renderMainPage = () => <MainPage onNavigate={handleMainPageNavigate} />;
+  const { user, loading } = useAuth();
 
   if (loading) {
     return <LoadingSpinner fullScreen label="جاري التحميل..." />;
@@ -136,67 +213,38 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  const current = navStack[navStack.length - 1];
-  const activeItemId = resolveActiveSidebarItem(current);
-
-  const wrapWithShell = node => (
+  return (
     <AppShellProvider>
-      <AppShellFrame
-        activeItemId={activeItemId}
-        onSelectItem={handleSidebarSelect}
-        onGoHome={goHome}
-        onProfileClick={handleProfileClick}
-      >
-        {node}
+      <AppShellFrame>
+        <Routes>
+          <Route path="/admin" element={<MainPageRoute />} />
+          <Route path="/admin/section/:sectionId" element={<SectionPageRoute />} />
+          <Route path="/admin/port/:portId" element={<PortPageRoute />} />
+
+          {/* Direct page routes */}
+          <Route path="/admin/debts" element={<LazyPage pageKey="debts" />} />
+          <Route path="/admin/reports" element={<LazyPage pageKey="reports" />} />
+          <Route path="/admin/accounts" element={<LazyPage pageKey="accounts" />} />
+          <Route path="/admin/profile" element={<LazyPage pageKey="profile" />} />
+          <Route path="/admin/users" element={<LazyPage pageKey="users" />} />
+          <Route path="/admin/merchant-management" element={<LazyPage pageKey="merchant-management" />} />
+          <Route path="/admin/backups" element={<LazyPage pageKey="backups" />} />
+          <Route path="/admin/trial-balance" element={<LazyPage pageKey="trial-balance" />} />
+          <Route path="/admin/payment-matching" element={<LazyPage pageKey="payment-matching" />} />
+          <Route path="/admin/field-management" element={<LazyPage pageKey="field-management" />} />
+          <Route path="/admin/expenses" element={<LazyPage pageKey="expenses" />} />
+          <Route path="/admin/defaults-management" element={<LazyPage pageKey="defaults-management" />} />
+          <Route path="/admin/audit-logs" element={<LazyPage pageKey="audit-logs" />} />
+          {/* Fallback */}
+          <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
       </AppShellFrame>
     </AppShellProvider>
   );
-
-  let pageNode = renderMainPage();
-
-  if (current.page === "main") {
-    pageNode = renderMainPage();
-  } else if (current.page === "section") {
-    pageNode = (
-      <SectionPage
-        sectionId={current.sectionId}
-        onBack={goBack}
-        onAction={handleSectionAction}
-      />
-    );
-  } else if (current.page === "port-work") {
-    const PortPage = pageComponents["port-work"];
-
-    pageNode = renderLazyPage(
-      `port-work:${current.portId || ""}:${current.view || ""}:${current.formType || ""}`,
-      <PortPage
-        portId={current.portId}
-        portName={current.portName}
-        accountType={current.accountType}
-        initialView={current.view}
-        initialFormType={current.formType}
-        onBack={goBack}
-        onHome={goHome}
-      />
-    );
-  } else {
-    const PageComponent = pageComponents[current.page];
-
-    if (!PageComponent) {
-      pageNode = renderMainPage();
-    } else if (ADMIN_ONLY_PAGES.has(current.page) && !can.manageUsers) {
-      pageNode = renderMainPage();
-    } else {
-      pageNode = renderLazyPage(
-        current.page,
-        <PageComponent onBack={goBack} />
-      );
-    }
-  }
-
-  return wrapWithShell(pageNode);
 }
 
+// ─── Root App ────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <ThemeProvider>

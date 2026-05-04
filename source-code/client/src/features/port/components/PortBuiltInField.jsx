@@ -613,6 +613,34 @@ export default function PortBuiltInField({
         </div>
       );
 
+    case "invoice_notes":
+      return (
+        <div key={field.key}>
+          <label className={LABEL_CLASS}>{label}</label>
+          <textarea
+            value={form.InvoiceNotes || ""}
+            onChange={event => setField("InvoiceNotes", event.target.value)}
+            className={TEXTAREA_CLASS}
+            rows="3"
+            placeholder="ملاحظات تظهر فقط في الفاتورة المطبوعة..."
+          />
+        </div>
+      );
+
+    case "invoice_details":
+      return (
+        <div key={field.key}>
+          <label className={LABEL_CLASS}>{label}</label>
+          <textarea
+            value={form.InvoiceDetails || ""}
+            onChange={event => setField("InvoiceDetails", event.target.value)}
+            className={TEXTAREA_CLASS}
+            rows="3"
+            placeholder="تفاصيل تظهر فقط في الفاتورة المطبوعة..."
+          />
+        </div>
+      );
+
     default:
       return null;
   }

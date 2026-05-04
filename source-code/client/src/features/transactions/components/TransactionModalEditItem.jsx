@@ -536,6 +536,30 @@ export default function TransactionModalEditItem({
           />
         </FieldShell>
       );
+    case "invoice_notes":
+      return (
+        <FieldShell key={fieldKey} label={label}>
+          <textarea
+            value={editForm.InvoiceNotes || ""}
+            onChange={event => setField("InvoiceNotes", event.target.value)}
+            className="input-field min-h-[110px] resize-y"
+            rows="3"
+            placeholder="ملاحظات تظهر فقط في الفاتورة المطبوعة..."
+          />
+        </FieldShell>
+      );
+    case "invoice_details":
+      return (
+        <FieldShell key={fieldKey} label={label}>
+          <textarea
+            value={editForm.InvoiceDetails || ""}
+            onChange={event => setField("InvoiceDetails", event.target.value)}
+            className="input-field min-h-[110px] resize-y"
+            rows="3"
+            placeholder="تفاصيل تظهر فقط في الفاتورة المطبوعة..."
+          />
+        </FieldShell>
+      );
     default:
       return null;
   }

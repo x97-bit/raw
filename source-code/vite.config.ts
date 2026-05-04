@@ -20,6 +20,20 @@ export default defineConfig({
   build: {
     outDir: path.resolve(projectRoot, "dist/public"),
     emptyOutDir: true,
+    // ── Safe performance optimizations ──
+    target: "es2020",
+    minify: "esbuild",
+    cssMinify: true,
+    sourcemap: false,
+    // Hashed filenames for aggressive browser caching
+    rollupOptions: {
+      output: {
+        chunkFileNames: "assets/js/[name]-[hash].js",
+        entryFileNames: "assets/js/[name]-[hash].js",
+        assetFileNames: "assets/[ext]/[name]-[hash].[ext]",
+      },
+    },
+    chunkSizeWarningLimit: 800,
   },
   server: {
     host: "127.0.0.1",

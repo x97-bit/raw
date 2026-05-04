@@ -168,6 +168,10 @@ export async function buildTransactionCreateInput(
       notes: pickBodyField(body, "notes", "Notes") ?? null,
       traderNote:
         pickBodyField(body, "traderNote", "TraderNote", "trader_note") ?? null,
+      invoiceNotes:
+        pickBodyField(body, "invoiceNotes", "InvoiceNotes", "invoice_notes") ?? null,
+      invoiceDetails:
+        pickBodyField(body, "invoiceDetails", "InvoiceDetails", "invoice_details") ?? null,
       recordType,
       portId: String(pickBodyField(body, "portId", "PortID", "port_id") ?? ""),
       accountType: String(

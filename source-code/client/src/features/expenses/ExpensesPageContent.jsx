@@ -25,6 +25,7 @@ export default function ExpensesPage({ onBack }) {
   const [form, setForm] = useState({});
   const [editId, setEditId] = useState(null);
   const [filterPort, setFilterPort] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const filteredExpenses = useMemo(
     () => filterExpensesByPort(data.expenses, filterPort),
@@ -80,17 +81,24 @@ export default function ExpensesPage({ onBack }) {
   };
 
   const handleSave = async () => {
-    if (editId) {
-      await api(`/expenses/${editId}`, {
-        method: "PUT",
-        body: JSON.stringify(form),
-      });
-    } else {
-      await api("/expenses", { method: "POST", body: JSON.stringify(form) });
-    }
+    setSaving(true);
+    try {
+      if (editId) {
+        await api(`/expenses/${editId}`, {
+          method: "PUT",
+          body: JSON.stringify(form),
+        });
+      } else {
+        await api("/expenses", { method: "POST", body: JSON.stringify(form) });
+      }
 
-    closeForm();
-    await load();
+      closeForm();
+      await load();
+    } catch (error) {
+      console.error("Error saving expense:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async id => {
@@ -169,6 +177,7 @@ export default function ExpensesPage({ onBack }) {
           accounts={accounts}
           form={form}
           editId={editId}
+          saving={saving}
           onClose={closeForm}
           onSave={handleSave}
           onChange={handleFormChange}

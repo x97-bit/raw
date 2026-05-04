@@ -193,7 +193,10 @@ export default function usePortTransactionForm({
       if (!nextForm.GoodTypeID && nextForm._newGoodType?.trim()) {
         const response = await api("/lookups/goods-types", {
           method: "POST",
-          body: JSON.stringify({ TypeName: nextForm._newGoodType.trim() }),
+          body: JSON.stringify({
+            TypeName: nextForm._newGoodType.trim(),
+            portId: portId,
+          }),
         });
         nextForm.GoodTypeID = response.id;
       }
@@ -217,7 +220,7 @@ export default function usePortTransactionForm({
 
       return nextForm;
     },
-    [api]
+    [api, portId]
   );
 
   const handleSave = useCallback(async () => {

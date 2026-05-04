@@ -7,6 +7,49 @@ import { translations } from "./i18n";
    Colors: White + Navy #1C2B59 + Red #E31E24
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// ─── Flag emoji to SVG mapping (Windows doesn't render emoji flags) ──────────
+const flagMap = {
+  "\u{1f1ee}\u{1f1f6}": "/flags/iq.svg",
+  "\u{1f1f8}\u{1f1fe}": "/flags/sy.svg",
+  "\u{1f1ef}\u{1f1f4}": "/flags/jo.svg",
+  "\u{1f1f8}\u{1f1e6}": "/flags/sa.svg",
+  "\u{1f1e8}\u{1f1f3}": "/flags/cn.svg",
+  "\u{1f1ee}\u{1f1f7}": "/flags/ir.svg",
+};
+function FlagImg({ flag, size = 20, className = "" }) {
+  const src = flagMap[flag] || flag;
+  if (src.startsWith("/")) {
+    return <img src={src} alt="" className={`inline-block rounded-sm ${className}`} style={{ width: size, height: size * 0.75 }} />;
+  }
+  return <span className={className} style={{ fontSize: size }}>{flag}</span>;
+}
+
+// ─── Image Slideshow (auto-rotate) ───────────────────────────────────────────
+function ImageSlideshow({ images, alt = "", className = "", interval = 4000 }) {
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % images.length);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [images.length, interval]);
+  return (
+    <div className={`relative w-full h-full ${className}`}>
+      {images.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt={alt}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            i === current ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Reveal on Scroll ─────────────────────────────────────────────────────────
 function useReveal(threshold = 0.12) {
   const ref = useRef(null);
@@ -73,10 +116,15 @@ function useCounter(target, duration = 2000) {
   useEffect(() => {
     if (!started) return;
     // Extract number from string like "+500", "+10,000", "24/7", "+15"
+    // If target contains "/" (like "24/7"), treat as static text
+    if (target.includes("/")) {
+      setCount(target);
+      return;
+    }
     const numStr = target.replace(/[^0-9]/g, "");
     const num = parseInt(numStr, 10);
     if (isNaN(num) || num === 0) {
-      setCount(target); // non-numeric like "24/7"
+      setCount(target);
       return;
     }
 
@@ -386,7 +434,7 @@ function Hero({ t, lang }) {
   }, []);
 
   return (
-    <section className="relative h-[75vh] min-h-[500px] flex items-center overflow-hidden w-full">
+    <section className="relative h-[60vh] sm:h-[75vh] min-h-[400px] sm:min-h-[500px] flex items-center overflow-hidden w-full">
       {/* Background Image with Parallax + Truck Slide-in */}
       <img
         src="/hero_banner.webp"
@@ -406,23 +454,23 @@ function Hero({ t, lang }) {
       <div className="absolute inset-0 bg-gradient-to-l rtl:bg-gradient-to-r from-[#0a0f1c]/85 via-[#0a0f1c]/60 to-transparent z-[2]" />
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 py-20 w-full">
-        <div className="max-w-[550px] ms-auto text-end rtl:text-start">
+        <div className="max-w-[550px] ms-auto text-end rtl:text-start px-2 sm:px-0">
 
 
 
           {/* Description */}
           <Reveal delay={300}>
-            <p className="text-white/80 text-lg sm:text-xl leading-relaxed font-medium">
+            <p className="text-white/80 text-base sm:text-lg md:text-xl leading-relaxed font-medium">
               {t.hero.description}
             </p>
           </Reveal>
 
           {/* CTAs */}
           <Reveal delay={450}>
-            <div className="mt-10 flex flex-wrap items-center justify-end rtl:justify-start gap-4">
+            <div className="mt-6 sm:mt-10 flex flex-wrap items-center justify-end rtl:justify-start gap-3 sm:gap-4">
               <a
                 href="/merchants"
-                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-white text-[#1C2B59] text-[14px] font-bold hover:bg-white/90 transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                className="group inline-flex items-center gap-2 sm:gap-2.5 px-5 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white text-[#1C2B59] text-[13px] sm:text-[14px] font-bold hover:bg-white/90 transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
               >
                 {t.hero.cta1}
                 <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -431,7 +479,7 @@ function Hero({ t, lang }) {
               </a>
               <a
                 href="#contact"
-                className="inline-flex items-center px-7 py-3.5 rounded-full bg-white/15 border-2 border-white/40 text-white text-[14px] font-semibold hover:bg-white/25 hover:border-white/60 backdrop-blur-md transition-all duration-200"
+                className="inline-flex items-center px-5 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white/15 border-2 border-white/40 text-white text-[13px] sm:text-[14px] font-semibold hover:bg-white/25 hover:border-white/60 backdrop-blur-md transition-all duration-200"
               >
                 {t.hero.cta2}
               </a>
@@ -463,7 +511,7 @@ function StatItem({ value, label, delay }) {
       }}
     >
       <div className="text-center">
-        <div className="text-4xl sm:text-5xl font-black text-[#1C2B59] tabular-nums">{displayValue}</div>
+        <div className="text-3xl sm:text-4xl md:text-5xl font-black text-[#1C2B59] tabular-nums">{displayValue}</div>
         <div className="mt-2 text-[13px] text-gray-400 font-medium">{label}</div>
       </div>
     </div>
@@ -475,7 +523,7 @@ function Stats({ t }) {
   return (
     <section className="py-16 bg-[#f9fafb] border-y border-gray-100">
       <div className="max-w-[1200px] mx-auto px-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
           {t.about.stats.map((s, i) => (
             <StatItem key={i} value={s.value} label={s.label} delay={i * 80} />
           ))}
@@ -624,11 +672,11 @@ function Services({ t }) {
 // ─── Border Ports Section ────────────────────────────────────────────────
 function BorderPorts({ t }) {
   const portImages = [
-    "/port_qaim.jpg",
-    "/port_trebil.jpg",
-    "/port_saudi.jpg",
-    "/port_yarubiya.jpg",
-    "/port_mundhiriya.jpg",
+    ["/port_qaim.jpg", "/port_qaim_2.jpg", "/port_qaim_3.jpg"],
+    ["/port_trebil.jpg", "/port_trebil_2.jpg", "/port_trebil_3.jpg"],
+    ["/port_saudi.jpg", "/port_saudi_2.jpg", "/port_saudi_3.jpg"],
+    ["/port_yarubiya.jpg", "/port_yarubiya_2.jpg", "/port_yarubiya_3.jpg"],
+    ["/port_mundhiriya.jpg", "/port_mundhiriya_2.jpg", "/port_mundhiriya_3.jpg"],
   ];
 
   return (
@@ -651,22 +699,18 @@ function BorderPorts({ t }) {
         </Reveal>
 
         {/* Ports Grid - Top row 3, Bottom row 2 centered */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {t.ports.items.slice(0, 3).map((port, i) => (
             <Reveal key={i} delay={i * 100}>
               <div className="group bg-white rounded-2xl h-full border border-gray-100 hover:border-[#1C2B59]/10 hover:shadow-[0_8px_40px_rgba(28,43,89,0.08)] transition-all duration-300 relative overflow-hidden">
                 {/* Port Image */}
                 <div className="relative h-[180px] overflow-hidden">
-                  <img
-                    src={portImages[i]}
-                    alt={port.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
+                  <ImageSlideshow images={portImages[i]} alt={port.name} interval={4000 + i * 500} />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1C2B59]/60 via-transparent to-transparent" />
                   <div className="absolute bottom-3 start-4 end-4 flex items-center justify-between">
                     <span className="text-white font-bold text-[15px] drop-shadow-lg">{port.name}</span>
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/20">
-                      <span className="text-[14px]">{port.flag}</span>
+                      <FlagImg flag={port.flag} size={22} />
                       <span className="text-[10px] font-medium text-white">{port.country}</span>
                     </div>
                   </div>
@@ -679,22 +723,18 @@ function BorderPorts({ t }) {
             </Reveal>
           ))}
         </div>
-        <div className="grid sm:grid-cols-2 gap-6 max-w-[800px] mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-[800px] mx-auto">
           {t.ports.items.slice(3).map((port, i) => (
             <Reveal key={i + 3} delay={(i + 3) * 100}>
               <div className="group bg-white rounded-2xl h-full border border-gray-100 hover:border-[#1C2B59]/10 hover:shadow-[0_8px_40px_rgba(28,43,89,0.08)] transition-all duration-300 relative overflow-hidden">
                 {/* Port Image */}
                 <div className="relative h-[180px] overflow-hidden">
-                  <img
-                    src={portImages[i + 3]}
-                    alt={port.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
+                  <ImageSlideshow images={portImages[i + 3]} alt={port.name} interval={4000 + (i + 3) * 500} />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1C2B59]/60 via-transparent to-transparent" />
                   <div className="absolute bottom-3 start-4 end-4 flex items-center justify-between">
                     <span className="text-white font-bold text-[15px] drop-shadow-lg">{port.name}</span>
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/20">
-                      <span className="text-[14px]">{port.flag}</span>
+                      <FlagImg flag={port.flag} size={22} />
                       <span className="text-[10px] font-medium text-white">{port.country}</span>
                     </div>
                   </div>
@@ -752,24 +792,24 @@ function LandTransport({ t }) {
         </Reveal>
 
         {/* Routes Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {t.transport.routes.map((route, i) => (
             <Reveal key={i} delay={i * 100}>
-              <div className="group bg-white rounded-2xl p-7 h-full border border-gray-100 hover:border-transparent hover:shadow-[0_8px_40px_rgba(28,43,89,0.08)] transition-all duration-300 text-center">
+              <div className="group bg-white rounded-2xl p-4 sm:p-7 h-full border border-gray-100 hover:border-transparent hover:shadow-[0_8px_40px_rgba(28,43,89,0.08)] transition-all duration-300 text-center">
                 {/* Flag + Icon */}
-                <div className="relative w-16 h-16 mx-auto mb-5">
-                  <div className="w-16 h-16 rounded-full bg-[#1C2B59]/[0.04] group-hover:bg-[#1C2B59] flex items-center justify-center transition-all duration-300">
+                <div className="relative w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-3 sm:mb-5">
+                  <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-[#1C2B59]/[0.04] group-hover:bg-[#1C2B59] flex items-center justify-center transition-all duration-300">
                     <svg className="w-6 h-6 text-[#1C2B59] group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                       {(routeIcons[i] || routeIcons[0]).split(" M").map((d, idx) => (
                         <path key={idx} d={idx === 0 ? d : `M${d}`} />
                       ))}
                     </svg>
                   </div>
-                  <span className="absolute -top-1 -end-1 text-[20px]">{route.flag}</span>
+                  <FlagImg flag={route.flag} size={28} className="absolute -top-1 -end-1" />
                 </div>
 
-                <h3 className="text-[16px] font-bold text-[#1C2B59] mb-2.5">{route.title}</h3>
-                <p className="text-[13px] text-gray-400 leading-[1.8]">{route.description}</p>
+                <h3 className="text-[14px] sm:text-[16px] font-bold text-[#1C2B59] mb-1.5 sm:mb-2.5">{route.title}</h3>
+                <p className="text-[11px] sm:text-[13px] text-gray-400 leading-[1.7] sm:leading-[1.8]">{route.description}</p>
               </div>
             </Reveal>
           ))}
@@ -812,13 +852,13 @@ function Seaport({ t }) {
         </Reveal>
 
         {/* Image + Description */}
-        <div className="grid lg:grid-cols-2 gap-10 items-center mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 items-center mb-10 sm:mb-16">
           <Reveal>
-            <div className="relative rounded-2xl overflow-hidden shadow-[0_16px_48px_rgba(28,43,89,0.12)]">
-              <img
-                src="/port_seaport.jpg"
+            <div className="relative rounded-2xl overflow-hidden shadow-[0_16px_48px_rgba(28,43,89,0.12)] h-[220px] sm:h-[320px]">
+              <ImageSlideshow
+                images={["/port_seaport.jpg", "/port_seaport_2.jpg", "/port_seaport_3.jpg"]}
                 alt={t.seaport.title}
-                className="w-full h-[320px] object-cover"
+                interval={5000}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1C2B59]/40 via-transparent to-transparent" />
             </div>
@@ -829,7 +869,7 @@ function Seaport({ t }) {
                 {t.seaport.description}
               </p>
               {/* Features grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {t.seaport.features.map((feat, i) => (
                   <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 hover:border-[#1C2B59]/10 hover:shadow-[0_4px_16px_rgba(28,43,89,0.06)] transition-all duration-300">
                     <div className="w-9 h-9 rounded-xl bg-[#1C2B59]/[0.06] flex items-center justify-center mb-3">
@@ -864,7 +904,7 @@ function System({ t }) {
   return (
     <section id="system" className="py-24 sm:py-32 bg-white">
       <div className="max-w-[1200px] mx-auto px-6">
-        <div className="bg-gradient-to-br from-[#1C2B59] to-[#0f1a3a] rounded-[32px] p-10 sm:p-16 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1C2B59] to-[#0f1a3a] rounded-[20px] sm:rounded-[32px] p-6 sm:p-10 md:p-16 relative overflow-hidden">
           {/* Background decoration */}
           <div className="absolute top-0 end-0 w-[400px] h-[400px] bg-[#E31E24]/[0.03] rounded-full -translate-y-1/2 translate-x-1/3 rtl:-translate-x-1/3" />
           <div className="absolute bottom-0 start-0 w-[250px] h-[250px] bg-white/[0.02] rounded-full translate-y-1/2 -translate-x-1/3 rtl:translate-x-1/3" />
@@ -947,7 +987,7 @@ function Contact({ t }) {
           </div>
         </Reveal>
 
-        <div className="max-w-[800px] mx-auto grid sm:grid-cols-3 gap-5">
+        <div className="max-w-[800px] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
           {/* Phones Card */}
           <Reveal delay={0}>
             <div className="bg-white rounded-2xl p-6 text-center border border-gray-100 hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-300">

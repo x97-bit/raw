@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { and, eq, type SQL } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import { accounts } from "../../../drizzle/schema";
 import { AuthRequest, authMiddleware } from "../../_core/appAuth";
 import { respondRouteError } from "../../_core/routeResponses";
@@ -104,17 +104,55 @@ export function registerAccountRoutes(router: Router) {
 
         if (data.name) {
           const normalizedInputName = normalizeArabicText(data.name);
-          
+
           if (normalizedInputName) {
-            const allAccounts = await db.select().from(accounts);
-            
-            const existing = allAccounts.find(acc => {
-              // Only match if accountType and portId also match (if provided)
-              if (data.accountType && acc.accountType !== String(data.accountType)) return false;
-              if (data.portId && acc.portId !== String(data.portId)) return false;
-              
-              return normalizeArabicText(acc.name) === normalizedInputName;
-            });
+            // ── Targeted SQL query instead of full-table scan ──
+            // Build conditions to narrow the search scope
+            const dupConditions: SQL<unknown>[] = [
+              eq(accounts.name, data.name),
+            ];
+            if (data.accountType) {
+              dupConditions.push(eq(accounts.accountType, String(data.accountType)));
+            }
+            if (data.portId) {
+              dupConditions.push(eq(accounts.portId, String(data.portId)));
+            }
+
+            // First try exact match (fast, uses index)
+            const exactMatches = await db
+              .select({ id: accounts.id, name: accounts.name })
+              .from(accounts)
+              .where(and(...dupConditions))
+              .limit(1);
+
+            let existing = exactMatches[0] || null;
+
+            // If no exact match, do a narrower search with Arabic normalization
+            // Only fetch accounts with matching type+port (not the entire table)
+            if (!existing) {
+              const narrowConditions: SQL<unknown>[] = [];
+              if (data.accountType) {
+                narrowConditions.push(eq(accounts.accountType, String(data.accountType)));
+              }
+              if (data.portId) {
+                narrowConditions.push(eq(accounts.portId, String(data.portId)));
+              }
+
+              const candidates =
+                narrowConditions.length > 0
+                  ? await db
+                      .select({ id: accounts.id, name: accounts.name })
+                      .from(accounts)
+                      .where(and(...narrowConditions))
+                  : await db
+                      .select({ id: accounts.id, name: accounts.name })
+                      .from(accounts);
+
+              existing =
+                candidates.find(
+                  (acc) => normalizeArabicText(acc.name) === normalizedInputName
+                ) || null;
+            }
 
             if (existing) {
               return res.json({

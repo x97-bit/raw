@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { appUsers } from "../../../drizzle/schema";
 import { getDb } from "../../db/db";
@@ -14,6 +14,33 @@ import {
   toLegacyUserShape,
   updateUserSchema,
 } from "./shared";
+
+// ── Helper: check if a username is already taken ────────────────────────────
+async function assertUsernameAvailable(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  username: string,
+  excludeUserId?: number
+) {
+  const normalizedUsername = username.trim().toLowerCase();
+
+  const conditions = [eq(appUsers.username, normalizedUsername)];
+  if (excludeUserId !== undefined) {
+    conditions.push(ne(appUsers.id, excludeUserId));
+  }
+
+  const [existing] = await db
+    .select({ id: appUsers.id })
+    .from(appUsers)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (existing) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "اسم المستخدم مستخدم بالفعل، يرجى اختيار اسم آخر",
+    });
+  }
+}
 
 export const usersRouter = router({
   list: adminProcedure.query(async () => {
@@ -49,9 +76,12 @@ export const usersRouter = router({
         message: "Database unavailable",
       });
 
+    // ── Unique username check before insert ──────────────────────────
+    await assertUsernameAvailable(db, input.username);
+
     const hashed = await bcrypt.hash(input.password, 10);
     const result = await db.insert(appUsers).values({
-      username: input.username,
+      username: input.username.trim().toLowerCase(),
       password: hashed,
       name: input.name || input.fullName || input.username,
       role: input.role || "user",
@@ -78,7 +108,13 @@ export const usersRouter = router({
 
       if (input.name || input.fullName)
         updates.name = input.name || input.fullName;
-      if (input.username) updates.username = input.username;
+
+      // ── Unique username check before update ────────────────────────
+      if (input.username) {
+        await assertUsernameAvailable(db, input.username, input.id);
+        updates.username = input.username.trim().toLowerCase();
+      }
+
       if (input.role || input.Role) updates.role = input.role || input.Role;
       if (input.permissions !== undefined)
         updates.permissions = input.permissions;

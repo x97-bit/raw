@@ -107,39 +107,37 @@ export default function BackupsPageContent({ onBack }) {
     });
   };
 
-  const handleExport = (actionKey, isTemplate = false) => {
+  const handleExport = async (actionKey, isTemplate = false) => {
     setBusyAction(actionKey);
 
-    startTransition(async () => {
-      try {
-        const result = isTemplate
-          ? await trpc.backups.template.mutate()
-          : await trpc.backups.export.mutate();
+    try {
+      const result = isTemplate
+        ? await trpc.backups.template.mutate()
+        : await trpc.backups.export.mutate();
 
-        // Create a blob and trigger download manually since tRPC returns JSON
-        const blob = new Blob([JSON.stringify(result.payload, null, 2)], {
-          type: "application/json; charset=utf-8",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = result.fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      // Create a blob and trigger download manually since tRPC returns JSON
+      const blob = new Blob([JSON.stringify(result.payload, null, 2)], {
+        type: "application/json; charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-        setMessageType("success");
-        setMessage(
-          `تم تنزيل ${isTemplate ? "قالب القاعدة" : "النسخة الاحتياطية"}: ${result.fileName}`
-        );
-      } catch (error) {
-        setMessageType("error");
-        setMessage(error.message);
-      } finally {
-        setBusyAction("");
-      }
-    });
+      setMessageType("success");
+      setMessage(
+        `تم تنزيل ${isTemplate ? "قالب القاعدة" : "النسخة الاحتياطية"}: ${result.fileName}`
+      );
+    } catch (error) {
+      setMessageType("error");
+      setMessage(error.message);
+    } finally {
+      setBusyAction("");
+    }
   };
 
   const handleImport = async () => {

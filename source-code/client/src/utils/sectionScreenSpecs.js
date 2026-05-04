@@ -388,6 +388,8 @@ const RAW_SECTION_SCREEN_SPECS = {
         createField("trans_price", "نقل عراقي (دينار)", "money"),
         createField("trader_note", "ملاحظات التاجر", "text"),
         createField("notes", "ملاحظات المالك", "text"),
+        createField("invoice_notes", "ملاحظات الفاتورة", "text"),
+        createField("invoice_details", "تفاصيل الفاتورة", "text"),
       ],
       layout: [
         createFormSection("المعلومات الأساسية", [
@@ -415,6 +417,7 @@ const RAW_SECTION_SCREEN_SPECS = {
           "trans_price",
         ]),
         createFormSection("الملاحظات", ["trader_note", "notes"]),
+        createFormSection("بيانات الفاتورة", ["invoice_notes", "invoice_details"]),
       ],
     },
     payment: {
@@ -518,6 +521,8 @@ const RAW_SECTION_SCREEN_SPECS = {
         createField("syr_cus", "الكمرك السوري", "money"),
         createField("trader_note", "ملاحظات التاجر", "text"),
         createField("notes", "ملاحظات المالك", "text"),
+        createField("invoice_notes", "ملاحظات الفاتورة", "text"),
+        createField("invoice_details", "تفاصيل الفاتورة", "text"),
       ],
       layout: [
         createFormSection("المعلومات الأساسية", [
@@ -541,6 +546,7 @@ const RAW_SECTION_SCREEN_SPECS = {
         ]),
         createFormSection("تفاصيل إضافية", ["syr_cus"]),
         createFormSection("الملاحظات", ["trader_note", "notes"]),
+        createFormSection("بيانات الفاتورة", ["invoice_notes", "invoice_details"]),
       ],
     },
     payment: {
@@ -644,6 +650,8 @@ const RAW_SECTION_SCREEN_SPECS = {
         createField("trader_note", "ملاحظات التاجر", "text"),
         createField("notes", "ملاحظات المالك", "text"),
         createField("company_name", "الشركة", "text"),
+        createField("invoice_notes", "ملاحظات الفاتورة", "text"),
+        createField("invoice_details", "تفاصيل الفاتورة", "text"),
       ],
       layout: [
         createFormSection("المعلومات الأساسية", [
@@ -667,6 +675,7 @@ const RAW_SECTION_SCREEN_SPECS = {
         ]),
         createFormSection("تفاصيل إضافية", ["company_name"]),
         createFormSection("الملاحظات", ["trader_note", "notes"]),
+        createFormSection("بيانات الفاتورة", ["invoice_notes", "invoice_details"]),
       ],
     },
     payment: {

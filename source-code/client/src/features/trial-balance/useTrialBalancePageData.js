@@ -7,36 +7,36 @@ import { trpc } from "../../utils/trpc";
 
 const INITIAL_FILTERS = { from: "", to: "", port: "", accountType: "" };
 
+// ── Module-level lookup cache (survives re-mounts, cleared on page refresh) ──
+let _cachedPorts = null;
+let _cachedAccountTypes = null;
+let _cachedFieldConfig = null;
+
 export default function useTrialBalancePageData({ api }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [ports, setPorts] = useState([]);
-  const [accountTypes, setAccountTypes] = useState([]);
+  const [ports, setPorts] = useState(_cachedPorts || []);
+  const [accountTypes, setAccountTypes] = useState(_cachedAccountTypes || []);
   const [visibleColumns, setVisibleColumns] = useState(
     TRIAL_BALANCE_ALL_COLUMNS.map(column => column.key)
   );
   const [fieldConfigMap, setFieldConfigMap] = useState({});
   const filtersRef = useRef(INITIAL_FILTERS);
+  const abortRef = useRef(null);
 
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
 
-  const loadFieldConfig = useCallback(async () => {
-    try {
-      const config = await api("/field-config/trial-balance");
-      const nextState = createTrialBalanceFieldConfigState(config);
-      setFieldConfigMap(nextState.fieldConfigMap);
-      setVisibleColumns(nextState.visibleColumns);
-    } catch {
-      console.log("No field config for trial-balance, using defaults");
-    }
-  }, [api]);
-
   const loadData = useCallback(
     async nextFilters => {
+      // Cancel previous in-flight request
+      if (abortRef.current) abortRef.current.abort?.();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       setLoading(true);
       setError(null);
       try {
@@ -48,27 +48,91 @@ export default function useTrialBalancePageData({ api }) {
           portId: activeFilters.port || undefined,
           accountType: activeFilters.accountType || undefined,
         });
-        setData(nextData);
+        // Only update if this request wasn't superseded
+        if (!controller.signal.aborted) {
+          setData(nextData);
+        }
       } catch (error) {
-        console.error("TrialBalance Error:", error);
-        setError(error.message || String(error));
+        if (!controller.signal.aborted) {
+          console.error("TrialBalance Error:", error);
+          setError(error.message || String(error));
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     },
     []
   );
 
+  // ── Load all initial data in parallel ──
   useEffect(() => {
-    api("/lookups/ports")
-      .then(setPorts)
-      .catch(() => {});
-    api("/lookups/account-types")
-      .then(setAccountTypes)
-      .catch(() => {});
-    loadData(INITIAL_FILTERS);
-    loadFieldConfig();
-  }, [api, loadData, loadFieldConfig]);
+    const loadAll = async () => {
+      // Fire all requests simultaneously
+      const promises = [];
+
+      // 1. Ports (use cache if available)
+      if (_cachedPorts) {
+        setPorts(_cachedPorts);
+      } else {
+        promises.push(
+          api("/lookups/ports")
+            .then(result => {
+              _cachedPorts = result;
+              setPorts(result);
+            })
+            .catch(() => {})
+        );
+      }
+
+      // 2. Account types (use cache if available)
+      if (_cachedAccountTypes) {
+        setAccountTypes(_cachedAccountTypes);
+      } else {
+        promises.push(
+          api("/lookups/account-types")
+            .then(result => {
+              _cachedAccountTypes = result;
+              setAccountTypes(result);
+            })
+            .catch(() => {})
+        );
+      }
+
+      // 3. Field config (use cache if available)
+      if (_cachedFieldConfig) {
+        setFieldConfigMap(_cachedFieldConfig.fieldConfigMap);
+        setVisibleColumns(_cachedFieldConfig.visibleColumns);
+      } else {
+        promises.push(
+          api("/field-config/trial-balance")
+            .then(config => {
+              const nextState = createTrialBalanceFieldConfigState(config);
+              _cachedFieldConfig = nextState;
+              setFieldConfigMap(nextState.fieldConfigMap);
+              setVisibleColumns(nextState.visibleColumns);
+            })
+            .catch(() => {
+              console.log("No field config for trial-balance, using defaults");
+            })
+        );
+      }
+
+      // 4. Main data (always fresh)
+      promises.push(loadData(INITIAL_FILTERS));
+
+      // Wait for all to complete
+      await Promise.all(promises);
+    };
+
+    loadAll();
+
+    // Cleanup: abort in-flight data request on unmount
+    return () => {
+      if (abortRef.current) abortRef.current.abort?.();
+    };
+  }, [api, loadData]);
 
   return {
     accountTypes,

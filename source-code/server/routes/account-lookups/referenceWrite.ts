@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import {
   companies,
   drivers,
@@ -147,29 +147,40 @@ export function registerReferenceLookupWriteRoutes(router: Router) {
         if (!db) return;
 
         const name = req.body.name || req.body.TypeName;
+        const portId = req.body.portId || req.body.port_id || null;
+
         if (name) {
+          // Check uniqueness within the same port (name + port_id)
+          const whereClause = portId
+            ? and(eq(goodsTypes.name, name), eq(goodsTypes.portId, portId))
+            : and(eq(goodsTypes.name, name), isNull(goodsTypes.portId));
+
           const [existing] = await db
             .select()
             .from(goodsTypes)
-            .where(eq(goodsTypes.name, name))
+            .where(whereClause)
             .limit(1);
           if (existing) {
             return res.json({
               id: existing.id,
               GoodTypeID: existing.id,
               TypeName: existing.name,
+              portId: existing.portId,
               existing: true,
             });
           }
         }
 
-        const result = await db.insert(goodsTypes).values({ name });
+        const result = await db
+          .insert(goodsTypes)
+          .values({ name, portId });
         const goodTypeId = Number(result[0].insertId);
         invalidateLookupReadCache();
         return res.json({
           id: goodTypeId,
           GoodTypeID: goodTypeId,
           TypeName: name,
+          portId,
         });
       } catch (error) {
         return respondRouteError(res, error);
