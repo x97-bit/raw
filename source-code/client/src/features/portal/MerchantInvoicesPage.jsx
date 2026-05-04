@@ -1,4 +1,4 @@
-import { fmtNum, fmtUSD, fmtIQD } from "../../utils/formatNumber";
+import { fmtNum } from "../../utils/formatNumber";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { merchantTrpc } from "./merchantContext";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -6,7 +6,6 @@ import { Receipt, Search, Calendar, FileText, FileDown, Loader2 } from "lucide-r
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
-import ExportButtons from "../../components/ExportButtons";
 import { merchantExportInvoicePDF } from "./merchantPdfExport";
 
 
@@ -17,7 +16,14 @@ export default function MerchantInvoicesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [exportingId, setExportingId] = useState(null);
+
+  // Debounce search to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     let isMounted = true;
@@ -26,9 +32,10 @@ export default function MerchantInvoicesPage() {
 
     async function loadData() {
       try {
-        const result = await merchantTrpc.merchant.getStatement.query({
+        const result = await merchantTrpc.merchant.getInvoices.query({
           fromDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
           toDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+          search: debouncedSearch || undefined,
         });
         if (isMounted) setData(result);
       } catch (err) {
@@ -39,31 +46,11 @@ export default function MerchantInvoicesPage() {
     }
     loadData();
     return () => { isMounted = false; };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, debouncedSearch]);
 
-  const invoices = useMemo(() => {
-    if (!data?.transactions) return [];
-    let filtered = data.transactions.filter(t => {
-      const dir = String(t.direction || "").trim().toUpperCase();
-      return ["IN", "DR"].includes(dir) && t.TransTypeID !== 2;
-    });
-
-    if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      filtered = filtered.filter(t =>
-        (t.Notes && t.Notes.toLowerCase().includes(lower)) ||
-        (t.RefNo && t.RefNo.toString().includes(lower)) ||
-        (t.CompanyName && t.CompanyName.toLowerCase().includes(lower)) ||
-        (t.DriverName && t.DriverName.toLowerCase().includes(lower)) ||
-        (t.GoodTypeName && t.GoodTypeName.toLowerCase().includes(lower))
-      );
-    }
-
-    return filtered;
-  }, [data, searchTerm]);
-
-  const totalInvoicesUSD = useMemo(() => invoices.reduce((sum, t) => sum + Math.abs(Number(t.AmountUSD || 0)), 0), [invoices]);
-  const totalInvoicesIQD = useMemo(() => invoices.reduce((sum, t) => sum + Math.abs(Number(t.AmountIQD || 0)), 0), [invoices]);
+  const invoices = data?.invoices || [];
+  const totalInvoicesUSD = data?.totals?.totalInvoicesUSD || 0;
+  const totalInvoicesIQD = data?.totals?.totalInvoicesIQD || 0;
 
   const handleExportPDF = useCallback(async (invoice) => {
     const id = invoice.TransID || invoice.RefNo;
@@ -99,7 +86,7 @@ export default function MerchantInvoicesPage() {
         </div>
         <div className="flex items-center gap-2 bg-blue-500/10 px-4 py-2 rounded-xl">
           <Receipt size={18} className="text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{invoices.length} فاتورة</span>
+          <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{data?.total || 0} فاتورة</span>
         </div>
       </div>
 

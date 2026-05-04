@@ -41,6 +41,83 @@ export const merchantProcedure = publicProcedure.use(async ({ ctx, next }) => {
 });
 
 export const merchantRouter = router({
+  getInvoices: merchantProcedure
+    .input(
+      z.object({
+        fromDate: z.string().optional(),
+        toDate: z.string().optional(),
+        search: z.string().optional(),
+        limit: z.number().int().min(1).max(500).optional().default(100),
+        offset: z.number().int().min(0).optional().default(0),
+        _bust: z.number().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection failed",
+        });
+      }
+
+      // Build conditions: only invoices (direction IN/DR) excluding debit-notes and expense-charges
+      const conditions: SQL<unknown>[] = [
+        eq(transactions.accountId, ctx.merchantUser.accountId),
+        sql`UPPER(${transactions.direction}) IN ('IN', 'DR')`,
+        sql`COALESCE(LOWER(${transactions.recordType}), 'shipment') NOT IN ('expense-charge', 'debit-note')`,
+      ];
+
+      if (input.fromDate && input.fromDate.trim() !== "") {
+        conditions.push(sql`${transactions.transDate} >= ${input.fromDate}`);
+      }
+      if (input.toDate && input.toDate.trim() !== "") {
+        conditions.push(sql`${transactions.transDate} <= ${input.toDate}`);
+      }
+      if (input.search && input.search.trim() !== "") {
+        const term = `%${input.search.trim()}%`;
+        conditions.push(
+          sql`(${transactions.refNo} LIKE ${term} OR ${transactions.notes} LIKE ${term} OR ${transactions.traderNote} LIKE ${term} OR company_name LIKE ${term})`
+        );
+      }
+
+      // Run count and data queries in parallel
+      const [countResult, invoiceRows] = await Promise.all([
+        db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(transactions)
+          .where(and(...conditions)),
+        db
+          .select()
+          .from(transactions)
+          .where(and(...conditions))
+          .orderBy(sql`${transactions.transDate} DESC, ${transactions.id} DESC`)
+          .limit(input.limit)
+          .offset(input.offset),
+      ]);
+
+      const totalCount = Number(countResult[0]?.count ?? 0);
+      const enrichedInvoices = await enrichTransactions(db, invoiceRows);
+
+      // Compute totals for filtered invoices
+      const totalsUSD = enrichedInvoices.reduce((sum, inv) => sum + Math.abs(Number(inv.AmountUSD || 0)), 0);
+      const totalsIQD = enrichedInvoices.reduce((sum, inv) => sum + Math.abs(Number(inv.AmountIQD || 0)), 0);
+
+      return {
+        invoices: enrichedInvoices,
+        total: totalCount,
+        totals: {
+          totalInvoicesUSD: totalsUSD,
+          totalInvoicesIQD: totalsIQD,
+        },
+        pagination: {
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: invoiceRows.length === input.limit,
+        },
+      };
+    }),
+
   getStatement: merchantProcedure
     .input(
       z.object({
