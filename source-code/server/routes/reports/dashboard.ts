@@ -97,8 +97,8 @@ export function registerReportDashboardRoutes(router: Router) {
             // Debt totals via SQL SUM
             db.execute(sql`
             SELECT
-              COALESCE(SUM(CAST(amount_usd AS DECIMAL(15,2))), 0) AS totalUSD,
-              COALESCE(SUM(CAST(amount_iqd AS DECIMAL(15,0))), 0) AS totalIQD
+              COALESCE(SUM(CAST(amountUSD AS DECIMAL(15,2))), 0) AS totalUSD,
+              COALESCE(SUM(CAST(amountIQD AS DECIMAL(15,0))), 0) AS totalIQD
             FROM debts
           `),
 
