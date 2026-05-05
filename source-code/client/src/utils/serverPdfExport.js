@@ -164,31 +164,21 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
   } else if (Array.isArray(options.summaryCards) && options.summaryCards.length > 0) {
     const cards = options.summaryCards;
 
-    // Extract known fields into a structured grid (same layout as summaryGrid)
+    // Extract known fields into a structured grid
     const accountCard = cards.find(c => (c.label || "").includes("التاجر"));
     const dateCard = cards.find(c => (c.label || "").includes("الفترة"));
-    const totalIqdCard = cards.find(c => (c.label || "").includes("الاجمالي دينار"));
-    const totalUsdCard = cards.find(c => (c.label || "").includes("الاجمالي دولار"));
+    const totalIqdCard = cards.find(c => (c.label || "").includes("الكلي دينار") || (c.label || "").includes("الاجمالي دينار"));
+    const totalUsdCard = cards.find(c => (c.label || "").includes("الكلي دولار") || (c.label || "").includes("الاجمالي دولار"));
     const selectedIqdCard = cards.find(c => (c.label || "").includes("المحدد دينار"));
     const selectedUsdCard = cards.find(c => (c.label || "").includes("المحدد دولار"));
+    const balanceIqdCard = cards.find(c => (c.label || "").includes("المتبقي دينار"));
+    const balanceUsdCard = cards.find(c => (c.label || "").includes("المتبقي دولار"));
     const weightCard = cards.find(c => (c.label || "").includes("الوزن"));
     const metersCard = cards.find(c => (c.label || "").includes("الامتار"));
 
     // Remaining cards that don't match any known field
-    const knownLabels = new Set([accountCard, dateCard, totalIqdCard, totalUsdCard, selectedIqdCard, selectedUsdCard, weightCard, metersCard].filter(Boolean).map(c => c.label));
+    const knownLabels = new Set([accountCard, dateCard, totalIqdCard, totalUsdCard, selectedIqdCard, selectedUsdCard, balanceIqdCard, balanceUsdCard, weightCard, metersCard].filter(Boolean).map(c => c.label));
     const extraCards = cards.filter(c => !knownLabels.has(c.label));
-
-    // Build totals line: combine IQD + USD on same row
-    const totalsItems = [];
-    if (totalUsdCard) totalsItems.push(`${escapeHtml(totalUsdCard.label)}: <span dir="ltr">${escapeHtml(totalUsdCard.value)}</span>`);
-    if (totalIqdCard) totalsItems.push(`${escapeHtml(totalIqdCard.label)}: <span dir="ltr">${escapeHtml(totalIqdCard.value)}</span>`);
-    if (weightCard) totalsItems.push(`${escapeHtml(weightCard.label)}: <span dir="ltr">${escapeHtml(weightCard.value)}</span>`);
-    if (metersCard) totalsItems.push(`${escapeHtml(metersCard.label)}: <span dir="ltr">${escapeHtml(metersCard.value)}</span>`);
-
-    // Build selected-amounts line
-    const selectedItems = [];
-    if (selectedUsdCard) selectedItems.push(`${escapeHtml(selectedUsdCard.label)}: <span dir="ltr">${escapeHtml(selectedUsdCard.value)}</span>`);
-    if (selectedIqdCard) selectedItems.push(`${escapeHtml(selectedIqdCard.label)}: <span dir="ltr">${escapeHtml(selectedIqdCard.value)}</span>`);
 
     // Parse date range
     let fromDate = "---";
@@ -199,7 +189,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
       toDate = (parts[1] || "---").trim();
     }
 
-    // Build meta items array for table display
+    // Build meta items array for card display (label + value side by side)
     const metaItems = [];
     if (accountCard) metaItems.push({ label: escapeHtml(accountCard.label), value: escapeHtml(accountCard.value), accent: false });
     if (dateCard && fromDate !== "---") metaItems.push({ label: "من تاريخ", value: escapeHtml(fromDate), accent: false });
@@ -208,19 +198,21 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     if (totalIqdCard) metaItems.push({ label: escapeHtml(totalIqdCard.label), value: escapeHtml(totalIqdCard.value), accent: true });
     if (selectedUsdCard) metaItems.push({ label: escapeHtml(selectedUsdCard.label), value: escapeHtml(selectedUsdCard.value), accent: true });
     if (selectedIqdCard) metaItems.push({ label: escapeHtml(selectedIqdCard.label), value: escapeHtml(selectedIqdCard.value), accent: true });
+    if (balanceUsdCard) metaItems.push({ label: escapeHtml(balanceUsdCard.label), value: escapeHtml(balanceUsdCard.value), accent: true });
+    if (balanceIqdCard) metaItems.push({ label: escapeHtml(balanceIqdCard.label), value: escapeHtml(balanceIqdCard.value), accent: true });
     if (weightCard) metaItems.push({ label: escapeHtml(weightCard.label), value: escapeHtml(weightCard.value), accent: false });
     if (metersCard) metaItems.push({ label: escapeHtml(metersCard.label), value: escapeHtml(metersCard.value), accent: false });
-    extraCards.forEach(c => metaItems.push({ label: escapeHtml(c.label), value: escapeHtml(c.value), accent: false }));
+    extraCards.forEach(c => metaItems.push({ label: escapeHtml(c.label), value: escapeHtml(c.value), accent: !!c.color }));
 
     metadataHtml = `
-      <table class="tay-meta-table">
-        <thead>
-          <tr>${metaItems.map(item => `<th>${item.label}</th>`).join("")}</tr>
-        </thead>
-        <tbody>
-          <tr>${metaItems.map(item => `<td class="${item.accent ? 'tay-meta-accent' : ''}">${item.value}</td>`).join("")}</tr>
-        </tbody>
-      </table>
+      <div class="tay-admin-meta-grid">
+        ${metaItems.map(item => `
+          <div class="tay-admin-meta-card">
+            <span class="tay-admin-meta-label">${item.label}</span>
+            <span class="tay-admin-meta-value ${item.accent ? 'tay-admin-meta-accent' : ''}">${item.value}</span>
+          </div>
+        `).join("")}
+      </div>
     `;
   }
 
@@ -278,6 +270,41 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           pointer-events: none;
         }
         .watermark img { width: 280px; height: auto; }
+
+        /* ── Admin Meta Grid: label+value side by side in each card ── */
+        .tay-admin-meta-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 10px;
+          direction: rtl;
+        }
+        .tay-admin-meta-card {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #f0f4f8;
+          border: 1.5px solid #1C2B59;
+          border-radius: 7px;
+          padding: 5px 12px;
+          white-space: nowrap;
+        }
+        .tay-admin-meta-label {
+          color: #ffffff;
+          background: #1C2B59;
+          font-weight: 700;
+          font-size: 9pt;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+        .tay-admin-meta-value {
+          color: #1C2B59;
+          font-weight: 800;
+          font-size: 10pt;
+        }
+        .tay-admin-meta-accent {
+          color: #E31E24 !important;
+        }
 
         /* ── Meta Info Table ── */
         .tay-meta-table {

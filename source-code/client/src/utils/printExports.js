@@ -240,13 +240,13 @@ export function buildPrintMetaHtml(metaItems = []) {
   if (!visibleItems.length) return "";
 
   return `
-    <div class="tay-meta-stack">
+    <div class="tay-admin-meta-grid">
       ${visibleItems
         .map(
           item => `
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">${escapeHtml(item.label)}:</span>
-          <span class="${item.tone === "accent" ? "tay-meta-value-red" : ""}">${escapeHtml(item.value)}</span>
+        <div class="tay-admin-meta-card">
+          <span class="tay-admin-meta-label">${escapeHtml(item.label)}</span>
+          <span class="tay-admin-meta-value ${item.tone === "accent" ? "tay-admin-meta-accent" : ""}">${escapeHtml(item.value)}</span>
         </div>
       `
         )
@@ -667,6 +667,41 @@ function getShellCss({
     .tay-footer-page::before {
       content: counter(page);
     }
+    /* ── Admin Meta Grid: label+value side by side in each card ── */
+    .tay-admin-meta-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 6mm;
+      direction: rtl;
+    }
+    .tay-admin-meta-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f4f8;
+      border: 1.5px solid ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
+      border-radius: 8px;
+      padding: 8px 14px;
+      white-space: nowrap;
+    }
+    .tay-admin-meta-label {
+      color: #ffffff;
+      background: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
+      font-weight: 700;
+      font-size: 12pt;
+      padding: 4px 10px;
+      border-radius: 5px;
+    }
+    .tay-admin-meta-value {
+      color: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
+      font-weight: 800;
+      font-size: 13pt;
+    }
+    .tay-admin-meta-accent {
+      color: ${TAY_ALRAWI_BRAND_COLORS.accentRed} !important;
+    }
+    /* Legacy classes kept for backward compat */
     .tay-meta-inline,
     .tay-meta-stack {
       display: flex;
