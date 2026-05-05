@@ -567,7 +567,7 @@ function getShellCss({
       word-break: break-word;
     }
     .tay-table td {
-      font-size: 13pt;
+      font-size: 15pt;
       font-weight: 500;
       color: #000000;
     }
@@ -582,7 +582,7 @@ function getShellCss({
       white-space: nowrap;
       word-break: normal;
       padding: 6px 4px;
-      font-size: 13pt;
+      font-size: 15pt;
     }
     .tay-table tbody tr:nth-child(even) td {
       background: #f9f9f9;
