@@ -33,15 +33,17 @@ const CANVAS_PAGE_SPECS = {
 };
 
 const PDF_BODY_FONT_FAMILY =
-  '"Cordale Trial Bold Italic", "Cordale Trial", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
+  '"IBM Plex Sans Arabic", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
 const PDF_TITLE_FONT_FAMILY =
-  '"Cordale Trial Bold Italic", "Cordale Trial", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
+  '"IBM Plex Sans Arabic", "Cairo", "Tajawal", Tahoma, "Segoe UI", Arial, sans-serif';
 
 async function ensurePdfFontsReady() {
   if (typeof document === "undefined" || !document.fonts?.ready) return;
 
   try {
     await Promise.allSettled([
+      document.fonts.load("500 24px IBM Plex Sans Arabic"),
+      document.fonts.load("700 24px IBM Plex Sans Arabic"),
       document.fonts.load("700 24px Tajawal"),
       document.fonts.load("800 52px Tajawal"),
       document.fonts.load("600 24px Cairo"),

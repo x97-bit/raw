@@ -60,13 +60,13 @@ function openPrintWindow(title, body, extraCss = "") {
   <head>
     <meta charset="utf-8" />
     <title>${escapeHtml(title || "طباعة")}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Cairo:wght@400;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=Tajawal:wght@400;500;700;800&amp;family=Cairo:wght@400;600;700&amp;display=swap" rel="stylesheet">
     <style>
       @page { margin: 0 !important; }
-      * { box-sizing: border-box; font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif !important; }
+      * { box-sizing: border-box; font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", Arial, Tahoma, sans-serif !important; }
       html, body { margin: 0 !important; padding: 0 !important; background: #eef2f7; }
       body {
-        font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
+        font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
         direction: rtl;
         color: #000000;
         -webkit-print-color-adjust: exact;
@@ -567,7 +567,7 @@ function getShellCss({
       word-break: break-word;
     }
     .tay-table td {
-      font-size: 11pt;
+      font-size: 13pt;
       font-weight: 500;
       color: #000000;
     }
@@ -582,7 +582,7 @@ function getShellCss({
       white-space: nowrap;
       word-break: normal;
       padding: 6px 4px;
-      font-size: 11pt;
+      font-size: 13pt;
     }
     .tay-table tbody tr:nth-child(even) td {
       background: #f9f9f9;
