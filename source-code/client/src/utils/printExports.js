@@ -690,6 +690,35 @@ function getShellCss({
       color: ${TAY_ALRAWI_BRAND_COLORS.accentRed};
       font-weight: 700;
     }
+    .tay-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 20px 0;
+      font-size: 13pt;
+      direction: rtl;
+    }
+    .tay-meta-table th {
+      background: ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
+      color: #fff;
+      font-weight: 700;
+      padding: 8px 12px;
+      text-align: center;
+      white-space: nowrap;
+      border: 1px solid ${TAY_ALRAWI_BRAND_COLORS.headerNavy};
+    }
+    .tay-meta-table td {
+      background: #f8f9fc;
+      color: #1f2937;
+      font-weight: 600;
+      padding: 8px 12px;
+      text-align: center;
+      border: 1px solid #d1d5db;
+      font-size: 14pt;
+    }
+    .tay-meta-table td.tay-meta-value-red {
+      color: ${TAY_ALRAWI_BRAND_COLORS.accentRed};
+      font-weight: 700;
+    }
     @media print {
       @page {
         size: ${pageSize};
@@ -801,63 +830,24 @@ export function printSaudiStatementTemplate({
     line => line.label.includes("متبقي")
   );
 
+  // Build all info items for the meta table
+  const allMetaItems = [];
+  allMetaItems.push({ label: "اسم التاجر", value: accountName || "---", accent: false });
+  if (fromDate && fromDate !== "---") allMetaItems.push({ label: "من تاريخ", value: fromDate, accent: false });
+  if (toDate && toDate !== "---") allMetaItems.push({ label: "إلى تاريخ", value: toDate, accent: false });
+  rightLines.forEach(line => allMetaItems.push({ label: line.label, value: line.value, accent: true }));
+  centerLines.forEach(line => allMetaItems.push({ label: line.label, value: line.value, accent: true }));
+  leftLines.forEach(line => allMetaItems.push({ label: line.label, value: line.value, accent: true }));
+
   const metaHtml = `
-    <hr style="border: none; border-top: 1px solid #1C2B59; margin: 0 0 15px 0;" />
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 20px;">
-      <!-- Right Side: Trader Name, Total Amount -->
-      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0;">
-        <div class="tay-meta-inline">
-          <span class="tay-meta-label">اسم التاجر:</span>
-          <span>${escapeHtml(accountName || "---")}</span>
-        </div>
-        ${rightLines
-          .map(
-            line => `
-          <div class="tay-meta-inline">
-            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-
-      <!-- Center Side: Limit Amount -->
-      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: center; text-align: center; min-width: 0;">
-        ${centerLines
-          .map(
-            line => `
-          <div class="tay-meta-inline" style="justify-content: center;">
-            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-
-      <!-- Left Side: Dates & Balance -->
-      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: flex-end; text-align: left; min-width: 0;">
-        <div class="tay-meta-inline" style="justify-content: flex-end;">
-          <span class="tay-meta-label">من تاريخ:</span>
-          <span>${escapeHtml(fromDate || "---")}</span>
-        </div>
-        <div class="tay-meta-inline" style="justify-content: flex-end;">
-          <span class="tay-meta-label">إلى تاريخ:</span>
-          <span>${escapeHtml(toDate || "---")}</span>
-        </div>
-        ${leftLines
-          .map(
-            line => `
-          <div class="tay-meta-inline" style="justify-content: flex-end;">
-            <span class="tay-meta-label">${escapeHtml(line.label)}:</span>
-            <span class="tay-meta-value-red">${escapeHtml(line.value)}</span>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-    </div>
+    <table class="tay-meta-table">
+      <thead>
+        <tr>${allMetaItems.map(item => `<th>${escapeHtml(item.label)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        <tr>${allMetaItems.map(item => `<td class="${item.accent ? "tay-meta-value-red" : ""}">${escapeHtml(item.value)}</td>`).join("")}</tr>
+      </tbody>
+    </table>
   `;
 
   const tableHtml = `
