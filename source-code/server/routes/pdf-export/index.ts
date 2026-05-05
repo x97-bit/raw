@@ -282,28 +282,46 @@ function buildInvoiceHtml(transaction: any, sectionKey: string | undefined, bran
   const invoiceNotes = transaction.InvoiceNotes || "";
   const invoiceDetails = transaction.InvoiceDetails || "";
 
-  // Build table rows
-  const tableRows: { notes: string; details: string; currency: string; amount: string }[] = [];
+  // Build table rows - with sequential number
+  const tableRows: { description: string; notes: string; currency: string; amount: string }[] = [];
   const hasUSD = Number(transaction.AmountUSD) > 0 || Number(transaction.CostUSD) > 0;
   const hasIQD = Number(transaction.AmountIQD) > 0 || Number(transaction.CostIQD) > 0;
 
+  // Main amount row(s)
   if (hasUSD && hasIQD) {
-    tableRows.push({ notes: invoiceNotes, details: invoiceDetails, currency: "دولار", amount: formatMoney(transaction.AmountUSD || transaction.CostUSD, "USD") });
-    tableRows.push({ notes: "", details: "", currency: "دينار", amount: formatMoney(transaction.AmountIQD || transaction.CostIQD, "IQD") });
+    tableRows.push({ description: invoiceDetails || invoiceNotes || transTypeLabel, notes: invoiceNotes, currency: "دولار", amount: formatMoney(transaction.AmountUSD || transaction.CostUSD, "USD") });
+    tableRows.push({ description: "", notes: "", currency: "دينار", amount: formatMoney(transaction.AmountIQD || transaction.CostIQD, "IQD") });
   } else {
-    tableRows.push({ notes: invoiceNotes, details: invoiceDetails, currency: smartCurrency, amount: smartAmount });
+    tableRows.push({ description: invoiceDetails || invoiceNotes || transTypeLabel, notes: invoiceNotes, currency: smartCurrency, amount: smartAmount });
   }
 
   // Additional charges
   if (Number(transaction.SyrCus) > 0) {
-    tableRows.push({ notes: "الكمرك السوري", details: "", currency: "دينار", amount: formatMoney(transaction.SyrCus, "IQD") });
+    tableRows.push({ description: "الكمرك السوري", notes: "", currency: "دينار", amount: formatMoney(transaction.SyrCus, "IQD") });
   }
   if (Number(transaction.TransPrice) > 0) {
-    tableRows.push({ notes: "سعر النقل", details: "", currency: "دينار", amount: formatMoney(transaction.TransPrice, "IQD") });
+    tableRows.push({ description: "سعر النقل", notes: "", currency: "دينار", amount: formatMoney(transaction.TransPrice, "IQD") });
   }
   if (Number(transaction.FeeUSD) > 0) {
-    tableRows.push({ notes: "الرسوم", details: "", currency: "دولار", amount: formatMoney(transaction.FeeUSD, "USD") });
+    tableRows.push({ description: "الرسوم", notes: "", currency: "دولار", amount: formatMoney(transaction.FeeUSD, "USD") });
   }
+
+  // Calculate totals for footer row
+  let totalUSD = 0;
+  let totalIQD = 0;
+  tableRows.forEach(row => {
+    if (row.currency === "دولار" && row.amount) {
+      const num = Number(row.amount.replace(/[^\d.-]/g, ""));
+      if (!isNaN(num)) totalUSD += num;
+    } else if (row.currency === "دينار" && row.amount) {
+      const num = Number(row.amount.replace(/[^\d.-]/g, ""));
+      if (!isNaN(num)) totalIQD += num;
+    }
+  });
+  const totalDisplay: string[] = [];
+  if (totalUSD > 0) totalDisplay.push(formatMoney(totalUSD, "USD"));
+  if (totalIQD > 0) totalDisplay.push(formatMoney(totalIQD, "IQD"));
+  const showTotal = tableRows.length > 1;
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -417,22 +435,32 @@ function buildInvoiceHtml(transaction: any, sectionKey: string | undefined, bran
     <table class="invoice-table">
       <thead>
         <tr>
-          <th style="width:30%">الملاحظات</th>
-          <th style="width:30%">التفاصيل</th>
-          <th style="width:15%">العملة</th>
+          <th style="width:8%">#</th>
+          <th style="width:32%">الوصف</th>
+          <th style="width:22%">الملاحظات</th>
+          <th style="width:13%">العملة</th>
           <th style="width:25%">المبلغ</th>
         </tr>
       </thead>
       <tbody>
-        ${tableRows.map(row => `
+        ${tableRows.map((row, idx) => `
         <tr>
-          <td>${escapeHtml(row.notes)}</td>
-          <td>${escapeHtml(row.details)}</td>
+          <td style="font-weight:700;color:#64748b;">${idx + 1}</td>
+          <td style="text-align:right;padding-right:16px;">${escapeHtml(row.description)}</td>
+          <td style="font-size:11px;color:#64748b;">${escapeHtml(row.notes)}</td>
           <td class="currency-cell">${escapeHtml(row.currency)}</td>
           <td class="amount-cell">${escapeHtml(row.amount)}</td>
         </tr>
         `).join("")}
       </tbody>
+      ${showTotal ? `
+      <tfoot>
+        <tr style="background:${navy};">
+          <td colspan="3" style="text-align:right;padding:10px 16px;font-weight:800;color:#ffffff;font-size:12px;">الإجمالي</td>
+          <td colspan="2" style="text-align:center;padding:10px 14px;font-weight:800;color:#ffffff;font-size:14px;direction:ltr;font-family:'Inter','Segoe UI',monospace;">${totalDisplay.join(" + ")}</td>
+        </tr>
+      </tfoot>
+      ` : ""}
     </table>
 
     <div class="signature-area">
