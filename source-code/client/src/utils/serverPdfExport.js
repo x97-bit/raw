@@ -139,43 +139,26 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
 
   if (options.summaryGrid) {
     const g = options.summaryGrid;
+    // Build meta items array for table display
+    const metaItems = [];
+    if (g.accountName) metaItems.push({ label: escapeHtml(g.accountLabel || "اسم التاجر"), value: escapeHtml(g.accountName), accent: false });
+    if (g.fromDate !== undefined) metaItems.push({ label: escapeHtml(g.fromLabel || "من تاريخ"), value: escapeHtml(g.fromDate), accent: false });
+    if (g.toDate !== undefined) metaItems.push({ label: escapeHtml(g.toLabel || "الى تاريخ"), value: escapeHtml(g.toDate), accent: false });
+    if (g.totalLabel) metaItems.push({ label: escapeHtml(g.totalLabel), value: escapeHtml(g.totalValue || "---"), accent: true });
+    if (g.amountOnValue) metaItems.push({ label: "المبلغ عليه", value: escapeHtml(g.amountOnValue), accent: true });
+    if (g.amountForValue) metaItems.push({ label: "المبلغ له", value: escapeHtml(g.amountForValue), accent: true });
+    if (g.netValue) metaItems.push({ label: "الصافي", value: escapeHtml(g.netValue), accent: true });
+    if (g.hasDateFilter && g.filteredLabel) metaItems.push({ label: escapeHtml(g.filteredLabel), value: escapeHtml(g.filteredValue || "---"), accent: true });
+    if (g.balanceLabel) metaItems.push({ label: escapeHtml(g.balanceLabel), value: escapeHtml(g.balanceValue || "---"), accent: true });
+
     metadataHtml = `
-      <table class="summary-grid" style="border:none;">
-        <tr>
-          <td class="summary-cell right navy">
-            ${g.accountName ? `<div style="margin-top: -5mm;">${escapeHtml(g.accountLabel || "اسم التاجر")} : ${escapeHtml(g.accountName)}</div>` : ''}
-          </td>
-          <td class="summary-cell left navy" dir="rtl">
-            ${g.fromDate !== undefined ? `<span>${escapeHtml(g.fromLabel || "من تاريخ")} : <span dir="ltr">${escapeHtml(g.fromDate)}</span></span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="summary-cell right red">
-            ${g.totalLabel ? `<span>${escapeHtml(g.totalLabel)}: <span dir="ltr">${escapeHtml(g.totalValue || "---")}</span></span>` : ''}
-            ${g.amountOnValue ? `<span>المبلغ عليه: ${escapeHtml(g.amountOnValue)}</span>` : ''}
-            ${g.amountForValue ? `<span style="margin-right: 12px;">المبلغ له: ${escapeHtml(g.amountForValue)}</span>` : ''}
-            ${g.netValue ? `<span style="margin-right: 12px;">الصافي: ${escapeHtml(g.netValue)}</span>` : ''}
-          </td>
-          <td class="summary-cell left navy" dir="rtl">
-            ${g.toDate !== undefined ? `<span>${escapeHtml(g.toLabel || "الى تاريخ")} : <span dir="ltr">${escapeHtml(g.toDate)}</span></span>` : ''}
-          </td>
-        </tr>
-        ${(g.hasDateFilter && g.filteredLabel) ? `
-        <tr>
-          <td class="summary-cell right red">
-            <span>${escapeHtml(g.filteredLabel)}: <span dir="ltr">${escapeHtml(g.filteredValue || "---")}</span></span>
-          </td>
-          <td class="summary-cell left"></td>
-        </tr>
-        ` : ''}
-        ${g.balanceLabel ? `
-        <tr>
-          <td class="summary-cell right red">
-            <span>${escapeHtml(g.balanceLabel)}: <span dir="ltr">${escapeHtml(g.balanceValue || "---")}</span></span>
-          </td>
-          <td class="summary-cell left"></td>
-        </tr>
-        ` : ''}
+      <table class="tay-meta-table">
+        <thead>
+          <tr>${metaItems.map(item => `<th>${item.label}</th>`).join("")}</tr>
+        </thead>
+        <tbody>
+          <tr>${metaItems.map(item => `<td class="${item.accent ? 'tay-meta-accent' : ''}">${item.value}</td>`).join("")}</tr>
+        </tbody>
       </table>
     `;
   } else if (Array.isArray(options.summaryCards) && options.summaryCards.length > 0) {
@@ -216,42 +199,27 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
       toDate = (parts[1] || "---").trim();
     }
 
+    // Build meta items array for table display
+    const metaItems = [];
+    if (accountCard) metaItems.push({ label: escapeHtml(accountCard.label), value: escapeHtml(accountCard.value), accent: false });
+    if (dateCard && fromDate !== "---") metaItems.push({ label: "من تاريخ", value: escapeHtml(fromDate), accent: false });
+    if (dateCard && toDate !== "---") metaItems.push({ label: "الى تاريخ", value: escapeHtml(toDate), accent: false });
+    if (totalUsdCard) metaItems.push({ label: escapeHtml(totalUsdCard.label), value: escapeHtml(totalUsdCard.value), accent: true });
+    if (totalIqdCard) metaItems.push({ label: escapeHtml(totalIqdCard.label), value: escapeHtml(totalIqdCard.value), accent: true });
+    if (selectedUsdCard) metaItems.push({ label: escapeHtml(selectedUsdCard.label), value: escapeHtml(selectedUsdCard.value), accent: true });
+    if (selectedIqdCard) metaItems.push({ label: escapeHtml(selectedIqdCard.label), value: escapeHtml(selectedIqdCard.value), accent: true });
+    if (weightCard) metaItems.push({ label: escapeHtml(weightCard.label), value: escapeHtml(weightCard.value), accent: false });
+    if (metersCard) metaItems.push({ label: escapeHtml(metersCard.label), value: escapeHtml(metersCard.value), accent: false });
+    extraCards.forEach(c => metaItems.push({ label: escapeHtml(c.label), value: escapeHtml(c.value), accent: false }));
+
     metadataHtml = `
-      <table class="summary-grid" style="border:none;">
-        <tr>
-          <td class="summary-cell right navy">
-            ${accountCard ? `<div style="margin-top: -5mm;">${escapeHtml(accountCard.label)} : ${escapeHtml(accountCard.value)}</div>` : ''}
-          </td>
-          <td class="summary-cell left navy" dir="rtl">
-            ${dateCard ? `<span>من تاريخ : <span dir="ltr">${escapeHtml(fromDate)}</span></span>` : ''}
-          </td>
-        </tr>
-        ${totalsItems.length > 0 ? `
-        <tr>
-          <td class="summary-cell right navy">
-            ${totalsItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px;">|</span>')}
-          </td>
-          <td class="summary-cell left navy" dir="rtl">
-            ${dateCard ? `<span>الى تاريخ : <span dir="ltr">${escapeHtml(toDate)}</span></span>` : ''}
-          </td>
-        </tr>
-        ` : ''}
-        ${selectedItems.length > 0 ? `
-        <tr>
-          <td class="summary-cell right red">
-            ${selectedItems.map(item => `<span>${item}</span>`).join('<span style="margin: 0 8px; color: #E31E24;">|</span>')}
-          </td>
-          <td class="summary-cell left"></td>
-        </tr>
-        ` : ''}
-        ${extraCards.length > 0 ? `
-        <tr>
-          <td class="summary-cell right navy">
-            ${extraCards.map(c => `<span>${escapeHtml(c.label)}: <span dir="ltr">${escapeHtml(c.value)}</span></span>`).join('<span style="margin: 0 8px;">|</span>')}
-          </td>
-          <td class="summary-cell left"></td>
-        </tr>
-        ` : ''}
+      <table class="tay-meta-table">
+        <thead>
+          <tr>${metaItems.map(item => `<th>${item.label}</th>`).join("")}</tr>
+        </thead>
+        <tbody>
+          <tr>${metaItems.map(item => `<td class="${item.accent ? 'tay-meta-accent' : ''}">${item.value}</td>`).join("")}</tr>
+        </tbody>
       </table>
     `;
   }
@@ -286,7 +254,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
-      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&amp;family=Cairo:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&amp;family=Cairo:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @page { 
@@ -294,7 +262,7 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
           margin: ${options.headerBase64 ? (options.orientation === 'landscape' ? '30mm' : '22mm') : '10mm'} 0 ${options.footerBase64 ? '22mm' : '10mm'} 0; 
         }
         body {
-          font-family: "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
+          font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", Arial, Tahoma, sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
           direction: rtl;
@@ -311,28 +279,36 @@ export async function exportToServerPdf(spec, rows, columns, options = {}) {
         }
         .watermark img { width: 280px; height: auto; }
 
-        /* ── Summary Grid: Unified info box for ALL templates ── */
-        .summary-grid {
+        /* ── Meta Info Table ── */
+        .tay-meta-table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 5px;
+          margin-bottom: 12px;
+          font-size: 11pt;
+          font-weight: 600;
+          border: 1.5px solid #1C2B59;
+        }
+        .tay-meta-table th {
+          background-color: #1C2B59;
+          color: #ffffff;
+          padding: 6px 10px;
+          text-align: center;
+          font-weight: 700;
+          font-size: 10pt;
+          border: 1px solid #1C2B59;
+        }
+        .tay-meta-table td {
+          background-color: #f8f9fc;
+          padding: 7px 10px;
+          text-align: center;
           font-weight: 700;
           font-size: 11pt;
-          table-layout: fixed;
-          line-height: 1.8;
+          color: #1C2B59;
+          border: 1px solid #ddd;
         }
-        .summary-cell { 
-          padding: 3px 0;
-          border: none;
-          background: transparent;
-          white-space: nowrap;
+        .tay-meta-table td.tay-meta-accent {
+          color: #E31E24;
         }
-        .summary-cell span + span { margin-right: 0; }
-        .summary-cell.right { text-align: right; }
-        .summary-cell.center { text-align: center; }
-        .summary-cell.left { text-align: left; }
-        .summary-cell.navy { color: #1C2B59; }
-        .summary-cell.red { color: #E31E24; }
 
         /* ── Table ── */
         table {
