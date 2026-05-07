@@ -2092,10 +2092,10 @@ function buildSaudiStatementPdfSummaryCards(
   ];
 
   const globalTotals = printContext?.globalTotals || totals;
-  const totalUsd = `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}`;
-  const totalIqd = `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع`;
-  const filteredUsd = `$${fmtUSD(totals.totalInvoicesUSD || 0)}`;
-  const filteredIqd = `$${fmtNum(totals.totalInvoicesIQD || 0)} د.ع`;
+  const totalUsd = `$${fmtUSD(globalTotals.balanceUSD || 0)}`;
+  const totalIqd = `${fmtIQD(globalTotals.balanceIQD || 0)} د.ع`;
+  const filteredUsd = `$${fmtUSD(totals.balanceUSD || 0)}`;
+  const filteredIqd = `$${fmtNum(totals.balanceIQD || 0)} د.ع`;
   const balanceUsd = `$${fmtUSD(globalTotals.balanceUSD || 0)}`;
   const balanceIqd = `$${fmtNum(globalTotals.balanceIQD || 0)} د.ع`;
 
@@ -2107,12 +2107,10 @@ function buildSaudiStatementPdfSummaryCards(
     summaryCards.push({ label: "المبلغ الكلي", value: totalUsd });
     if (hasDateFilter)
       summaryCards.push({ label: "المبلغ المحدد", value: filteredUsd });
-    summaryCards.push({ label: "الرصيد المتبقي", value: balanceUsd });
   } else if (templateVariant === "iqd") {
     summaryCards.push({ label: "المبلغ الكلي", value: totalIqd });
     if (hasDateFilter)
       summaryCards.push({ label: "المبلغ المحدد", value: filteredIqd });
-    summaryCards.push({ label: "الرصيد المتبقي", value: balanceIqd });
   } else {
     summaryCards.push(
       { label: "المبلغ الكلي دولار", value: totalUsd },
@@ -2124,10 +2122,6 @@ function buildSaudiStatementPdfSummaryCards(
         { label: "المبلغ المحدد دينار", value: filteredIqd }
       );
     }
-    summaryCards.push(
-      { label: "الرصيد المتبقي دولار", value: balanceUsd },
-      { label: "الرصيد المتبقي دينار", value: balanceIqd }
-    );
   }
 
   if (totals.totalWeight !== undefined && totals.totalWeight !== null) {
@@ -2953,35 +2947,34 @@ export async function exportToPDF({
     const totals = printContext.totals || {};
     const fmt = fmtNum;
     
-    let summaryGrid;
+    // Build summaryCards (card design) instead of summaryGrid (table design)
+    const partnerCards = [];
+    if (printContext.accountName) {
+      partnerCards.push({ label: "اسم التاجر", value: printContext.accountName });
+    }
+    if (printContext.fromDate || printContext.toDate) {
+      const range = `${printContext.fromDate || "---"}  →  ${printContext.toDate || "---"}`;
+      partnerCards.push({ label: "الفترة", value: range });
+    }
+
     if (sectionKey === "special-partner") {
-      summaryGrid = {
-        accountName: printContext.accountName || "---",
-        fromDate: printContext.fromDate || "---",
-        toDate: printContext.toDate || "---",
-        amountOnValue: `$${fmt(totals.totalAmountUSD)}`,
-        amountForValue: `$${fmt(totals.totalPartnerUSD)}`,
-        netValue: `$${fmt(totals.totalNetUSD)}`,
-      };
+      partnerCards.push({ label: "المبلغ عليه", value: `$${fmt(totals.totalAmountUSD)}` });
+      partnerCards.push({ label: "المبلغ له", value: `$${fmt(totals.totalPartnerUSD)}` });
+      partnerCards.push({ label: "الصافي", value: `$${fmt(totals.totalNetUSD)}` });
     } else {
-      // Al-Qaim port (port-3) maps its standard totals to the statement design format
+      // Al-Qaim port (port-3)
       const invUsd = totals.totalInvoicesUSD || 0;
       const balUsd = totals.balanceUSD || 0;
-      summaryGrid = {
-        accountName: printContext.accountName || "---",
-        fromDate: printContext.fromDate || "---",
-        toDate: printContext.toDate || "---",
-        amountOnValue: `$${fmt(invUsd)}`,
-        amountForValue: `$${fmt(invUsd - balUsd)}`,
-        netValue: `$${fmt(balUsd)}`,
-      };
+      partnerCards.push({ label: "المبلغ عليه", value: `$${fmt(invUsd)}` });
+      partnerCards.push({ label: "المبلغ له", value: `$${fmt(invUsd - balUsd)}` });
+      partnerCards.push({ label: "الصافي", value: `$${fmt(balUsd)}` });
     }
 
     await exportToServerPdf(
       { title: undefined, subtitle: undefined, filename },
       rows,
       columns,
-      { summaryGrid, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64, orientation }
+      { summaryCards: partnerCards, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64, orientation }
     );
     return;
   }
@@ -3072,7 +3065,6 @@ export async function exportSaudiStatementPDF({
   templateVariant = "both",
 }) {
   const branded = shouldUseTayAlRawiBranding({ sectionKey });
-  const useGridHeader = templateVariant === "usd" || templateVariant === "iqd";
 
   // Convert branding images to base64 data URIs for Puppeteer
   const brandAssets = resolveBrandAssets({ sectionKey });
@@ -3082,56 +3074,61 @@ export async function exportSaudiStatementPDF({
     imageToBase64(brandAssets.logo),
   ]);
 
-  if (useGridHeader) {
-    const totals = printContext?.totals || {};
-    const globalTotals = printContext?.globalTotals || totals;
-    const fmt = fmtNum;
-    
-    const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
-    const hasDateFilter = isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
+  // Build summaryCards for ALL template variants (usd, iqd, both)
+  // This ensures the tay-admin-meta-grid (card) design is used for all statement templates
+  const totals = printContext?.totals || {};
+  const globalTotals = printContext?.globalTotals || totals;
+  const isValidDate = d => d && d !== "---" && String(d).trim() !== "";
+  const hasDateFilter = isValidDate(printContext?.fromDate) || isValidDate(printContext?.toDate);
 
-    const totalValue =
-      templateVariant === "usd"
-        ? `$${fmt(globalTotals.totalInvoicesUSD)}`
-        : `${fmt(globalTotals.totalInvoicesIQD)} د.ع`;
-        
-    const filteredValue =
-      templateVariant === "usd"
-        ? `$${fmt(totals.totalInvoicesUSD)}`
-        : `${fmt(totals.totalInvoicesIQD)} د.ع`;
-        
-    const balanceValue =
-      templateVariant === "usd"
-        ? `$${fmt(globalTotals.balanceUSD)}`
-        : `${fmt(globalTotals.balanceIQD)} د.ع`;
+  const summaryCards = [];
 
-    const summaryGrid = {
-      accountName: printContext?.accountName || "---",
-      fromDate: printContext?.fromDate || "---",
-      toDate: printContext?.toDate || "---",
-      totalLabel: "المبلغ الكلي",
-      totalValue,
-      hasDateFilter,
-      filteredLabel: "المبلغ المحدد",
-      filteredValue,
-      balanceLabel: "الرصيد المتبقي",
-      balanceValue,
-    };
-
-    await exportToServerPdf(
-      { title, subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628", filename },
-      rows,
-      columns,
-      { summaryGrid, sectionKey, totalsRow, headerBase64, footerBase64, logoBase64 }
-    );
-    return;
+  // Account name
+  if (printContext?.accountName) {
+    summaryCards.push({ label: "اسم التاجر", value: printContext.accountName });
   }
 
-  const summaryCards = buildPortStatementSummaryCards(
-    printContext,
-    rows,
-    sectionKey
-  );
+  // Date range
+  if (printContext?.fromDate || printContext?.toDate) {
+    const range = `${printContext.fromDate || "---"}  →  ${printContext.toDate || "---"}`;
+    summaryCards.push({ label: "الفترة", value: range });
+  }
+
+  // Amounts based on templateVariant
+  if (templateVariant === "usd") {
+    summaryCards.push({ label: "المبلغ الكلي دولار", value: `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}` });
+    if (hasDateFilter) {
+      summaryCards.push({ label: "المبلغ المحدد دولار", value: `$${fmtUSD(totals.totalInvoicesUSD || 0)}`, color: "#d82534" });
+    }
+    summaryCards.push({ label: "الرصيد المتبقي دولار", value: `$${fmtUSD(globalTotals.balanceUSD || 0)}` });
+  } else if (templateVariant === "iqd") {
+    summaryCards.push({ label: "المبلغ الكلي دينار", value: `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع` });
+    if (hasDateFilter) {
+      summaryCards.push({ label: "المبلغ المحدد دينار", value: `${fmtIQD(totals.totalInvoicesIQD || 0)} د.ع`, color: "#d82534" });
+    }
+    summaryCards.push({ label: "الرصيد المتبقي دينار", value: `${fmtIQD(globalTotals.balanceIQD || 0)} د.ع` });
+  } else {
+    // "both" - show USD and IQD
+    summaryCards.push({ label: "المبلغ الكلي دولار", value: `$${fmtUSD(globalTotals.totalInvoicesUSD || 0)}` });
+    summaryCards.push({ label: "المبلغ الكلي دينار", value: `${fmtIQD(globalTotals.totalInvoicesIQD || 0)} د.ع` });
+    if (hasDateFilter) {
+      summaryCards.push({ label: "المبلغ المحدد دولار", value: `$${fmtUSD(totals.totalInvoicesUSD || 0)}`, color: "#d82534" });
+      summaryCards.push({ label: "المبلغ المحدد دينار", value: `${fmtIQD(totals.totalInvoicesIQD || 0)} د.ع`, color: "#d82534" });
+    }
+    summaryCards.push({ label: "الرصيد المتبقي دولار", value: `$${fmtUSD(globalTotals.balanceUSD || 0)}` });
+    summaryCards.push({ label: "الرصيد المتبقي دينار", value: `${fmtIQD(globalTotals.balanceIQD || 0)} د.ع` });
+  }
+
+  // Meters for Saudi port
+  if (sectionKey === "port-1") {
+    const totalMeters = rows.reduce(
+      (sum, row) => sum + Number(row.Meters || row.meters || 0),
+      0
+    );
+    summaryCards.push({ label: "مجموع الامتار", value: fmtNum(totalMeters) });
+  } else if (totals.totalWeight !== undefined && totals.totalWeight !== null) {
+    summaryCards.push({ label: "مجموع الوزن", value: fmtNum(totals.totalWeight) });
+  }
 
   await exportToServerPdf(
     { title, subtitle: subtitle || "\u0643\u0634\u0641 \u062d\u0633\u0627\u0628", filename },
