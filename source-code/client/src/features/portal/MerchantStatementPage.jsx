@@ -216,7 +216,7 @@ export default function MerchantStatementPage() {
           <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-500"></div>
           <div className="relative z-10">
             <h3 className="text-blue-200 text-sm font-medium mb-1">الحساب الحالي</h3>
-            <p className="text-3xl font-bold tracking-wide">{accountName}</p>
+            <p className="text-3xl font-bold tracking-wide text-white">{accountName}</p>
           </div>
         </div>
 
