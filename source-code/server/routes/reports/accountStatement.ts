@@ -24,6 +24,17 @@ type AccountStatementRow = EnrichedTransactionRecord & {
   runningIQD: number;
 };
 
+const ACCOUNT_TYPE_MAP: Record<string, string> = {
+  "1": "trader",
+  "2": "carrier",
+  "5": "partner",
+};
+
+function resolveAccountTypeValue(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  return ACCOUNT_TYPE_MAP[raw] ?? raw;
+}
+
 function readQueryString(value: unknown): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -52,7 +63,7 @@ export function registerReportAccountStatementRoutes(router: Router) {
         const accountId = parseInt(req.params.id, 10);
         const { startDate, endDate, portId, accountType, by } = req.query;
         const requestedPortId = readQueryString(portId);
-        const requestedAccountType = readQueryString(accountType);
+        const requestedAccountType = resolveAccountTypeValue(readQueryString(accountType));
         const requestedStartDate = readQueryString(startDate);
         const requestedEndDate = readQueryString(endDate);
         const statementBy = readQueryString(by);

@@ -67,6 +67,17 @@ type TransactionDataRow = {
   createdBy?: DecimalLike;
 };
 
+const ACCOUNT_TYPE_MAP: Record<string, string> = {
+  "1": "trader",
+  "2": "carrier",
+  "5": "partner",
+};
+
+function resolveAccountTypeValue(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  return ACCOUNT_TYPE_MAP[raw] ?? raw;
+}
+
 function readQueryString(value: unknown): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -207,7 +218,7 @@ export function registerTransactionQueryRoutes(router: Router) {
         } = req.query;
         const conditions: SQL<unknown>[] = [];
         const resolvedPortId = readQueryString(portId) ?? readQueryString(port);
-        const resolvedAccountType = readQueryString(accountType);
+        const resolvedAccountType = resolveAccountTypeValue(readQueryString(accountType));
         const resolvedSearch = readQueryString(search);
         const resolvedAccountId = parsePositiveIntegerQuery(accountId);
         const resolvedLimit = parsePositiveIntegerQuery(limit);
